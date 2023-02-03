@@ -229,6 +229,7 @@ public class IdaAuthenticatorImpl implements Authenticator {
 
             RequestEntity requestEntity = RequestEntity
                      .get(UriComponentsBuilder.fromUriString(getCertsUrl).queryParam("applicationId", applicationId).queryParam("referenceId", referenceId).build().toUri())
+                     .header(AUTHORIZATION_HEADER_NAME, AUTHORIZATION_HEADER_NAME)
                      .header(HttpHeaders.COOKIE, "Authorization=" + authToken)
                      .build();
             
