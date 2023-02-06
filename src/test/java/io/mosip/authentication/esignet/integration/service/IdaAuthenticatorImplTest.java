@@ -262,6 +262,11 @@ public class IdaAuthenticatorImplTest {
 
 		Mockito.when(mapper.writeValueAsString(Mockito.any())).thenReturn("value");
 
+		JWTSignatureResponseDto responseDto = Mockito.mock(JWTSignatureResponseDto.class);
+		responseDto.setJwtSignedData("jwtSignedData");
+
+		Mockito.when(signatureService.jwtSign(Mockito.any())).thenReturn(responseDto);
+
 		IdaKycExchangeResponse idaKycExchangeResponse = new IdaKycExchangeResponse();
 		idaKycExchangeResponse.setEncryptedKyc("ENCRKYC123");
 
