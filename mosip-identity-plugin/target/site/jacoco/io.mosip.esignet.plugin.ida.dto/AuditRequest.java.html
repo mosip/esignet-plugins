@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AuditRequest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">mosip-identity-plugin</a> &gt; <a href="index.source.html" class="el_package">io.mosip.esignet.plugin.ida.dto</a> &gt; <span class="el_source">AuditRequest.java</span></div><h1>AuditRequest.java</h1><pre class="source lang-java linenums">package io.mosip.esignet.plugin.ida.dto;
+
+import java.time.LocalDateTime;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+/**
+ * The Class AuditRequestDto.
+ *
+ * @author Manoj SP
+ */
+<span class="pc bnc" id="L14" title="All 134 branches missed.">@Data</span>
+<span class="fc" id="L15">@NoArgsConstructor</span>
+<span class="nc" id="L16">@AllArgsConstructor</span>
+public class AuditRequest {
+	
+<span class="nc" id="L19">	private String eventId;</span>
+<span class="nc" id="L20">	private String eventName;</span>
+<span class="nc" id="L21">	private String eventType;</span>
+<span class="nc" id="L22">	private LocalDateTime actionTimeStamp;</span>
+<span class="nc" id="L23">	private String hostName;</span>
+<span class="nc" id="L24">	private String hostIp;</span>
+<span class="nc" id="L25">	private String applicationId;</span>
+<span class="nc" id="L26">	private String applicationName;</span>
+<span class="nc" id="L27">	private String sessionUserId;</span>
+<span class="nc" id="L28">	private String sessionUserName;</span>
+<span class="nc" id="L29">	private String id;</span>
+<span class="nc" id="L30">	private String idType;</span>
+<span class="nc" id="L31">	private String createdBy;</span>
+<span class="nc" id="L32">	private String moduleName;</span>
+<span class="nc" id="L33">	private String moduleId;</span>
+<span class="nc" id="L34">	private String description;</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

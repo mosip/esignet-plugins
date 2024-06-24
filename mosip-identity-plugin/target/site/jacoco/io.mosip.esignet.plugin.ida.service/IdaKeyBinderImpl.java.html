@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>IdaKeyBinderImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">mosip-identity-plugin</a> &gt; <a href="index.source.html" class="el_package">io.mosip.esignet.plugin.ida.service</a> &gt; <span class="el_source">IdaKeyBinderImpl.java</span></div><h1>IdaKeyBinderImpl.java</h1><pre class="source lang-java linenums">/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+package io.mosip.esignet.plugin.ida.service;
+
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import io.mosip.esignet.plugin.ida.dto.IdaResponseWrapper;
+import io.mosip.esignet.plugin.ida.dto.IdaSendOtpRequest;
+import io.mosip.esignet.plugin.ida.dto.KeyBindingRequest;
+import io.mosip.esignet.plugin.ida.dto.KeyBindingResponse;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.MediaType;
+import org.springframework.http.RequestEntity;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import io.mosip.esignet.api.dto.AuthChallenge;
+import io.mosip.esignet.api.dto.KeyBindingResult;
+import io.mosip.esignet.api.dto.SendOtpResult;
+import io.mosip.esignet.api.exception.KeyBindingException;
+import io.mosip.esignet.api.exception.SendOtpException;
+import io.mosip.esignet.api.spi.KeyBinder;
+import io.mosip.esignet.api.util.ErrorConstants;
+import lombok.extern.slf4j.Slf4j;
+
+@ConditionalOnProperty(value = &quot;mosip.esignet.integration.key-binder&quot;, havingValue = &quot;IdaKeyBinderImpl&quot;)
+@Component
+<span class="fc" id="L44">@Slf4j</span>
+<span class="fc" id="L45">public class IdaKeyBinderImpl implements KeyBinder {</span>
+
+<span class="fc" id="L47">    private static final Map&lt;String, List&lt;String&gt;&gt; supportedFormats = new HashMap&lt;&gt;();</span>
+    static {
+<span class="fc" id="L49">        supportedFormats.put(&quot;OTP&quot;, Arrays.asList(&quot;alpha-numeric&quot;));</span>
+<span class="fc" id="L50">        supportedFormats.put(&quot;PIN&quot;, Arrays.asList(&quot;number&quot;));</span>
+<span class="fc" id="L51">        supportedFormats.put(&quot;BIO&quot;, Arrays.asList(&quot;encoded-json&quot;));</span>
+<span class="fc" id="L52">        supportedFormats.put(&quot;WLA&quot;, Arrays.asList(&quot;jwt&quot;));</span>
+<span class="fc" id="L53">    }</span>
+
+    private static final String PARTNER_ID_HEADER = &quot;partner-id&quot;;
+    private static final String PARTNER_API_KEY_HEADER = &quot;partner-api-key&quot;;
+    public static final String SIGNATURE_HEADER_NAME = &quot;signature&quot;;
+    public static final String AUTHORIZATION_HEADER_NAME = &quot;Authorization&quot;;
+    public static final String REQUIRED_HEADERS_MISSING = &quot;required_header_missing&quot;;
+
+    @Value(&quot;${mosip.esignet.binder.ida.key-binding-url}&quot;)
+    private String keyBinderUrl;
+
+    @Value(&quot;${mosip.esignet.binder.ida-binding-id:mosip.identity.keybinding}&quot;)
+    private String keyBindingId;
+
+    @Value(&quot;${mosip.esignet.authenticator.ida-version:1.0}&quot;)
+    private String idaVersion;
+
+    @Value(&quot;${mosip.esignet.authenticator.ida-domainUri}&quot;)
+    private String idaDomainUri;
+
+    @Value(&quot;${mosip.esignet.authenticator.ida-env:Staging}&quot;)
+    private String idaEnv;
+
+    @Autowired
+    private HelperService helperService;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Autowired
+    private RestTemplate restTemplate;
+
+    @Override
+    public SendOtpResult sendBindingOtp(String individualId, List&lt;String&gt; otpChannels, Map&lt;String, String&gt; requestHeaders)
+            throws SendOtpException {
+<span class="fc" id="L88">        log.info(&quot;Started to send-binding-otp request&quot;);</span>
+        try {
+<span class="pc bpc" id="L90" title="1 of 4 branches missed.">            if(StringUtils.isEmpty(requestHeaders.get(PARTNER_ID_HEADER)) || StringUtils.isEmpty(requestHeaders.get(PARTNER_API_KEY_HEADER)))</span>
+<span class="fc" id="L91">                throw new SendOtpException(REQUIRED_HEADERS_MISSING);</span>
+
+<span class="fc" id="L93">            IdaSendOtpRequest idaSendOtpRequest = new IdaSendOtpRequest();</span>
+<span class="fc" id="L94">            idaSendOtpRequest.setOtpChannel(otpChannels);</span>
+<span class="fc" id="L95">            idaSendOtpRequest.setIndividualId(individualId);</span>
+<span class="fc" id="L96">            idaSendOtpRequest.setTransactionID(helperService.getTransactionId(HelperService.generateHash(individualId.trim())));</span>
+<span class="fc" id="L97">            return helperService.sendOTP(requestHeaders.get(PARTNER_ID_HEADER),</span>
+<span class="fc" id="L98">                    requestHeaders.get(PARTNER_API_KEY_HEADER), idaSendOtpRequest);</span>
+<span class="fc" id="L99">        } catch (SendOtpException e) {</span>
+<span class="fc" id="L100">            throw e;</span>
+<span class="nc" id="L101">        } catch (Exception e) {</span>
+<span class="nc" id="L102">            log.error(&quot;send-binding-otp failed with requestHeaders : {}&quot;, requestHeaders, e);</span>
+        }
+<span class="nc" id="L104">        throw new SendOtpException();</span>
+    }
+
+    @Override
+    public KeyBindingResult doKeyBinding(String individualId, List&lt;AuthChallenge&gt; challengeList, Map&lt;String, Object&gt; publicKeyJWK,
+                                         String bindAuthFactorType, Map&lt;String, String&gt; requestHeaders) throws KeyBindingException {
+<span class="fc" id="L110">        log.info(&quot;Started to key-binding request for auth-factor-type {}&quot;, bindAuthFactorType);</span>
+<span class="pc bpc" id="L111" title="1 of 4 branches missed.">        if(StringUtils.isEmpty(requestHeaders.get(PARTNER_ID_HEADER)) || StringUtils.isEmpty(requestHeaders.get(PARTNER_API_KEY_HEADER)))</span>
+<span class="fc" id="L112">            throw new KeyBindingException(REQUIRED_HEADERS_MISSING);</span>
+
+        try {
+<span class="fc" id="L115">            KeyBindingRequest keyBindingRequest = new KeyBindingRequest();</span>
+<span class="fc" id="L116">            keyBindingRequest.setId(keyBindingId);</span>
+<span class="fc" id="L117">            keyBindingRequest.setVersion(idaVersion);</span>
+<span class="fc" id="L118">            keyBindingRequest.setRequestTime(HelperService.getUTCDateTime());</span>
+<span class="fc" id="L119">            keyBindingRequest.setDomainUri(idaDomainUri);</span>
+<span class="fc" id="L120">            keyBindingRequest.setEnv(idaEnv);</span>
+<span class="fc" id="L121">            keyBindingRequest.setConsentObtained(true);</span>
+<span class="fc" id="L122">            keyBindingRequest.setIndividualId(individualId);</span>
+<span class="fc" id="L123">            keyBindingRequest.setTransactionID(helperService.getTransactionId(HelperService.generateHash(individualId.trim())));</span>
+<span class="fc" id="L124">            helperService.setAuthRequest(challengeList, keyBindingRequest);</span>
+
+<span class="fc" id="L126">            KeyBindingRequest.IdentityKeyBinding identityKeyBinding = new KeyBindingRequest.IdentityKeyBinding();</span>
+<span class="fc" id="L127">            identityKeyBinding.setPublicKeyJWK(publicKeyJWK);</span>
+<span class="fc" id="L128">            identityKeyBinding.setAuthFactorType(bindAuthFactorType);</span>
+<span class="fc" id="L129">            keyBindingRequest.setIdentityKeyBinding(identityKeyBinding);</span>
+
+            //set signature header, body and invoke kyc auth endpoint
+<span class="fc" id="L132">            String requestBody = objectMapper.writeValueAsString(keyBindingRequest);</span>
+<span class="fc" id="L133">            RequestEntity requestEntity = RequestEntity</span>
+<span class="fc" id="L134">                    .post(UriComponentsBuilder.fromUriString(keyBinderUrl).pathSegment(requestHeaders.getOrDefault(PARTNER_ID_HEADER, PARTNER_ID_HEADER),</span>
+<span class="fc" id="L135">                            requestHeaders.getOrDefault(PARTNER_API_KEY_HEADER, PARTNER_API_KEY_HEADER)).build().toUri())</span>
+<span class="fc" id="L136">                    .contentType(MediaType.APPLICATION_JSON_UTF8)</span>
+<span class="fc" id="L137">                    .header(SIGNATURE_HEADER_NAME, helperService.getRequestSignature(requestBody))</span>
+<span class="fc" id="L138">                    .header(AUTHORIZATION_HEADER_NAME, AUTHORIZATION_HEADER_NAME)</span>
+<span class="fc" id="L139">                    .body(requestBody);</span>
+<span class="fc" id="L140">            ResponseEntity&lt;IdaResponseWrapper&lt;KeyBindingResponse&gt;&gt; responseEntity = restTemplate.exchange(requestEntity,</span>
+<span class="fc" id="L141">                    new ParameterizedTypeReference&lt;IdaResponseWrapper&lt;KeyBindingResponse&gt;&gt;() {});</span>
+
+<span class="pc bpc" id="L143" title="2 of 4 branches missed.">            if(responseEntity.getStatusCode().is2xxSuccessful() &amp;&amp; responseEntity.getBody() != null) {</span>
+<span class="fc" id="L144">                IdaResponseWrapper&lt;KeyBindingResponse&gt; responseWrapper = responseEntity.getBody();</span>
+<span class="fc bfc" id="L145" title="All 2 branches covered.">                if(responseWrapper.getResponse() == null) {</span>
+<span class="fc" id="L146">                    log.error(&quot;Error response received from IDA (Key-binding) Errors: {}&quot;, responseWrapper.getErrors());</span>
+<span class="pc bpc" id="L147" title="1 of 2 branches missed.">                    throw new KeyBindingException(CollectionUtils.isEmpty(responseWrapper.getErrors()) ?</span>
+<span class="pc" id="L148">                            ErrorConstants.KEY_BINDING_FAILED : responseWrapper.getErrors().get(0).getErrorCode());</span>
+                }
+
+<span class="fc bfc" id="L151" title="All 2 branches covered.">                if(!responseWrapper.getResponse().isBindingAuthStatus()) {</span>
+<span class="fc" id="L152">                    log.error(&quot;Binding-Auth-status : {}&quot;, responseWrapper.getResponse().isBindingAuthStatus());</span>
+<span class="fc" id="L153">                    throw new KeyBindingException(ErrorConstants.BINDING_AUTH_FAILED);</span>
+                }
+
+<span class="fc" id="L156">                KeyBindingResult keyBindingResult = new KeyBindingResult();</span>
+<span class="fc" id="L157">                keyBindingResult.setCertificate(responseWrapper.getResponse().getIdentityCertificate());</span>
+<span class="fc" id="L158">                keyBindingResult.setPartnerSpecificUserToken(responseWrapper.getResponse().getAuthToken());</span>
+<span class="fc" id="L159">                return keyBindingResult;</span>
+            }
+
+<span class="nc" id="L162">            log.error(&quot;Error response received from IDA (Key-binding) with status : {}&quot;, responseEntity.getStatusCode());</span>
+<span class="fc" id="L163">        } catch (KeyBindingException e) {</span>
+<span class="fc" id="L164">            throw e;</span>
+<span class="nc" id="L165">        } catch (Exception e) {</span>
+<span class="nc" id="L166">            log.error(&quot;Key-binding failed with headers: {}&quot;, requestHeaders, e);</span>
+<span class="nc" id="L167">        }</span>
+<span class="nc" id="L168">        throw new KeyBindingException(ErrorConstants.KEY_BINDING_FAILED);</span>
+    }
+
+    @Override
+    public List&lt;String&gt; getSupportedChallengeFormats(String authFactorType) {
+<span class="nc" id="L173">        return supportedFormats.getOrDefault(authFactorType, Arrays.asList());</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

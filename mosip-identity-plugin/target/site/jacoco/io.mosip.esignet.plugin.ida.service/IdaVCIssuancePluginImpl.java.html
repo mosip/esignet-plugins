@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>IdaVCIssuancePluginImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">mosip-identity-plugin</a> &gt; <a href="index.source.html" class="el_package">io.mosip.esignet.plugin.ida.service</a> &gt; <span class="el_source">IdaVCIssuancePluginImpl.java</span></div><h1>IdaVCIssuancePluginImpl.java</h1><pre class="source lang-java linenums">package io.mosip.esignet.plugin.ida.service;
+
+import java.security.Key;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import javax.crypto.Cipher;
+
+import io.mosip.esignet.plugin.ida.dto.IdaVcExchangeResponse;
+import io.mosip.esignet.api.exception.VCIExchangeException;
+import io.mosip.esignet.api.util.ErrorConstants;
+import io.mosip.esignet.core.dto.OIDCTransaction;
+import io.mosip.esignet.plugin.ida.dto.CredentialDefinitionDTO;
+import io.mosip.esignet.plugin.ida.dto.IdaResponseWrapper;
+import io.mosip.esignet.plugin.ida.dto.IdaVcExchangeRequest;
+import io.mosip.esignet.plugin.ida.helper.VCITransactionHelper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.MediaType;
+import org.springframework.http.RequestEntity;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import foundation.identity.jsonld.JsonLDObject;
+import io.mosip.esignet.api.dto.VCRequestDto;
+import io.mosip.esignet.api.dto.VCResult;
+import io.mosip.esignet.api.spi.VCIssuancePlugin;
+import io.mosip.kernel.core.keymanager.spi.KeyStore;
+import io.mosip.kernel.keymanagerservice.constant.KeymanagerConstant;
+import io.mosip.kernel.keymanagerservice.entity.KeyAlias;
+import io.mosip.kernel.keymanagerservice.helper.KeymanagerDBHelper;
+import lombok.extern.slf4j.Slf4j;
+
+@Component
+<span class="fc" id="L44">@Slf4j</span>
+@ConditionalOnProperty(value = &quot;mosip.esignet.integration.vci-plugin&quot;, havingValue = &quot;IdaVCIssuancePluginImpl&quot;)
+<span class="fc" id="L46">public class IdaVCIssuancePluginImpl implements VCIssuancePlugin {</span>
+	private static final String CLIENT_ID = &quot;client_id&quot;;
+	private static final String ACCESS_TOKEN_HASH = &quot;accessTokenHash&quot;;
+	public static final String SIGNATURE_HEADER_NAME = &quot;signature&quot;;
+	public static final String AUTHORIZATION_HEADER_NAME = &quot;Authorization&quot;;
+	public static final String OIDC_SERVICE_APP_ID = &quot;OIDC_SERVICE&quot;;
+	public static final String AES_CIPHER_FAILED = &quot;aes_cipher_failed&quot;;
+	public static final String NO_UNIQUE_ALIAS = &quot;no_unique_alias&quot;;
+
+	@Autowired
+	private ObjectMapper objectMapper;
+
+	@Autowired
+	private RestTemplate restTemplate;
+
+	@Autowired
+	HelperService helperService;
+
+	@Autowired
+	private KeyStore keyStore;
+
+	@Autowired
+	private KeymanagerDBHelper dbHelper;
+
+	@Autowired
+    VCITransactionHelper vciTransactionHelper;
+
+	@Value(&quot;${mosip.esignet.ida.vci-exchange-url}&quot;)
+	private String vciExchangeUrl;
+
+	@Value(&quot;${mosip.esignet.ida.vci-exchange-id}&quot;)
+	private String vciExchangeId;
+
+	@Value(&quot;${mosip.esignet.ida.vci-exchange-version}&quot;)
+	private String vciExchangeVersion;
+
+	@Value(&quot;${mosip.esignet.cache.secure.individual-id}&quot;)
+	private boolean secureIndividualId;
+
+	@Value(&quot;${mosip.esignet.cache.store.individual-id}&quot;)
+	private boolean storeIndividualId;
+
+	@Value(&quot;${mosip.esignet.cache.security.algorithm-name}&quot;)
+	private String aesECBTransformation;
+
+	@Value(&quot;${mosip.esignet.cache.security.secretkey.reference-id}&quot;)
+	private String cacheSecretKeyRefId;
+
+<span class="fc" id="L94">	private Base64.Decoder urlSafeDecoder = Base64.getUrlDecoder();</span>
+
+
+	@Override
+	public VCResult&lt;JsonLDObject&gt; getVerifiableCredentialWithLinkedDataProof(VCRequestDto vcRequestDto, String holderId,
+			Map&lt;String, Object&gt; identityDetails) throws VCIExchangeException {
+<span class="fc" id="L100">		log.info(&quot;Started to created the VCIssuance&quot;);</span>
+		try {
+<span class="fc" id="L102">			OIDCTransaction transaction = vciTransactionHelper</span>
+<span class="fc" id="L103">					.getOAuthTransaction(identityDetails.get(ACCESS_TOKEN_HASH).toString());</span>
+<span class="fc" id="L104">			String individualId = getIndividualId(transaction.getIndividualId());</span>
+<span class="fc" id="L105">			IdaVcExchangeRequest idaVciExchangeRequest = new IdaVcExchangeRequest();</span>
+<span class="fc" id="L106">			CredentialDefinitionDTO vciCred = new CredentialDefinitionDTO();</span>
+<span class="fc" id="L107">			idaVciExchangeRequest.setId(vciExchangeId);// Configuration</span>
+<span class="fc" id="L108">			idaVciExchangeRequest.setVersion(vciExchangeVersion);// Configuration</span>
+<span class="fc" id="L109">			idaVciExchangeRequest.setRequestTime(HelperService.getUTCDateTime());</span>
+<span class="fc" id="L110">			idaVciExchangeRequest.setTransactionID(transaction.getAuthTransactionId());// Cache input</span>
+<span class="fc" id="L111">			idaVciExchangeRequest.setVcAuthToken(transaction.getKycToken()); // Cache input</span>
+<span class="fc" id="L112">			idaVciExchangeRequest.setIndividualId(individualId);</span>
+<span class="fc" id="L113">			idaVciExchangeRequest.setCredSubjectId(holderId);</span>
+<span class="fc" id="L114">			idaVciExchangeRequest.setVcFormat(vcRequestDto.getFormat());</span>
+<span class="fc" id="L115">			idaVciExchangeRequest.setLocales(convertLangCodesToISO3LanguageCodes(transaction.getClaimsLocales()));</span>
+<span class="fc" id="L116">			vciCred.setCredentialSubject(vcRequestDto.getCredentialSubject());</span>
+<span class="fc" id="L117">			vciCred.setType(vcRequestDto.getType());</span>
+<span class="fc" id="L118">			vciCred.setContext(vcRequestDto.getContext());</span>
+<span class="fc" id="L119">			idaVciExchangeRequest.setCredentialsDefinition(vciCred);</span>
+
+<span class="fc" id="L121">			String requestBody = objectMapper.writeValueAsString(idaVciExchangeRequest);</span>
+<span class="fc" id="L122">			RequestEntity requestEntity = RequestEntity</span>
+<span class="fc" id="L123">					.post(UriComponentsBuilder.fromUriString(vciExchangeUrl)</span>
+<span class="fc" id="L124">							.pathSegment(transaction.getRelyingPartyId(),</span>
+<span class="fc" id="L125">									identityDetails.get(CLIENT_ID).toString())</span>
+<span class="fc" id="L126">							.build().toUri())</span>
+<span class="fc" id="L127">					.contentType(MediaType.APPLICATION_JSON_UTF8)</span>
+<span class="fc" id="L128">					.header(SIGNATURE_HEADER_NAME, helperService.getRequestSignature(requestBody))</span>
+<span class="fc" id="L129">					.header(AUTHORIZATION_HEADER_NAME, AUTHORIZATION_HEADER_NAME).body(requestBody);</span>
+
+<span class="fc" id="L131">			ResponseEntity&lt;IdaResponseWrapper&lt;IdaVcExchangeResponse&lt;JsonLDObject&gt;&gt;&gt; responseEntity = restTemplate.exchange(</span>
+<span class="fc" id="L132">					requestEntity, new ParameterizedTypeReference&lt;IdaResponseWrapper&lt;IdaVcExchangeResponse&lt;JsonLDObject&gt;&gt;&gt;() {});</span>
+<span class="pc bpc" id="L133" title="2 of 4 branches missed.">			if (responseEntity.getStatusCode().is2xxSuccessful() &amp;&amp; responseEntity.getBody() != null) {</span>
+<span class="fc" id="L134">				IdaResponseWrapper&lt;IdaVcExchangeResponse&lt;JsonLDObject&gt;&gt; responseWrapper = responseEntity.getBody();</span>
+<span class="fc bfc" id="L135" title="All 2 branches covered.">				if (responseWrapper.getResponse() != null) {</span>
+<span class="fc" id="L136">					VCResult vCResult = new VCResult();</span>
+<span class="fc" id="L137">					vCResult.setCredential(responseWrapper.getResponse().getVerifiableCredentials());</span>
+<span class="fc" id="L138">					vCResult.setFormat(vcRequestDto.getFormat());</span>
+<span class="fc" id="L139">					return vCResult;</span>
+				}
+<span class="fc" id="L141">				log.error(&quot;Errors in response received from IDA VCI Exchange: {}&quot;, responseWrapper.getErrors());</span>
+<span class="pc bpc" id="L142" title="1 of 2 branches missed.">				throw new VCIExchangeException(CollectionUtils.isEmpty(responseWrapper.getErrors()) ?</span>
+<span class="pc" id="L143">						ErrorConstants.DATA_EXCHANGE_FAILED : responseWrapper.getErrors().get(0).getErrorCode());</span>
+			}
+<span class="nc" id="L145">			log.error(&quot;Error response received from IDA (VCI-exchange) with status : {}&quot;, responseEntity.getStatusCode());</span>
+<span class="fc" id="L146">		} catch (Exception e) {</span>
+<span class="fc" id="L147">			log.error(&quot;IDA Vci-exchange failed &quot;, e);</span>
+<span class="nc" id="L148">		}</span>
+<span class="fc" id="L149">		throw new VCIExchangeException();</span>
+	}
+
+	@Override
+	public VCResult&lt;String&gt; getVerifiableCredential(VCRequestDto vcRequestDto, String holderId,
+			Map&lt;String, Object&gt; identityDetails) throws VCIExchangeException {
+<span class="nc" id="L155">		throw new VCIExchangeException(ErrorConstants.NOT_IMPLEMENTED);</span>
+	}
+
+	protected String getIndividualId(String encryptedIndividualId) throws Exception {
+<span class="fc bfc" id="L159" title="All 2 branches covered.">		if (!storeIndividualId)</span>
+<span class="fc" id="L160">			return null;</span>
+<span class="pc bpc" id="L161" title="1 of 2 branches missed.">		return secureIndividualId ? decryptIndividualId(encryptedIndividualId) : encryptedIndividualId;</span>
+	}
+
+	private String decryptIndividualId(String encryptedIndividualId) throws Exception {
+		try {
+<span class="fc" id="L166">			Cipher cipher = Cipher.getInstance(aesECBTransformation);</span>
+<span class="fc" id="L167">			byte[] decodedBytes = b64Decode(encryptedIndividualId);</span>
+<span class="fc" id="L168">			cipher.init(Cipher.DECRYPT_MODE, getSecretKeyFromHSM());</span>
+<span class="fc" id="L169">			return new String(cipher.doFinal(decodedBytes, 0, decodedBytes.length));</span>
+<span class="fc" id="L170">		} catch (Exception e) {</span>
+<span class="fc" id="L171">			log.error(&quot;Error Cipher Operations of provided secret data.&quot;, e);</span>
+<span class="fc" id="L172">			throw new Exception(AES_CIPHER_FAILED);</span>
+		}
+	}
+
+	private Key getSecretKeyFromHSM() throws Exception {
+<span class="fc" id="L177">		String keyAlias = getKeyAlias(OIDC_SERVICE_APP_ID, cacheSecretKeyRefId);</span>
+<span class="pc bpc" id="L178" title="1 of 2 branches missed.">		if (Objects.nonNull(keyAlias)) {</span>
+<span class="fc" id="L179">			return keyStore.getSymmetricKey(keyAlias);</span>
+		}
+<span class="nc" id="L181">		throw new Exception(NO_UNIQUE_ALIAS);</span>
+	}
+
+	private String getKeyAlias(String keyAppId, String keyRefId) throws Exception {
+<span class="fc" id="L185">		Map&lt;String, List&lt;KeyAlias&gt;&gt; keyAliasMap = dbHelper.getKeyAliases(keyAppId, keyRefId,</span>
+<span class="fc" id="L186">				LocalDateTime.now(ZoneOffset.UTC));</span>
+<span class="fc" id="L187">		List&lt;KeyAlias&gt; currentKeyAliases = keyAliasMap.get(KeymanagerConstant.CURRENTKEYALIAS);</span>
+<span class="pc bpc" id="L188" title="2 of 4 branches missed.">		if (!currentKeyAliases.isEmpty() &amp;&amp; currentKeyAliases.size() == 1) {</span>
+<span class="fc" id="L189">			return currentKeyAliases.get(0).getAlias();</span>
+		}
+<span class="nc" id="L191">		log.error(&quot;CurrentKeyAlias is not unique. KeyAlias count: {}&quot;, currentKeyAliases.size());</span>
+<span class="nc" id="L192">		throw new Exception(NO_UNIQUE_ALIAS);</span>
+	}
+
+	private byte[] b64Decode(String value) {
+<span class="fc" id="L196">		return urlSafeDecoder.decode(value);</span>
+	};
+
+	//Converts an array of two-letter language codes to their corresponding ISO 639-2/T language codes.
+	private List&lt;String&gt; convertLangCodesToISO3LanguageCodes(String[] langCodes) {
+<span class="pc bpc" id="L201" title="1 of 4 branches missed.">		if(langCodes == null || langCodes.length == 0)</span>
+<span class="fc" id="L202">			return List.of(&quot;eng&quot;);</span>
+<span class="fc" id="L203">		return Arrays.stream(langCodes)</span>
+<span class="fc" id="L204">				.map(langCode -&gt; {</span>
+					try {
+<span class="fc" id="L206">						return new Locale(langCode).getISO3Language();</span>
+<span class="fc" id="L207">					} catch (MissingResourceException ex) {}</span>
+<span class="fc" id="L208">					return null;</span>
+				})
+<span class="fc" id="L210">				.filter(Objects::nonNull)</span>
+<span class="fc" id="L211">				.collect(Collectors.toList());</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

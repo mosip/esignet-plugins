@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: io.mosip.esignet.plugin.ida.helper.AuthTransactionHelperTest
+-------------------------------------------------------------------------------
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.182 s - in io.mosip.esignet.plugin.ida.helper.AuthTransactionHelperTest

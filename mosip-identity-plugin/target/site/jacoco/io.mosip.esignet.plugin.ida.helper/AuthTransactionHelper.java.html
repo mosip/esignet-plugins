@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AuthTransactionHelper.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">mosip-identity-plugin</a> &gt; <a href="index.source.html" class="el_package">io.mosip.esignet.plugin.ida.helper</a> &gt; <span class="el_source">AuthTransactionHelper.java</span></div><h1>AuthTransactionHelper.java</h1><pre class="source lang-java linenums">package io.mosip.esignet.plugin.ida.helper;
+
+import java.time.LocalDateTime;
+
+import io.mosip.esignet.plugin.ida.dto.ClientIdSecretKeyRequest;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.MediaType;
+import org.springframework.http.RequestEntity;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import io.mosip.kernel.core.http.RequestWrapper;
+import io.mosip.kernel.core.http.ResponseWrapper;
+import lombok.extern.slf4j.Slf4j;
+
+@Component
+<span class="fc" id="L25">@Slf4j</span>
+<span class="fc" id="L26">public class AuthTransactionHelper {</span>
+	
+    private static final String AUTH_TOKEN_CACHE = &quot;authtokens&quot;;
+	
+    public static final String AUTH_TOKEN_CACHE_KEY = &quot;auth_token&quot;;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+	
+    @Autowired
+    private RestTemplate restTemplate;
+	
+    @Value(&quot;${mosip.esignet.authenticator.ida.auth-token-url}&quot;)
+    private String authTokenUrl;
+	
+    @Value(&quot;${mosip.esignet.authenticator.ida.client-id}&quot;)
+    private String clientId;
+    
+    @Value(&quot;${mosip.esignet.authenticator.ida.secret-key}&quot;)
+    private String secretKey;
+    
+    @Value(&quot;${mosip.esignet.authenticator.ida.app-id}&quot;)
+    private String appId;
+	
+    @Cacheable(value = AUTH_TOKEN_CACHE, key = &quot;#root.target.AUTH_TOKEN_CACHE_KEY&quot;)
+    public String getAuthToken() throws Exception {
+<span class="fc" id="L52">    	log.info(&quot;Started to get auth-token with appId : {} &amp;&amp; clientId : {}&quot;,</span>
+                appId, clientId);
+    	
+<span class="fc" id="L55">	RequestWrapper&lt;ClientIdSecretKeyRequest&gt; authRequest = new RequestWrapper&lt;&gt;();</span>
+<span class="fc" id="L56">    	authRequest.setRequesttime(LocalDateTime.now());</span>
+<span class="fc" id="L57">    	ClientIdSecretKeyRequest clientIdSecretKeyRequest = new ClientIdSecretKeyRequest(clientId, secretKey, appId);</span>
+<span class="fc" id="L58">    	authRequest.setRequest(clientIdSecretKeyRequest);</span>
+    	
+<span class="fc" id="L60">    	String requestBody = objectMapper.writeValueAsString(authRequest);</span>
+<span class="fc" id="L61">    	RequestEntity requestEntity = RequestEntity</span>
+<span class="fc" id="L62">                 .post(UriComponentsBuilder.fromUriString(authTokenUrl).build().toUri())</span>
+<span class="fc" id="L63">                 .contentType(MediaType.APPLICATION_JSON)</span>
+<span class="fc" id="L64">                 .body(requestBody);</span>
+<span class="fc" id="L65">        ResponseEntity&lt;ResponseWrapper&gt; responseEntity = restTemplate.exchange(requestEntity,</span>
+<span class="fc" id="L66">                 new ParameterizedTypeReference&lt;ResponseWrapper&gt;() {});</span>
+        
+<span class="fc" id="L68">        String authToken = responseEntity.getHeaders().getFirst(&quot;authorization&quot;);</span>
+<span class="fc" id="L69">        return authToken;</span>
+     }
+    
+    @CacheEvict(value = AUTH_TOKEN_CACHE, allEntries = true)
+    public void purgeAuthTokenCache() {
+<span class="nc" id="L74">    	log.info(&quot;Evicting entry from AUTH_TOKEN_CACHE&quot;);</span>
+<span class="nc" id="L75">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>
