@@ -1,8 +1,0 @@
-/opt/mosip/repository/esignet-plugins/mosip-identity-plugin/src/test/java/io/mosip/esignet/plugin/ida/service/IdaVCIssuancePluginImplTest.java
-/opt/mosip/repository/esignet-plugins/mosip-identity-plugin/src/test/java/io/mosip/esignet/plugin/ida/helper/AuthTransactionHelperTest.java
-/opt/mosip/repository/esignet-plugins/mosip-identity-plugin/src/test/java/io/mosip/esignet/plugin/ida/service/IdaAuditPluginImplTest.java
-/opt/mosip/repository/esignet-plugins/mosip-identity-plugin/src/test/java/io/mosip/esignet/plugin/ida/service/TestUtil.java
-/opt/mosip/repository/esignet-plugins/mosip-identity-plugin/src/test/java/io/mosip/esignet/plugin/ida/service/IdaKeyBinderImplTest.java
-/opt/mosip/repository/esignet-plugins/mosip-identity-plugin/src/test/java/io/mosip/esignet/plugin/ida/service/IdaAuthenticatorImplTest.java
-/opt/mosip/repository/esignet-plugins/mosip-identity-plugin/src/test/java/io/mosip/esignet/plugin/ida/helper/VCITransactionHelperTest.java
-/opt/mosip/repository/esignet-plugins/mosip-identity-plugin/src/test/java/io/mosip/esignet/plugin/ida/service/HelperServiceTest.java
