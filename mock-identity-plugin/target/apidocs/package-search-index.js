@@ -1,1 +1,0 @@
-packageSearchIndex = [{"l":"All Packages","url":"allpackages-index.html"},{"l":"io.mosip.esignet.mock.integration.dto"},{"l":"io.mosip.esignet.mock.integration.service"}]
