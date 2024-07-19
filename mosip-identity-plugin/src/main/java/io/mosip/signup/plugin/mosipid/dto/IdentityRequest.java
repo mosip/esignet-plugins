@@ -13,4 +13,5 @@ public class IdentityRequest {
 
     private String registrationId;
     private JsonNode identity;
+    private JsonNode verifiedAttributes;
 }

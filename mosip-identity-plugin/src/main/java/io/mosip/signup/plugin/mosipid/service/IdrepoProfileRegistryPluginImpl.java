@@ -384,6 +384,13 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
         }
 
         IdentityRequest identityRequest = new IdentityRequest();
+
+        //if verified claims exists then pass it in the request as "verifiedAttributes"
+        if(inputJson.has("verified_claims")) {
+            identityRequest.setVerifiedAttributes(inputJson.get("verified_claims"));
+            ((ObjectNode) inputJson).remove("verified_claims");
+        }
+
         identityRequest.setIdentity(inputJson);
         return identityRequest;
     }
