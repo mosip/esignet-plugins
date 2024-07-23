@@ -223,13 +223,13 @@ public class MockAuthenticationService implements Authenticator {
 
             int maxAge = filterDateTime != null ? filterDateTime.getMax_age() : 999; // Default value for maxAge if not set
 
-            if(!StringUtils.isEmpty(trustFrameworkCriteria.getValue())){
+            if(trustFrameworkCriteria!=null && !StringUtils.isEmpty(trustFrameworkCriteria.getValue())){
                 trustFrameWorkMap.computeIfAbsent(trustFrameworkCriteria.getValue(), k -> new ArrayList<>()).add(new AbstractMap.SimpleEntry<>(claimName, maxAge));
-            } else if (trustFrameworkCriteria.getValues()!=null && !trustFrameworkCriteria.getValues().isEmpty()) {
+            }else if (trustFrameworkCriteria!=null && trustFrameworkCriteria.getValues()!=null && !trustFrameworkCriteria.getValues().isEmpty()) {
                 for (String trustFramework : trustFrameworkCriteria.getValues()) {
                     trustFrameWorkMap.computeIfAbsent(trustFramework, list -> new ArrayList<>()).add(new AbstractMap.SimpleEntry<>(claimName, maxAge));
                 }
-            } else {
+            }else{
                 // Handle null trust_framework separately
                 trustFrameWorkMap.computeIfAbsent(null, list -> new ArrayList<>()).add(new AbstractMap.SimpleEntry<>(claimName, maxAge));
             }
