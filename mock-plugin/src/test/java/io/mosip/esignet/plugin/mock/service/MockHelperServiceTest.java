@@ -1,14 +1,17 @@
 package io.mosip.esignet.plugin.mock.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.mosip.esignet.api.dto.AuthChallenge;
-import io.mosip.esignet.api.dto.KycAuthDto;
-import io.mosip.esignet.api.dto.KycAuthResult;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.mosip.esignet.api.dto.*;
 import io.mosip.esignet.api.dto.claim.VerificationDetail;
 import io.mosip.esignet.api.exception.KycAuthException;
+import io.mosip.esignet.api.exception.SendOtpException;
 import io.mosip.esignet.api.util.ErrorConstants;
 import io.mosip.esignet.plugin.mock.dto.KycAuthResponseDtoV2;
+import io.mosip.kernel.core.exception.ServiceError;
 import io.mosip.kernel.core.http.ResponseWrapper;
+import io.mosip.kernel.signature.dto.JWTSignatureResponseDto;
+import io.mosip.kernel.signature.service.SignatureService;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -26,6 +29,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,11 +41,12 @@ public class MockHelperServiceTest {
     @InjectMocks
     MockHelperService mockHelperService;
 
-    @Mock
-    MockAuthenticationService mockAuthenticationService;
 
     @Mock
     RestTemplate restTemplate;
+
+    @Mock
+    SignatureService signatureService;
 
 
     @Before
@@ -158,5 +163,133 @@ public class MockHelperServiceTest {
         }catch (KycAuthException e){
             Assert.assertEquals(ErrorConstants.AUTH_FAILED,e.getErrorCode());
         }
+    }
+
+
+    @Test
+    public void sendOtpMock_withValidDetails_thenPass() throws SendOtpException {
+
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+        ReflectionTestUtils.setField(mockHelperService, "objectMapper", objectMapper);
+        ReflectionTestUtils.setField(mockHelperService, "sendOtpUrl", "http://localhost:8080/otp/send");
+
+        ResponseWrapper<SendOtpResult> responseWrapper = new ResponseWrapper<>();
+        SendOtpResult sendOtpResult = new SendOtpResult();
+        sendOtpResult.setTransactionId("test_transaction_id");
+        sendOtpResult.setMaskedMobile("test_masked_mobile");
+        sendOtpResult.setMaskedEmail("test_masked_email");
+        responseWrapper.setResponse(sendOtpResult);
+        ResponseEntity<ResponseWrapper<SendOtpResult>> responseEntity= new ResponseEntity<>(responseWrapper, HttpStatus.OK);
+
+        Mockito.when(restTemplate.exchange(
+                Mockito.any(RequestEntity.class),
+                Mockito.eq(new ParameterizedTypeReference<ResponseWrapper<SendOtpResult>>() {
+                })
+        )).thenReturn(responseEntity);
+
+        SendOtpResult result = mockHelperService.sendOtpMock("test_transaction_id", "individualId", List.of("mobile"), "relyingPartyId", "clientId");
+        Assert.assertNotNull(result);
+        Assert.assertEquals(result, sendOtpResult);
+
+    }
+
+    @Test
+    public void sendOtpMock_withEmptyResponse_thenFail() throws SendOtpException {
+
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+        ReflectionTestUtils.setField(mockHelperService, "objectMapper", objectMapper);
+        ReflectionTestUtils.setField(mockHelperService, "sendOtpUrl", "http://localhost:8080/otp/send");
+
+        ResponseWrapper<SendOtpResult> responseWrapper = new ResponseWrapper<>();
+        responseWrapper.setResponse(null);
+        ResponseEntity<ResponseWrapper<SendOtpResult>> responseEntity= new ResponseEntity<>(responseWrapper, HttpStatus.OK);
+
+        Mockito.when(restTemplate.exchange(
+                Mockito.any(RequestEntity.class),
+                Mockito.eq(new ParameterizedTypeReference<ResponseWrapper<SendOtpResult>>() {
+                })
+        )).thenReturn(responseEntity);
+
+        try{
+            mockHelperService.sendOtpMock("test_transaction_id", "individualId", List.of("mobile"),"relyingPartyId", "clientId");
+            Assert.fail();
+        }catch (SendOtpException e){
+            Assert.assertEquals(ErrorConstants.SEND_OTP_FAILED,e.getErrorCode());
+        }
+    }
+
+    @Test
+    public void sendOtpMock_withErrorInResponse_thenFail() throws SendOtpException {
+
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+        ReflectionTestUtils.setField(mockHelperService, "objectMapper", objectMapper);
+        ReflectionTestUtils.setField(mockHelperService, "sendOtpUrl", "http://localhost:8080/otp/send");
+
+        ResponseWrapper<SendOtpResult> responseWrapper = new ResponseWrapper<>();
+        responseWrapper.setErrors(List.of(new ServiceError("test_error_code","test_error_message")));
+        responseWrapper.setResponse(null);
+        ResponseEntity<ResponseWrapper<SendOtpResult>> responseEntity= new ResponseEntity<>(responseWrapper, HttpStatus.OK);
+
+        Mockito.when(restTemplate.exchange(
+                Mockito.any(RequestEntity.class),
+                Mockito.eq(new ParameterizedTypeReference<ResponseWrapper<SendOtpResult>>() {
+                })
+        )).thenReturn(responseEntity);
+
+        try{
+            mockHelperService.sendOtpMock("test_transaction_id", "individualId", List.of("mobile"),"relyingPartyId", "clientId");
+            Assert.fail();
+        }catch (SendOtpException e){
+            Assert.assertEquals("test_error_code",e.getErrorCode());
+        }
+    }
+
+
+    @Test
+    public void sendOtpMock_withResponseCodeAsUnAuthorized_thenFail() throws SendOtpException {
+
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+        ReflectionTestUtils.setField(mockHelperService, "objectMapper", objectMapper);
+        ReflectionTestUtils.setField(mockHelperService, "sendOtpUrl", "http://localhost:8080/otp/send");
+
+        ResponseWrapper<SendOtpResult> responseWrapper = new ResponseWrapper<>();
+        responseWrapper.setErrors(List.of(new ServiceError("test_error_code","test_error_message")));
+        responseWrapper.setResponse(null);
+        ResponseEntity<ResponseWrapper<SendOtpResult>> responseEntity= new ResponseEntity<>(responseWrapper, HttpStatus.UNAUTHORIZED);
+
+        Mockito.when(restTemplate.exchange(
+                Mockito.any(RequestEntity.class),
+                Mockito.eq(new ParameterizedTypeReference<ResponseWrapper<SendOtpResult>>() {
+                })
+        )).thenReturn(responseEntity);
+
+        try{
+            mockHelperService.sendOtpMock("test_transaction_id", "individualId", List.of("mobile"),"relyingPartyId", "clientId");
+            Assert.fail();
+        }catch (SendOtpException e){
+            Assert.assertEquals(ErrorConstants.SEND_OTP_FAILED,e.getErrorCode());
+        }
+    }
+
+
+    @Test
+    public void getRequestSignatureTest() {
+        String request = "request";
+        JWTSignatureResponseDto jwtSignatureResponseDto = new JWTSignatureResponseDto();
+        jwtSignatureResponseDto.setJwtSignedData("jwtSignedData");
+        jwtSignatureResponseDto.setTimestamp(LocalDateTime.now());
+        Mockito.when(signatureService.jwtSign(Mockito.any())).thenReturn(jwtSignatureResponseDto);
+        String requestSignature = mockHelperService.getRequestSignature(request);
+        Assert.assertNotNull(requestSignature);
+        Assert.assertEquals("jwtSignedData", requestSignature);
+
     }
 }
