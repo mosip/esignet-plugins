@@ -88,7 +88,7 @@ public class MockAuthenticationServiceTest {
         kycExchangeResponseDto.setKyc("responseKyc");
         ResponseWrapper responseWrapper = new ResponseWrapper();
         responseWrapper.setResponse(kycExchangeResponseDto);
-        var responseEntity = new ResponseEntity(responseWrapper, HttpStatus.OK);
+        ResponseEntity<ResponseWrapper<KycExchangeResponseDto>> responseEntity  = new ResponseEntity(responseWrapper, HttpStatus.OK);
         Mockito.when(restTemplate.exchange(
                 Mockito.any(RequestEntity.class),
                 Mockito.eq(new ParameterizedTypeReference<ResponseWrapper<KycExchangeResponseDto>>() {
