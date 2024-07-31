@@ -201,7 +201,7 @@ public class MockKeyBindingWrapperServiceTest {
     }
 
 
-    public static JWK generateJWK_RSA() {
+    private JWK generateJWK_RSA() {
         // Generate the RSA key pair
         try {
             KeyPairGenerator gen = KeyPairGenerator.getInstance("RSA");
