@@ -55,5 +55,7 @@ public class MockIdentityRequest {
 	String zoneInfo;
 	
 	String locale;
+	
+	Password password;
 
 }
