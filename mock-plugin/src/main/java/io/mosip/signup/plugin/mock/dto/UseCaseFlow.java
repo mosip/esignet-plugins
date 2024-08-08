@@ -5,18 +5,14 @@
  */
 package io.mosip.signup.plugin.mock.dto;
 
-
+import io.mosip.signup.api.dto.IDVProcessFeedback;
+import io.mosip.signup.api.dto.IDVProcessStepDetail;
 import lombok.Data;
-import java.util.List;
 
 @Data
-public class UseCaseScene {
-
-    private List<UseCaseFlow> flow;
-
-    private List<String> verified_claims;
-
-    private String trust_framework;
-
-    private String process_name;
+public class UseCaseFlow {
+    private int frameNumber;
+    private String stepCode;
+    private IDVProcessStepDetail step;
+    private IDVProcessFeedback feedback;
 }
