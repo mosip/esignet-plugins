@@ -137,7 +137,7 @@ public class MockVCIssuancePluginTest {
     }
 
     @Test
-    public void getVerifiableCredentialWithLinkedDataProof_withSecureIndividualId_thenFail() throws VCIExchangeException, NoSuchAlgorithmException {
+    public void getVerifiableCredentialWithLinkedDataProof_withInValidKeyAlias_thenFail() throws VCIExchangeException, NoSuchAlgorithmException {
 
         ReflectionTestUtils.setField(mockVCIssuancePlugin, "verificationMethod", "http://localhost:8080/v1/esignet.mosip.net/oauth/.well-known/jwks.json");
         List<String> vcCredentialContexts = new ArrayList<>();
@@ -174,8 +174,6 @@ public class MockVCIssuancePluginTest {
         jwtSignatureResponseDto.setTimestamp(LocalDateTime.now());
         jwtSignatureResponseDto.setJwtSignedData("test");
         Mockito.when(signatureService.jwtSign(Mockito.any())).thenReturn(jwtSignatureResponseDto);
-
-
         mockVCIssuancePlugin.getVerifiableCredentialWithLinkedDataProof(new VCRequestDto(), "test", new HashMap<>());
     }
 
