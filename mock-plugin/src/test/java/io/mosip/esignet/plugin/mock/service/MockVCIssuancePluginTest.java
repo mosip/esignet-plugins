@@ -23,6 +23,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.web.client.RestTemplate;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
@@ -53,6 +54,9 @@ public class MockVCIssuancePluginTest {
 
     @Mock
     private KeymanagerDBHelper dbHelper;
+
+    @Mock
+    private RestTemplate restTemplate;
 
     @InjectMocks
     private MockVCIssuancePlugin mockVCIssuancePlugin;
@@ -112,10 +116,26 @@ public class MockVCIssuancePluginTest {
         oidcTransaction.setRelyingPartyId("relyingPartyId");
 
         Mockito.when(parsedAccessToken.getAccessTokenHash()).thenReturn("123456789");
-
         Mockito.when(cache.get("123456789", OIDCTransaction.class)).thenReturn(oidcTransaction);
         Mockito.when(cacheManager.getCache(Mockito.anyString())).thenReturn(cache);
 
+        Map<String, Object> mockResponse = new HashMap<>();
+
+        Map<String,Object> res=new HashMap<>();
+        res.put("name", "John Doe");
+        res.put("fullName", "Johnathan Alexander Doe");
+        res.put("gender", "Male");
+        res.put("dateOfBirth", "1990-01-01");
+        res.put("email", "john.doe@example.com");
+        res.put("phone", "+1234567890");
+        res.put("streetAddress", "123 Main St");
+        res.put("locality", "Springfield");
+        res.put("region", "IL");
+        res.put("postalCode", "62701");
+        res.put("encodedPhoto", "Base64EncodedStringOfPhoto");
+        mockResponse.put("response",res);
+
+        Mockito.when(restTemplate.getForObject(Mockito.anyString(), Mockito.any())).thenReturn(mockResponse);
 
         Map<String, List<KeyAlias>> keyaliasesMap = new HashMap<>();
         KeyAlias keyAlias = new KeyAlias();
@@ -127,11 +147,7 @@ public class MockVCIssuancePluginTest {
         jwtSignatureResponseDto.setTimestamp(LocalDateTime.now());
         jwtSignatureResponseDto.setJwtSignedData("test");
         Mockito.when(signatureService.jwtSign(Mockito.any())).thenReturn(jwtSignatureResponseDto);
-
-
         Mockito.when(keyStore.getSymmetricKey(Mockito.any())).thenReturn(key,key);
-
-
 
         mockVCIssuancePlugin.getVerifiableCredentialWithLinkedDataProof(new VCRequestDto(), "test", new HashMap<>());
     }
@@ -173,8 +189,12 @@ public class MockVCIssuancePluginTest {
         JWTSignatureResponseDto jwtSignatureResponseDto = new JWTSignatureResponseDto();
         jwtSignatureResponseDto.setTimestamp(LocalDateTime.now());
         jwtSignatureResponseDto.setJwtSignedData("test");
-        Mockito.when(signatureService.jwtSign(Mockito.any())).thenReturn(jwtSignatureResponseDto);
-        mockVCIssuancePlugin.getVerifiableCredentialWithLinkedDataProof(new VCRequestDto(), "test", new HashMap<>());
+        try {
+            mockVCIssuancePlugin.getVerifiableCredentialWithLinkedDataProof(new VCRequestDto(), "test", new HashMap<>());
+        }catch (VCIExchangeException e){
+            Assert.assertEquals(e.getErrorCode(),"vci_exchange_failed");
+        }
+
     }
 
     @Test

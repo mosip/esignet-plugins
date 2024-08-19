@@ -74,6 +74,9 @@ public class MockVCIssuancePlugin implements VCIssuancePlugin {
 	@Autowired
 	private KeymanagerDBHelper dbHelper;
 
+	@Autowired
+	RestTemplate restTemplate;
+
 	private ConfigurableDocumentLoader confDocumentLoader = null;
 
 	@Value("${mosip.esignet.mock.vciplugin.verification-method}")
@@ -118,13 +121,14 @@ public class MockVCIssuancePlugin implements VCIssuancePlugin {
 	}
 
 	private JsonLDObject buildDummyJsonLDWithLDProof(String holderId)
-			throws IOException, GeneralSecurityException, JsonLDException, URISyntaxException {
+			throws IOException, GeneralSecurityException, JsonLDException, URISyntaxException, VCIExchangeException {
 		OIDCTransaction transaction = getUserInfoTransaction(parsedAccessToken.getAccessTokenHash());
 		Map<String, Object> formattedMap = null;
 		try{
 			formattedMap = getIndividualData(transaction);
 		} catch(Exception e) {
 			log.error("Unable to get KYC exchange data from MOCK", e);
+			throw new VCIExchangeException();
 		}
 
 		Map<String, Object> verCredJsonObject = new HashMap<>();
@@ -169,7 +173,7 @@ public class MockVCIssuancePlugin implements VCIssuancePlugin {
 	private Map<String, Object> getIndividualData(OIDCTransaction transaction){
 		String individualId = getIndividualId(transaction);
 		if (individualId!=null){
-			Map<String, Object> res = new RestTemplate().getForObject(
+			Map<String, Object> res = restTemplate.getForObject(
 				getIdentityUrl+"/"+individualId,
 				HashMap.class);
 			res = (Map<String, Object>)res.get("response");
