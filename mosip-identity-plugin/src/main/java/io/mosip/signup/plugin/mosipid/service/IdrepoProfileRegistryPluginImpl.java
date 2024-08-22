@@ -185,6 +185,11 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
         //set UIN
         //((ObjectNode) inputJson).set("UIN", objectMapper.valueToTree(profileDto.getUniqueUserId()));
         ((ObjectNode) inputJson).set(UIN, objectMapper.valueToTree(profileDto.getIndividualId()));
+
+        if(!inputJson.has(SELECTED_HANDLES_FIELD_ID) && !CollectionUtils.isEmpty(defaultSelectedHandles)){
+            ((ObjectNode) inputJson).set(SELECTED_HANDLES_FIELD_ID, objectMapper.valueToTree(defaultSelectedHandles));
+        }
+
         //Build identity request
         IdentityRequest identityRequest = buildIdentityRequest(inputJson, true);
         identityRequest.setRegistrationId(requestId);
