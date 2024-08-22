@@ -5,6 +5,8 @@
  */
 package io.mosip.signup.plugin.mock.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.mosip.signup.api.dto.FrameDetail;
 import io.mosip.signup.api.dto.IdentityVerificationDto;
 import io.mosip.signup.api.dto.IdentityVerificationResult;
@@ -12,8 +14,8 @@ import io.mosip.signup.api.dto.VerifiedResult;
 import io.mosip.signup.api.exception.IdentityVerifierException;
 import io.mosip.signup.api.spi.IdentityVerifierPlugin;
 import io.mosip.signup.api.util.ProcessType;
-import io.mosip.signup.api.util.VerificationStatus;
-import io.mosip.signup.plugin.mock.dto.UseCaseScene;
+import io.mosip.signup.plugin.mock.dto.MockScene;
+import io.mosip.signup.plugin.mock.dto.MockUserStory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,18 +30,17 @@ import static io.mosip.signup.api.util.ProcessType.VIDEO;
 @Component
 public class MockIdentityVerifierPluginImpl extends IdentityVerifierPlugin {
 
-    Map<String, String> localStore = new HashMap<>();
-
-    private UseCaseScene[] useCase;
-
-    @Value("${mosip.signup.identity-verification.mock.usecase}")
-    private String useCaseName;
+    @Value("${mosip.signup.identity-verification.mock.story-name}")
+    private String storyName;
 
     @Value("${mosip.signup.config-server-url}")
     private String configServerUrl;
 
     @Autowired
     private RestTemplate restTemplate;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Override
     public String getVerifierId() {
@@ -53,17 +54,17 @@ public class MockIdentityVerifierPluginImpl extends IdentityVerifierPlugin {
 
     @Override
     public void verify(String transactionId, IdentityVerificationDto identityVerificationDto) throws IdentityVerifierException {
-        if(useCase == null) {
-            useCase = restTemplate.getForObject(configServerUrl+useCaseName, UseCaseScene[].class);
-        }
+        MockUserStory mockUserStory = restTemplate.getForObject(configServerUrl+storyName, MockUserStory.class);
 
         IdentityVerificationResult identityVerificationResult = new IdentityVerificationResult();
         identityVerificationResult.setId(transactionId);
         identityVerificationResult.setVerifierId(getVerifierId());
 
         if(isStartStep(identityVerificationDto.getStepCode())) {
-            Optional<UseCaseScene> result = Arrays.stream(useCase).filter(scene -> scene.getFrameNumber() == 0 &&
-                    scene.getStepCode().equals(identityVerificationDto.getStepCode())).findFirst();
+            Optional<MockScene> result = Objects.requireNonNull(mockUserStory).getScenes().stream()
+                    .filter(scene -> scene.getFrameNumber() == 0 && scene.getStepCode().equals(identityVerificationDto.getStepCode()))
+                    .findFirst();
+
             if(result.isPresent()) {
                 identityVerificationResult.setStep(result.get().getStep());
                 identityVerificationResult.setFeedback(result.get().getFeedback());
@@ -73,7 +74,7 @@ public class MockIdentityVerifierPluginImpl extends IdentityVerifierPlugin {
 
         if(identityVerificationDto.getFrames() != null) {
             for(FrameDetail frameDetail : identityVerificationDto.getFrames()) {
-                Optional<UseCaseScene> result = Arrays.stream(useCase)
+                Optional<MockScene> result = Objects.requireNonNull(mockUserStory).getScenes().stream()
                         .filter(scene -> scene.getFrameNumber() == frameDetail.getOrder() &&
                                 scene.getStepCode().equals(identityVerificationDto.getStepCode()))
                         .findFirst();
@@ -88,9 +89,18 @@ public class MockIdentityVerifierPluginImpl extends IdentityVerifierPlugin {
 
     @Override
     public VerifiedResult getVerifiedResult(String transactionId) throws IdentityVerifierException {
-        log.info("TODO - we should save the verification details in mock-identity-system");
-        VerifiedResult verifiedResult = new VerifiedResult();
-        verifiedResult.setStatus(VerificationStatus.COMPLETED);
+        MockUserStory mockUserStory = restTemplate.getForObject(configServerUrl+storyName, MockUserStory.class);
+        VerifiedResult verifiedResult;
+        if(mockUserStory != null && mockUserStory.getVerifiedResult() != null) {
+            try {
+                verifiedResult = objectMapper.treeToValue(mockUserStory.getVerifiedResult(), VerifiedResult.class);
+                return verifiedResult;
+            } catch (JsonProcessingException e) {
+               log.error("Failed to parse verified attributes in the mock user story: {}", storyName, e);
+            }
+        }
+        verifiedResult = new VerifiedResult();
+        verifiedResult.setErrorCode("mock_verification_failed");
         return verifiedResult;
     }
 

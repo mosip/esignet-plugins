@@ -10,7 +10,7 @@ import io.mosip.signup.api.dto.IDVProcessStepDetail;
 import lombok.Data;
 
 @Data
-public class UseCaseScene {
+public class MockScene {
     private int frameNumber;
     private String stepCode;
     private IDVProcessStepDetail step;

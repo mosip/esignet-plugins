@@ -44,6 +44,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 import static io.mosip.signup.api.util.ErrorConstants.SERVER_UNREACHABLE;
+import static io.mosip.signup.plugin.mosipid.util.ErrorConstants.REQUEST_FAILED;
 
 @Slf4j
 @Component
@@ -201,7 +202,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     public ProfileCreateUpdateStatus getProfileCreateUpdateStatus(String requestId) throws ProfileException {
         List<String> handleRequestIds = profileCacheService.getHandleRequestIds(requestId);
         if(handleRequestIds == null || handleRequestIds.isEmpty())
-            throw new ProfileException(ErrorConstants.INVALID_REQUEST_ID);
+            return getRequestStatusFromServer(requestId);
 
         //TODO - Need to support returning multiple handles status
         //TODO - Also we should cache the handle create/update status
@@ -270,7 +271,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
             }
         }
         log.error("Failed to fetch the latest schema json due to {}", responseWrapper);
-        throw new ProfileException(ErrorConstants.REQUEST_FAILED);
+        throw new ProfileException(REQUEST_FAILED);
     }
 
     @Timed(value = "getuin.api.timer", percentiles = {0.9})
@@ -281,7 +282,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
             return responseWrapper.getResponse().getUIN();
         }
         log.error("Failed to generate UIN {}", responseWrapper.getResponse());
-        throw new ProfileException(ErrorConstants.REQUEST_FAILED);
+        throw new ProfileException(REQUEST_FAILED);
     }
 
     @Timed(value = "pwdhash.api.timer", percentiles = {0.9})
@@ -297,7 +298,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
                     responseWrapper.getResponse().getSalt());
         }
         log.error("Failed to generate salted hash {}", responseWrapper.getResponse());
-        throw new ProfileException(ErrorConstants.REQUEST_FAILED);
+        throw new ProfileException(REQUEST_FAILED);
     }
 
     @Timed(value = "addidentity.api.timer", percentiles = {0.9})
@@ -340,8 +341,9 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
                     return ProfileCreateUpdateStatus.PENDING;
             }
         }
-        log.error("Get registration status failed with response {}", applicationId, responseWrapper);
-        throw new ProfileException( responseWrapper.getErrors().get(0).getErrorCode() );
+        log.error("Get registration status failed with response {} -> {}", applicationId, responseWrapper);
+        throw new ProfileException( CollectionUtils.isEmpty(responseWrapper.getErrors()) ?  REQUEST_FAILED :
+                responseWrapper.getErrors().get(0).getErrorCode() );
     }
 
     private <T> ResponseWrapper<T> request(String url, HttpMethod method, Object request,
@@ -361,7 +363,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
             }
             log.error("{} endpoint returned error response {} ", url, responseWrapper);
             throw new ProfileException(responseWrapper != null && !CollectionUtils.isEmpty(responseWrapper.getErrors()) ?
-                    responseWrapper.getErrors().get(0).getErrorCode() : ErrorConstants.REQUEST_FAILED);
+                    responseWrapper.getErrors().get(0).getErrorCode() : REQUEST_FAILED);
         } catch (RestClientException e) {
             log.error("{} endpoint is unreachable.", url, e);
             throw new ProfileException(SERVER_UNREACHABLE);
