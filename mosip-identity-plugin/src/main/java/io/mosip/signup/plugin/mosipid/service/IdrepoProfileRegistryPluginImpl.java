@@ -131,6 +131,9 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
             Iterator itr = requiredFieldIds.iterator();
             while (itr.hasNext()) {
                 String fieldName = ((TextNode)itr.next()).textValue();
+                if(ID_SCHEMA_VERSION_FIELD_ID.equals(fieldName))
+                    continue;
+                
                 if (inputJson.get(fieldName) == null || StringUtils.isEmpty(inputJson.get(fieldName).textValue())
                         || StringUtils.containsWhitespace(inputJson.get(fieldName).textValue())) {
                     log.error("Null/Empty value found in the required field of {}, required: {}", fieldName, requiredFieldIds);
