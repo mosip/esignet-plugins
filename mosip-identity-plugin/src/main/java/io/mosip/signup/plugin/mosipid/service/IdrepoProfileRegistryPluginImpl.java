@@ -131,11 +131,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
             Iterator itr = requiredFieldIds.iterator();
             while (itr.hasNext()) {
                 String fieldName = ((TextNode)itr.next()).textValue();
-                if(ID_SCHEMA_VERSION_FIELD_ID.equals(fieldName))
-                    continue;
-                
-                if (inputJson.get(fieldName) == null || StringUtils.isEmpty(inputJson.get(fieldName).textValue())
-                        || StringUtils.containsWhitespace(inputJson.get(fieldName).textValue())) {
+                if (inputJson.get(fieldName) == null) {
                     log.error("Null/Empty value found in the required field of {}, required: {}", fieldName, requiredFieldIds);
                     throw new InvalidProfileException("invalid_".concat(fieldName.toLowerCase()));
                 }
@@ -420,7 +416,8 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     }
 
     private void validateValue(String keyName, SchemaFieldValidator validator, String value) {
-        if(value == null || value.isEmpty())
+        log.info("Validate field : {} with value : {} using validator : {}", keyName, value, validator.getValidator());
+        if(value == null || value.trim().isEmpty())
             throw new InvalidProfileException("invalid_".concat(keyName.toLowerCase()));
 
         if( validator != null && "regex".equalsIgnoreCase(validator.getType()) && !value.matches(validator.getValidator()) ) {
