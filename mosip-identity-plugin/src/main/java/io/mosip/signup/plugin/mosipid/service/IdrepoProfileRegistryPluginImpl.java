@@ -131,10 +131,10 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
             Iterator itr = requiredFieldIds.iterator();
             while (itr.hasNext()) {
                 String fieldName = ((TextNode)itr.next()).textValue();
-                if (fieldName.isBlank() || inputJson.get(fieldName) == null ) {
-                    log.error("Null value found in the required field of {}, required: {}", fieldName, requiredFieldIds);
-                    throw new InvalidProfileException("invalid_".concat(fieldName.toLowerCase())); 
-                    //TODO we should add exception message
+                if (inputJson.get(fieldName) == null || StringUtils.isEmpty(inputJson.get(fieldName).textValue())
+                        || StringUtils.containsWhitespace(inputJson.get(fieldName).textValue())) {
+                    log.error("Null/Empty value found in the required field of {}, required: {}", fieldName, requiredFieldIds);
+                    throw new InvalidProfileException("invalid_".concat(fieldName.toLowerCase()));
                 }
             }
         }
