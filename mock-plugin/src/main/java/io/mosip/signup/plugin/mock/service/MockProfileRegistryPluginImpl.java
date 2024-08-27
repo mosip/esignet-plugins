@@ -5,6 +5,7 @@
  */
 package io.mosip.signup.plugin.mock.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.mosip.esignet.core.util.IdentityProviderUtil;
@@ -36,7 +37,9 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 
@@ -74,9 +77,9 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
         if(identity.hasNonNull(VERIFIED_CLAIMS_FIELD_ID)) {
             try {
                 verificationDetails = objectMapper.convertValue(
-                        identity.get(VERIFIED_CLAIMS_FIELD_ID),
-                        Map.class );
+                        identity.get(VERIFIED_CLAIMS_FIELD_ID),objectMapper.getTypeFactory().constructParametricType(Map.class, String.class, VerificationDetail.class));
 
+                List<VerifiedClaimRequestDto> verifiedClaimRequestDtoList = new ArrayList<>();
                 for(String claim : verificationDetails.keySet()) {
                     VerificationDetail verificationDetail=verificationDetails.get(claim);
                     VerifiedClaimRequestDto verifiedClaimRequestDto = new VerifiedClaimRequestDto();
@@ -87,30 +90,34 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
                     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
                     ZonedDateTime zonedDateTime = ZonedDateTime.parse(verificationDetail.getTime(), formatter.withZone(ZoneOffset.UTC));
                     verifiedClaimRequestDto.setVerifiedDateTime(zonedDateTime.toLocalDateTime());
-
-                    RequestWrapper<VerifiedClaimRequestDto> request=new RequestWrapper(verifiedClaimRequestDto);
-                    request.setRequestTime(IdentityProviderUtil.getUTCDateTime());
-
-                    //set signature header, body and invoke add verified claim endpoint
-                    String requestBody = objectMapper.writeValueAsString(request);
-                    RequestEntity requestEntity = RequestEntity
-                            .post(UriComponentsBuilder.fromUriString(verifiedClaimUrl).build().toUri())
-                            .contentType(MediaType.APPLICATION_JSON_UTF8)
-                            .body(requestBody);
-                    ResponseEntity<ResponseWrapper<VerifiedClaimStatus>> responseEntity = restTemplate.exchange(requestEntity,
-                            new ParameterizedTypeReference<>() {
-                            });
-                    if (responseEntity.getStatusCode().is2xxSuccessful() && responseEntity.getBody() != null) {
-                        if(responseEntity.getBody().getResponse()!=null){
-                            continue;
-                        }
-                        log.error("Errors in response received from IDA addVerifiedClaim: {}", responseEntity.getBody().getErrors());
-                        throw new ProfileException(CollectionUtils.isEmpty(responseEntity.getBody().getErrors()) ?
-                                io.mosip.esignet.api.util.ErrorConstants.DATA_EXCHANGE_FAILED : responseEntity.getBody().getErrors().get(0).getErrorCode());
-                    }
-                    log.error("Errors in response received from IDA addVerifiedClaim");
-                    throw new ProfileException(ErrorConstants.UNKNOWN_ERROR);
+                    verifiedClaimRequestDtoList.add(verifiedClaimRequestDto);
                 }
+
+                RequestWrapper<List<VerifiedClaimRequestDto>> request=new RequestWrapper(verifiedClaimRequestDtoList);
+                request.setRequestTime(IdentityProviderUtil.getUTCDateTime());
+
+                //set signature header, body and invoke add verified claim endpoint
+                String requestBody = objectMapper.writeValueAsString(request);
+                RequestEntity<String> requestEntity = RequestEntity
+                        .post(UriComponentsBuilder.fromUriString(verifiedClaimUrl).build().toUri())
+                        .contentType(MediaType.APPLICATION_JSON_UTF8)
+                        .body(requestBody);
+                ResponseEntity<ResponseWrapper<VerifiedClaimStatus>> responseEntity = restTemplate.exchange(requestEntity,
+                        new ParameterizedTypeReference<>() {
+                        });
+                if (responseEntity.getStatusCode().is2xxSuccessful() && responseEntity.getBody() != null) {
+                    if(responseEntity.getBody().getResponse()!=null){
+                       log.info("Verified claim added successfully");
+                       ProfileResult profileResult = new ProfileResult();
+                       profileResult.setStatus("SUCCESS");
+                       return profileResult;
+                    }
+                    log.error("Errors in response received from IDA addVerifiedClaim: {}", responseEntity.getBody().getErrors());
+                    throw new ProfileException(CollectionUtils.isEmpty(responseEntity.getBody().getErrors()) ?
+                            io.mosip.esignet.api.util.ErrorConstants.DATA_EXCHANGE_FAILED : responseEntity.getBody().getErrors().get(0).getErrorCode());
+                }
+                log.error("Errors in response received from IDA addVerifiedClaim");
+                throw new ProfileException(ErrorConstants.UNKNOWN_ERROR);
             } catch (ProfileException e){
                 throw e;
             } catch (Exception e) {
@@ -119,7 +126,7 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
             }
         }
         ProfileResult profileResult = new ProfileResult();
-        profileResult.setStatus("SUCCESS");
+        profileResult.setStatus("FAILED");
         return profileResult;
     }
 

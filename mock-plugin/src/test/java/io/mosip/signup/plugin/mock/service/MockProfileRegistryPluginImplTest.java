@@ -3,7 +3,7 @@ package io.mosip.signup.plugin.mock.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.mosip.esignet.core.util.IdentityProviderUtil;
 import io.mosip.kernel.core.http.ResponseWrapper;
 import io.mosip.signup.api.dto.*;
@@ -32,8 +32,6 @@ import java.util.Map;
 @RunWith(MockitoJUnitRunner.class)
 public class MockProfileRegistryPluginImplTest {
 
-    @Mock
-    private ObjectMapper objectMapper;
 
     @Mock
     private RestTemplate restTemplate;
@@ -44,6 +42,9 @@ public class MockProfileRegistryPluginImplTest {
     @Test
     public void updateProfile_withValidVerifiedClaims_thenPass()  {
         ReflectionTestUtils.setField(mockProfileRegistryPlugin, "verifiedClaimUrl", "http://localhost:8080/verified-claim");
+        ObjectMapper objectMapper1=new ObjectMapper();
+        objectMapper1.registerModule(new JavaTimeModule());
+        ReflectionTestUtils.setField(mockProfileRegistryPlugin, "objectMapper",objectMapper1);
 
         String requestId = "req-123";
         String individualId = "ind-456";
@@ -57,10 +58,7 @@ public class MockProfileRegistryPluginImplTest {
         map.put("name", verificationDetail);
         verifiedData.put("verified_claims", map);
 
-        ObjectMapper objectMapper1=new ObjectMapper();
         JsonNode mockIdentity = objectMapper1.valueToTree(verifiedData);
-
-        Mockito.when(objectMapper.convertValue(Mockito.any(ObjectNode.class), Mockito.eq(Map.class))).thenReturn(map);
         ProfileDto profileDto = new ProfileDto();
         profileDto.setIndividualId(individualId);
         profileDto.setIdentity(mockIdentity);
@@ -86,6 +84,10 @@ public class MockProfileRegistryPluginImplTest {
     @Test
     public void updateProfile_withInValidVerifiedClaimsJson_thenFail() {
         ReflectionTestUtils.setField(mockProfileRegistryPlugin, "verifiedClaimUrl", "http://localhost:8080/verified-claim");
+        ObjectMapper objectMapper1=new ObjectMapper();
+        objectMapper1.registerModule(new JavaTimeModule());
+        ReflectionTestUtils.setField(mockProfileRegistryPlugin, "objectMapper",objectMapper1);
+
 
         String requestId = "req-123";
         String individualId = "ind-456";
@@ -99,11 +101,8 @@ public class MockProfileRegistryPluginImplTest {
         map.put("name", verificationDetail);
         verifiedData.put("verified_claims", map);
 
-        ObjectMapper objectMapper1=new ObjectMapper();
         JsonNode mockIdentity = objectMapper1.valueToTree(verifiedData);
 
-        Mockito.when(objectMapper.convertValue(Mockito.any(ObjectNode.class), Mockito.eq(Map.class))).thenThrow(new ProfileException(ErrorConstants.UNKNOWN_ERROR) {
-        });
         ProfileDto profileDto = new ProfileDto();
         profileDto.setIndividualId(individualId);
         profileDto.setIdentity(mockIdentity);
@@ -118,6 +117,10 @@ public class MockProfileRegistryPluginImplTest {
     @Test
     public void updateProfile_withInValidRequest_thenFail() throws Exception {
         ReflectionTestUtils.setField(mockProfileRegistryPlugin, "verifiedClaimUrl", "http://localhost:8080/verified-claim");
+        ObjectMapper objectMapper1=new ObjectMapper();
+        objectMapper1.registerModule(new JavaTimeModule());
+        ReflectionTestUtils.setField(mockProfileRegistryPlugin, "objectMapper",objectMapper1);
+
         String requestId = "req-123";
         String individualId = "ind-456";
 
@@ -130,10 +133,7 @@ public class MockProfileRegistryPluginImplTest {
         map.put("name", verificationDetail);
         verifiedData.put("verified_claims", map);
 
-        ObjectMapper objectMapper1=new ObjectMapper();
         JsonNode mockIdentity = objectMapper1.valueToTree(verifiedData);
-
-        Mockito.when(objectMapper.convertValue(Mockito.any(ObjectNode.class), Mockito.eq(Map.class))).thenReturn(map);
 
         ProfileDto profileDto = new ProfileDto();
         profileDto.setIndividualId(individualId);
@@ -141,9 +141,6 @@ public class MockProfileRegistryPluginImplTest {
 
 
         ResponseWrapper<VerifiedClaimStatus> responseWrapper = new ResponseWrapper<>();
-        VerifiedClaimStatus verifiedClaimStatus = new VerifiedClaimStatus();
-        verifiedClaimStatus.setStatus("success");
-        responseWrapper.setResponse(verifiedClaimStatus);
         ResponseEntity<ResponseWrapper<VerifiedClaimStatus>> responseEntity = new ResponseEntity(responseWrapper,HttpStatus.BAD_REQUEST);
 
         Mockito.when(restTemplate.exchange(
@@ -155,7 +152,7 @@ public class MockProfileRegistryPluginImplTest {
         try{
             mockProfileRegistryPlugin.updateProfile(requestId, profileDto);
         }catch (ProfileException e){
-            Assert.assertEquals(e.getErrorCode(),io.mosip.esignet.api.util.ErrorConstants.DATA_EXCHANGE_FAILED);
+            Assert.assertEquals(e.getErrorCode(),ErrorConstants.UNKNOWN_ERROR);
         }
     }
 
