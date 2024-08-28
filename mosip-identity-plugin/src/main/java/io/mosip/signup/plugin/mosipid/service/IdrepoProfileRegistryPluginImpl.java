@@ -216,8 +216,14 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     @Override
     public ProfileDto getProfile(String individualId) throws ProfileException {
         try {
-            String endpoint = String.format(getIdentityEndpoint, individualId);
-            ResponseWrapper<IdentityResponse> responseWrapper = request(endpoint, HttpMethod.GET, null,
+            IdRequestByIdDTO requestByIdDTO = new IdRequestByIdDTO();
+            RequestWrapper<IdRequestByIdDTO> idDTORequestWrapper=new RequestWrapper<>();
+            requestByIdDTO.setId(individualId);
+            requestByIdDTO.setType("demo");
+            requestByIdDTO.setIdType("HANDLE");
+            idDTORequestWrapper.setRequest(requestByIdDTO);
+            idDTORequestWrapper.setRequesttime(getUTCDateTime());
+            ResponseWrapper<IdentityResponse> responseWrapper = request(getIdentityEndpoint, HttpMethod.POST, idDTORequestWrapper,
                     new ParameterizedTypeReference<ResponseWrapper<IdentityResponse>>() {});
             ProfileDto profileDto = new ProfileDto();
             profileDto.setIndividualId(responseWrapper.getResponse().getIdentity().get(UIN).textValue());
