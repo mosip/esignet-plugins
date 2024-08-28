@@ -56,6 +56,6 @@ public class MockIdentityRequest {
 	
 	String locale;
 	
-	Password password;
+	String password;
 
 }

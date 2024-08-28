@@ -9,11 +9,15 @@ import static io.mosip.signup.api.util.ErrorConstants.SERVER_UNREACHABLE;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +31,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -41,6 +46,7 @@ import com.fasterxml.jackson.databind.node.TextNode;
 
 import io.mosip.esignet.core.dto.RequestWrapper;
 import io.mosip.esignet.core.dto.ResponseWrapper;
+import io.mosip.kernel.core.util.CryptoUtil;
 import io.mosip.signup.api.dto.ProfileDto;
 import io.mosip.signup.api.dto.ProfileResult;
 import io.mosip.signup.api.exception.InvalidProfileException;
@@ -50,9 +56,7 @@ import io.mosip.signup.api.util.ProfileCreateUpdateStatus;
 import io.mosip.signup.plugin.mock.dto.LanguageValue;
 import io.mosip.signup.plugin.mock.dto.MockIdentityRequest;
 import io.mosip.signup.plugin.mock.dto.MockIdentityResponse;
-import io.mosip.signup.plugin.mock.dto.Password;
 import io.mosip.signup.plugin.mock.util.ErrorConstants;
-import io.mosip.signup.plugin.mock.util.ProfileCacheService;
 import lombok.extern.slf4j.Slf4j;
 
 @ConditionalOnProperty(value = "mosip.signup.integration.profile-registry-plugin", havingValue = "MockProfileRegistryPluginImpl")
@@ -80,9 +84,6 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     @Value("${mosip.signup.mock.get-identity.endpoint}")
     private String getIdentityEndpoint;
 
-    @Value("${mosip.signup.idrepo.generate-hash.endpoint}")
-    private String generateHashEndpoint;
-
     @Value("${mosip.signup.mock.get-status.endpoint}")
     private String getStatusEndpoint;
 
@@ -92,7 +93,9 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
 
     @Autowired
     private ObjectMapper objectMapper;
-
+    
+    @Autowired
+    private PasswordEncoder passwordEncoder; 
 
     @Override
     public void validate(String action, ProfileDto profileDto) throws InvalidProfileException {
@@ -105,7 +108,8 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
             for (String fieldName:requiredFields) {
                 if (inputJson.get(fieldName) == null) {
                     log.error("Null value found in the required field of {}, required: {}", fieldName, requiredFields);
-                    throw new InvalidProfileException(fieldName.toLowerCase().concat("_required")); //TODO we should add exception message
+                    throw new InvalidProfileException(fieldName.toLowerCase().concat("_required"));
+                    //TODO we should add exception message
                 }
             }
         }
@@ -115,7 +119,8 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     public ProfileResult createProfile(String requestId, ProfileDto profileDto) throws ProfileException {
     	JsonNode inputJson = profileDto.getIdentity();
 
-        MockIdentityRequest identityRequest = buildIdentityRequest(inputJson);
+        MockIdentityRequest identityRequest = new MockIdentityRequest();
+		identityRequest = buildIdentityRequest(inputJson); 
         identityRequest.setIndividualId(getUniqueIdentifier().toString());
         MockIdentityResponse identityResponse = addIdentity(identityRequest);
         ProfileResult profileResult = new ProfileResult();
@@ -127,7 +132,8 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     public ProfileResult updateProfile(String requestId, ProfileDto profileDto) throws ProfileException {
         JsonNode inputJson = profileDto.getIdentity();
         //Build identity request
-        MockIdentityRequest identityRequest = buildIdentityRequest(inputJson);
+        MockIdentityRequest identityRequest = new MockIdentityRequest();
+		identityRequest = buildIdentityRequest(inputJson);
         MockIdentityResponse identityResponse = updateIdentity(identityRequest);
         ProfileResult profileResult = new ProfileResult();
         profileResult.setStatus(identityResponse.getStatus());
@@ -203,7 +209,7 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
 		}
 	}
     
-    private MockIdentityRequest buildIdentityRequest(JsonNode inputJson){
+    private MockIdentityRequest buildIdentityRequest(JsonNode inputJson) throws ProfileException{
     	MockIdentityRequest mockIdentityRequest = new MockIdentityRequest();
     	Iterator<Map.Entry<String, JsonNode>> itr = inputJson.fields();
     	List<String> fieldNames = new ArrayList<>();
@@ -216,7 +222,7 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     		if(fieldNames.contains(field)) {
     			try {
 	    			if(field.equalsIgnoreCase(PASSWORD)) {
-	    				Password password = generateSaltedHash(inputJson.get("password").asText());
+	    				String password = passwordEncoder.encode(inputJson.get(PASSWORD).asText());
 						BeanUtils.setProperty(mockIdentityRequest, field, password);
 	
 	    			}
@@ -266,18 +272,4 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
                 .format(DateTimeFormatter.ofPattern(UTC_DATETIME_PATTERN));
     }
     
-    private Password generateSaltedHash(String password) throws ProfileException {
-        RequestWrapper<Password.PasswordPlaintext> requestWrapper = new RequestWrapper<>();
-        requestWrapper.setRequestTime(getUTCDateTime());
-        requestWrapper.setRequest(new Password.PasswordPlaintext(password));
-        ResponseWrapper<Password.PasswordHash> responseWrapper = request(generateHashEndpoint, HttpMethod.POST, requestWrapper,
-                new ParameterizedTypeReference<ResponseWrapper<Password.PasswordHash>>() {});
-        if (!StringUtils.isEmpty(responseWrapper.getResponse().getHashValue()) &&
-                !StringUtils.isEmpty(responseWrapper.getResponse().getSalt())) {
-            return new Password(responseWrapper.getResponse().getHashValue(),
-                    responseWrapper.getResponse().getSalt());
-        }
-        log.error("Failed to generate salted hash {}", responseWrapper.getResponse());
-        throw new ProfileException(ErrorConstants.REQUEST_FAILED);
-    }
 }
