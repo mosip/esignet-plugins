@@ -103,6 +103,9 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     @Value("#{'${mosip.signup.idrepo.optional-language:}'.split(',')}")
     private List<String> optionalLanguages;
 
+    @Value("${mosip.signup.idrepo.idvid-postfix}")
+    private String postfix;
+
     @Autowired
     @Qualifier("selfTokenRestTemplate")
     private RestTemplate restTemplate;
@@ -218,6 +221,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
         try {
             IdRequestByIdDTO requestByIdDTO = new IdRequestByIdDTO();
             RequestWrapper<IdRequestByIdDTO> idDTORequestWrapper=new RequestWrapper<>();
+            individualId= StringUtils.isEmpty(postfix) ? individualId : individualId.concat(postfix);
             requestByIdDTO.setId(individualId);
             requestByIdDTO.setType("demo");
             requestByIdDTO.setIdType("HANDLE");
