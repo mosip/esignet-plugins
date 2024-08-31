@@ -58,6 +58,9 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
 
     @Value("#{'${mosip.signup.idrepo.default.selected-handles:phone}'.split(',')}")
     private List<String> defaultSelectedHandles;
+    
+    @Value("${mosip.signup.username.handle:phone}")
+    private String userNameHandle;
 
     @Value("${mosip.signup.idrepo.schema-url}")
     private String schemaUrl;
@@ -141,6 +144,10 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
 
     @Override
     public ProfileResult createProfile(String requestId, ProfileDto profileDto) throws ProfileException {
+    	if(!profileDto.getIndividualId().equalsIgnoreCase(profileDto.getIdentity().get(userNameHandle).asText())) {
+            log.error(String.format("%s and userName mismatch", userNameHandle));
+            throw new InvalidProfileException(ErrorConstants.IDENTIFIER_MISMATCH);
+        }
         JsonNode inputJson = profileDto.getIdentity();
         //set UIN
         ((ObjectNode) inputJson).set("UIN", objectMapper.valueToTree(getUniqueIdentifier()));
