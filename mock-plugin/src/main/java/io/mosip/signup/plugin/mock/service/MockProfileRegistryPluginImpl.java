@@ -17,11 +17,9 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import org.apache.commons.beanutils.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,10 +29,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
@@ -42,11 +38,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.TextNode;
 
 import io.mosip.esignet.core.dto.RequestWrapper;
 import io.mosip.esignet.core.dto.ResponseWrapper;
-import io.mosip.kernel.core.util.CryptoUtil;
 import io.mosip.signup.api.dto.ProfileDto;
 import io.mosip.signup.api.dto.ProfileResult;
 import io.mosip.signup.api.exception.InvalidProfileException;
@@ -68,34 +62,30 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     private static final String PASSWORD = "password";
     private static final List<String> ACTIONS = Arrays.asList("CREATE", "UPDATE");
     
+    @Value("${mosip.signup.username.handle:phone}")
+    private String userNameHandle;
 
     @Value("#{'${mosip.signup.mandatory-attributes.mock.new-registration:}'.split(',')}")
     private List<String> requiredFields;
 
-    @Value("#{${mosip.signup.mock.register.field-details}}")
-    private List<Map<String, String>> fieldDetailList;
-
     @Value("#{'${mosip.signup.mock.lang-based-attributes:}'.split(',')}")
     private List<String> langBasedFields;
+    
+    @Value("${mosip.signup.mock.hash-algo:MD5}")
+    private String cryptoAlgo;
     
     @Value("${mosip.signup.mock.identity.endpoint}")
     private String identityEndpoint;
 
     @Value("${mosip.signup.mock.get-identity.endpoint}")
     private String getIdentityEndpoint;
-
-    @Value("${mosip.signup.mock.get-status.endpoint}")
-    private String getStatusEndpoint;
-
+    
     @Autowired
     @Qualifier("selfTokenRestTemplate")
     private RestTemplate restTemplate;
 
     @Autowired
     private ObjectMapper objectMapper;
-    
-    @Autowired
-    private PasswordEncoder passwordEncoder; 
 
     @Override
     public void validate(String action, ProfileDto profileDto) throws InvalidProfileException {
@@ -117,11 +107,13 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
 
     @Override
     public ProfileResult createProfile(String requestId, ProfileDto profileDto) throws ProfileException {
+    	if(!profileDto.getIndividualId().equalsIgnoreCase(profileDto.getIdentity().get(userNameHandle).asText())) {
+            log.error(String.format("%s and userName mismatch", userNameHandle));
+            throw new InvalidProfileException(ErrorConstants.IDENTIFIER_MISMATCH);
+        }
     	JsonNode inputJson = profileDto.getIdentity();
-
-        MockIdentityRequest identityRequest = new MockIdentityRequest();
-		identityRequest = buildIdentityRequest(inputJson); 
-        identityRequest.setIndividualId(getUniqueIdentifier().toString());
+        MockIdentityRequest identityRequest = buildIdentityRequest(inputJson); 
+        identityRequest.setIndividualId(profileDto.getIndividualId());
         MockIdentityResponse identityResponse = addIdentity(identityRequest);
         ProfileResult profileResult = new ProfileResult();
         profileResult.setStatus(identityResponse.getStatus());
@@ -129,11 +121,11 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     }
 
     @Override
-    public ProfileResult updateProfile(String requestId, ProfileDto profileDto) throws ProfileException {
+    public ProfileResult updateProfile(String individualId, ProfileDto profileDto) throws ProfileException {
         JsonNode inputJson = profileDto.getIdentity();
         //Build identity request
-        MockIdentityRequest identityRequest = new MockIdentityRequest();
-		identityRequest = buildIdentityRequest(inputJson);
+        MockIdentityRequest identityRequest = buildIdentityRequest(inputJson);
+        identityRequest.setIndividualId(profileDto.getIndividualId());
         MockIdentityResponse identityResponse = updateIdentity(identityRequest);
         ProfileResult profileResult = new ProfileResult();
         profileResult.setStatus(identityResponse.getStatus());
@@ -142,9 +134,9 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
 
     @Override
     public ProfileCreateUpdateStatus getProfileCreateUpdateStatus(String requestId) throws ProfileException {
-    	ResponseWrapper<MockIdentityRequest> responseWrapper = request(getStatusEndpoint+requestId,
+    	ResponseWrapper<MockIdentityRequest> responseWrapper = request(getIdentityEndpoint+requestId,
                 HttpMethod.GET, null, new ParameterizedTypeReference<ResponseWrapper<MockIdentityRequest>>() {});
-        if (responseWrapper != null && responseWrapper.getResponse() != null ) {
+        if (responseWrapper.getResponse() != null ) {
                return ProfileCreateUpdateStatus.COMPLETED;
         }
         log.error("Get registration status failed with response {}", requestId, responseWrapper);
@@ -154,7 +146,7 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     @Override
     public ProfileDto getProfile(String individualId) throws ProfileException {
     	try {
-            ResponseWrapper<MockIdentityRequest> responseWrapper = request(getStatusEndpoint+individualId, HttpMethod.GET, null,
+            ResponseWrapper<MockIdentityRequest> responseWrapper = request(getIdentityEndpoint+individualId, HttpMethod.GET, null,
                     new ParameterizedTypeReference<ResponseWrapper<MockIdentityRequest>>() {});
             ProfileDto profileDto = new ProfileDto();
             profileDto.setIndividualId(responseWrapper.getResponse().getIndividualId());
@@ -218,11 +210,11 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     		fieldNames.add(field.getName());
     	}
     	while(itr.hasNext()) {
-    		String field = ((TextNode)itr.next()).textValue();
+    		String field = (itr.next()).getKey();
     		if(fieldNames.contains(field)) {
     			try {
 	    			if(field.equalsIgnoreCase(PASSWORD)) {
-	    				String password = passwordEncoder.encode(inputJson.get(PASSWORD).asText());
+	    				String password = getPasswordHash(inputJson.get(PASSWORD).asText());
 						BeanUtils.setProperty(mockIdentityRequest, field, password);
 	
 	    			}
@@ -232,7 +224,7 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
 	    				BeanUtils.setProperty(mockIdentityRequest, field, fieldValue);
 	    			}
 	    			else {
-	    				BeanUtils.setProperty(mockIdentityRequest, field, inputJson.get(field).toString());
+	    				BeanUtils.setProperty(mockIdentityRequest, field, inputJson.get(field).asText());
 	    			}
 	    		}catch(IllegalAccessException|InvocationTargetException|JsonProcessingException ex) {
 	    			ex.printStackTrace();
@@ -241,11 +233,6 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     	}
     	
     	return mockIdentityRequest;
-    }
-    
-    private UUID getUniqueIdentifier() throws ProfileException {
-    	return UUID.randomUUID();
-
     }
     
     private MockIdentityResponse addIdentity(MockIdentityRequest identityRequest) throws ProfileException{
@@ -264,6 +251,27 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
         ResponseWrapper<MockIdentityResponse> responseWrapper = request(identityEndpoint, HttpMethod.PUT, restRequest,
                 new ParameterizedTypeReference<ResponseWrapper<MockIdentityResponse>>() {});
         return responseWrapper.getResponse();
+    }
+    
+    private String getPasswordHash(String password) {
+    	  try 
+    	    {
+    		  MessageDigest md = MessageDigest.getInstance(cryptoAlgo);
+    		  md.update(password.getBytes(StandardCharsets.UTF_8));
+    		  byte[] bytes = md.digest();
+
+    	      // This bytes[] has bytes in decimal format. Convert it to hexadecimal format
+    	      StringBuilder sb = new StringBuilder();
+    	      for (int i = 0; i < bytes.length; i++) {
+    	        sb.append(Integer.toString((bytes[i] & 0xff) + 0x100, 16).substring(1));
+    	      }
+
+    	      // Get complete hashed password in hex format
+    	      return sb.toString();
+    	    } catch (NoSuchAlgorithmException e) {
+    	      e.printStackTrace();
+    	    }
+    	  return "";
     }
     
     private String getUTCDateTime() {

@@ -13,5 +13,6 @@ public class ErrorConstants {
     public static final String MISSING_FIELD = "missing_field";
     public static final String DATATYPE_MISMATCH = "datatype_mismatch";
     public static final String MANDATORY_LANGUAGE_MISSING = "mandatory_language_missing";
+    public static final String IDENTIFIER_MISMATCH = "identifier_mismatch";
 
 }
