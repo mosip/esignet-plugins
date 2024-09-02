@@ -65,7 +65,7 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     @Value("${mosip.signup.username.handle:phone}")
     private String userNameHandle;
 
-    @Value("#{'${mosip.signup.mandatory-attributes.mock.new-registration:}'.split(',')}")
+    @Value("#{'${mosip.signup.mock.mandatory-attributes.new-registration:}'.split(',')}")
     private List<String> requiredFields;
 
     @Value("#{'${mosip.signup.mock.lang-based-attributes:}'.split(',')}")
