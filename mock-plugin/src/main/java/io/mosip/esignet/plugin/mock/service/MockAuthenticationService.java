@@ -7,10 +7,8 @@ package io.mosip.esignet.plugin.mock.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.mosip.esignet.api.dto.claim.FilterCriteria;
-import io.mosip.esignet.api.dto.claim.FilterDateTime;
 import io.mosip.esignet.plugin.mock.dto.KycExchangeResponseDto;
 import io.mosip.esignet.api.dto.*;
-import io.mosip.esignet.api.dto.claim.VerificationFilter;
 import io.mosip.esignet.api.exception.KycAuthException;
 import io.mosip.esignet.api.exception.KycExchangeException;
 import io.mosip.esignet.api.exception.SendOtpException;
@@ -75,9 +73,6 @@ public class MockAuthenticationService implements Authenticator {
     @Override
     public KycAuthResult doKycAuth(@NotBlank String relyingPartyId, @NotBlank String clientId,
                                    @NotNull @Valid KycAuthDto kycAuthDto) throws KycAuthException {
-
-        log.info("Started to build kyc-auth request with transactionId : {} && clientId : {}",
-                kycAuthDto.getTransactionId(), clientId);
         return mockHelperService.doKycAuthMock(relyingPartyId, clientId, kycAuthDto,false);
     }
 
@@ -154,14 +149,12 @@ public class MockAuthenticationService implements Authenticator {
 
     @Override
     public KycAuthResult doKycAuth(String relyingPartyId, String clientId, boolean claimsMetadataRequired, KycAuthDto kycAuthDto) throws KycAuthException {
-        log.info("Started to build kyc-auth request with transactionId : {} && clientId : {}",
-                kycAuthDto.getTransactionId(), clientId);
-        return mockHelperService.doKycAuthMock(relyingPartyId, clientId, kycAuthDto,claimsMetadataRequired);
+        return mockHelperService.doKycAuthMock(relyingPartyId, clientId, kycAuthDto, claimsMetadataRequired);
     }
 
     @Override
     public KycExchangeResult doVerifiedKycExchange(String relyingPartyId, String clientId, VerifiedKycExchangeDto kycExchangeDto) throws KycExchangeException {
-        log.info("Started to build kyc-exchange request with transactionId : {} && clientId : {}",
+        log.info("Started to build verified kyc-exchange request with transactionId : {} && clientId : {}",
                 kycExchangeDto.getTransactionId(), clientId);
         try {
             VerifiedKycExchangeRequestDto verifiedKycExchangeRequestDto = buildVerifiedKycExchangeRequestDto(kycExchangeDto);
@@ -213,10 +206,10 @@ public class MockAuthenticationService implements Authenticator {
         }
 
         //setting essential verified claims
-        Map<String,VerificationFilter> acceptedVerifiedClaims = verifiedKycExchangeDto.getAcceptedVerifiedClaims();
+        Map<String, List<Map<String, Object>>> acceptedVerifiedClaims = verifiedKycExchangeDto.getAcceptedVerifiedClaims();
         //Group claims by trust framework and capture time information
         Map<String, List<Map.Entry<String, Integer>>> trustFrameWorkMap = new HashMap<>();
-        for (Map.Entry<String, VerificationFilter> entry : acceptedVerifiedClaims.entrySet()) {
+        /*for (Map.Entry<String, VerificationFilter> entry : acceptedVerifiedClaims.entrySet()) {
             String claimName = entry.getKey();
             FilterCriteria trustFrameworkCriteria = entry.getValue().getTrust_framework();
             FilterDateTime filterDateTime = entry.getValue().getTime();
@@ -256,7 +249,7 @@ public class MockAuthenticationService implements Authenticator {
             verifiedClaimsList.add(finalMap);
         }
         acceptedClaims.put("verified_claims",verifiedClaimsList);
-        verifiedKycExchangeRequestDto.setAcceptedClaims(acceptedClaims);
+        verifiedKycExchangeRequestDto.setAcceptedClaims(acceptedClaims);*/
 
         return verifiedKycExchangeRequestDto;
     }
