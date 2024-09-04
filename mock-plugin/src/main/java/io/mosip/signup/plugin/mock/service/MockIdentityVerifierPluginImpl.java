@@ -7,13 +7,11 @@ package io.mosip.signup.plugin.mock.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.mosip.signup.api.dto.FrameDetail;
-import io.mosip.signup.api.dto.IdentityVerificationDto;
-import io.mosip.signup.api.dto.IdentityVerificationResult;
-import io.mosip.signup.api.dto.VerifiedResult;
+import io.mosip.signup.api.dto.*;
 import io.mosip.signup.api.exception.IdentityVerifierException;
 import io.mosip.signup.api.spi.IdentityVerifierPlugin;
 import io.mosip.signup.api.util.ProcessType;
+import io.mosip.signup.api.util.VerificationStatus;
 import io.mosip.signup.plugin.mock.dto.MockScene;
 import io.mosip.signup.plugin.mock.dto.MockUserStory;
 import lombok.extern.slf4j.Slf4j;
@@ -53,6 +51,13 @@ public class MockIdentityVerifierPluginImpl extends IdentityVerifierPlugin {
     }
 
     @Override
+    public void initialize(String transactionId, IdentityVerificationInitDto identityVerificationInitDto) {
+        log.info("Transaction is initialized with individualId : {} and disabilityType: {}",
+                identityVerificationInitDto.getIndividualId(), identityVerificationInitDto.getDisabilityType());
+        log.info("**** Nothing to initialize as its mock identity verification plugin ****");
+    }
+
+    @Override
     public void verify(String transactionId, IdentityVerificationDto identityVerificationDto) throws IdentityVerifierException {
         MockUserStory mockUserStory = restTemplate.getForObject(configServerUrl+storyName, MockUserStory.class);
 
@@ -88,20 +93,20 @@ public class MockIdentityVerifierPluginImpl extends IdentityVerifierPlugin {
     }
 
     @Override
-    public VerifiedResult getVerifiedResult(String transactionId) throws IdentityVerifierException {
+    public VerificationResult getVerificationResult(String transactionId) throws IdentityVerifierException {
         MockUserStory mockUserStory = restTemplate.getForObject(configServerUrl+storyName, MockUserStory.class);
-        VerifiedResult verifiedResult;
+
         if(mockUserStory != null && mockUserStory.getVerifiedResult() != null) {
             try {
-                verifiedResult = objectMapper.treeToValue(mockUserStory.getVerifiedResult(), VerifiedResult.class);
-                return verifiedResult;
+                return objectMapper.treeToValue(mockUserStory.getVerifiedResult(), VerificationResult.class);
             } catch (JsonProcessingException e) {
                log.error("Failed to parse verified attributes in the mock user story: {}", storyName, e);
             }
         }
-        verifiedResult = new VerifiedResult();
-        verifiedResult.setErrorCode("mock_verification_failed");
-        return verifiedResult;
+        VerificationResult verificationResult = new VerificationResult();
+        verificationResult.setStatus(VerificationStatus.FAILED);
+        verificationResult.setErrorCode("mock_verification_failed");
+        return verificationResult;
     }
 
 }

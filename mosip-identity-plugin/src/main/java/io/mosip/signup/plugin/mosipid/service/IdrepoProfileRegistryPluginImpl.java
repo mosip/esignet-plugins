@@ -61,8 +61,8 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     @Value("#{'${mosip.signup.idrepo.default.selected-handles:phone}'.split(',')}")
     private List<String> defaultSelectedHandles;
     
-    @Value("${mosip.signup.username.handle:phone}")
-    private String userNameHandle;
+    @Value("${mosip.signup.idrepo.identifier-field:phone}")
+    private String identifierField;
 
     @Value("${mosip.signup.idrepo.schema-url}")
     private String schemaUrl;
@@ -149,10 +149,11 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
 
     @Override
     public ProfileResult createProfile(String requestId, ProfileDto profileDto) throws ProfileException {
-    	if(!profileDto.getIndividualId().equalsIgnoreCase(profileDto.getIdentity().get(userNameHandle).asText())) {
-            log.error(String.format("%s and userName mismatch", userNameHandle));
+    	if(identifierField != null && !profileDto.getIndividualId().equalsIgnoreCase(profileDto.getIdentity().get(identifierField).asText())) {
+            log.error("IndividualId and {} mismatch", identifierField);
             throw new InvalidProfileException(ErrorConstants.IDENTIFIER_MISMATCH);
         }
+
         JsonNode inputJson = profileDto.getIdentity();
         //set UIN
         ((ObjectNode) inputJson).set(UIN, objectMapper.valueToTree(getUniqueIdentifier()));
@@ -221,7 +222,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
         try {
             IdRequestByIdDTO requestByIdDTO = new IdRequestByIdDTO();
             RequestWrapper<IdRequestByIdDTO> idDTORequestWrapper=new RequestWrapper<>();
-            individualId= StringUtils.isEmpty(postfix) ? null : individualId.concat(postfix);
+            individualId = StringUtils.isEmpty(postfix) ? individualId : individualId.concat(postfix);
             requestByIdDTO.setId(individualId);
             requestByIdDTO.setType("demo");
             requestByIdDTO.setIdType("HANDLE");
