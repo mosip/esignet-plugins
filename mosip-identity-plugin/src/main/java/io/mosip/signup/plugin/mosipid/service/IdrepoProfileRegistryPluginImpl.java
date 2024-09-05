@@ -103,7 +103,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     @Value("#{'${mosip.signup.idrepo.optional-language:}'.split(',')}")
     private List<String> optionalLanguages;
 
-    @Value("${mosip.signup.idrepo.idvid-postfix}")
+    @Value("${mosip.signup.idrepo.idvid-postfix:@phone}")
     private String postfix;
 
     @Autowired
