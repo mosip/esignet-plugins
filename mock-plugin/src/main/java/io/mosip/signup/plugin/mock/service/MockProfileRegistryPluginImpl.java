@@ -154,7 +154,7 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
             profileDto.setActive(true);
             return profileDto;
         } catch (ProfileException e) {
-        	e.printStackTrace();
+            log.error("Get Profile failed ", e);
             throw e;
         }
     }
@@ -227,7 +227,7 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
 	    				BeanUtils.setProperty(mockIdentityRequest, field, inputJson.get(field).asText());
 	    			}
 	    		}catch(IllegalAccessException|InvocationTargetException|JsonProcessingException ex) {
-	    			ex.printStackTrace();
+                    log.error("Error while setting value: ", ex);
 	    		}
     		}
     	}
@@ -269,7 +269,7 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     	      // Get complete hashed password in hex format
     	      return sb.toString();
     	    } catch (NoSuchAlgorithmException e) {
-    	      e.printStackTrace();
+              log.error("Unsupported Algorithm: ", e);
     	    }
     	  return "";
     }
