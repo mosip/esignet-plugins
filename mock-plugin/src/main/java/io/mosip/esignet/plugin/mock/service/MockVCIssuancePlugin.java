@@ -176,26 +176,27 @@ public class MockVCIssuancePlugin implements VCIssuancePlugin {
 			Map<String, Object> res = restTemplate.getForObject(
 				getIdentityUrl+"/"+individualId,
 				HashMap.class);
-			res = (Map<String, Object>)res.get("response");
-			Map<String, Object> ret = new HashMap<>();
-			ret.put("vcVer", "VC-V1");
-			ret.put("id", getIdentityUrl+"/"+individualId);
-			ret.put("UIN", individualId);
-			ret.put("name", res.get("name"));
-			ret.put("fullName", res.get("fullName"));
-			ret.put("gender", res.get("gender"));
-			ret.put("dateOfBirth", res.get("dateOfBirth"));
-			ret.put("email", res.get("email"));
-			ret.put("phone", res.get("phone"));
-			ret.put("addressLine1", res.get("streetAddress"));
-			ret.put("province", res.get("locality"));
-			ret.put("region", res.get("region"));
-			ret.put("postalCode", res.get("postalCode"));
-			ret.put("face", res.get("encodedPhoto"));
-			return ret;
-		} else {
-			return new HashMap<>();
+			if(res!=null && res.containsKey("response")) {
+				res = (Map<String, Object>) res.get("response");
+				Map<String, Object> ret = new HashMap<>();
+				ret.put("vcVer", "VC-V1");
+				ret.put("id", getIdentityUrl + "/" + individualId);
+				ret.put("UIN", individualId);
+				ret.put("name", res.get("name"));
+				ret.put("fullName", res.get("fullName"));
+				ret.put("gender", res.get("gender"));
+				ret.put("dateOfBirth", res.get("dateOfBirth"));
+				ret.put("email", res.get("email"));
+				ret.put("phone", res.get("phone"));
+				ret.put("addressLine1", res.get("streetAddress"));
+				ret.put("province", res.get("locality"));
+				ret.put("region", res.get("region"));
+				ret.put("postalCode", res.get("postalCode"));
+				ret.put("face", res.get("encodedPhoto"));
+				return ret;
+			}
 		}
+		return new HashMap<>();
 	}
 
 	protected String getIndividualId(OIDCTransaction transaction) {
