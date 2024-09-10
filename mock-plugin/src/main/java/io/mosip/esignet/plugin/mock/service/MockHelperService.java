@@ -131,6 +131,8 @@ public class MockHelperService {
 
     public KycAuthResult doKycAuthMock(String relyingPartyId, String clientId, KycAuthDto kycAuthDto,boolean isClaimsMetadataRequired)
             throws KycAuthException {
+        log.info("Started to build kyc-auth request with transactionId : {} && clientId : {} && isClaimsMetadataRequired: {}",
+                kycAuthDto.getTransactionId(), clientId, isClaimsMetadataRequired);
         try {
             KycAuthRequestDto kycAuthRequestDto = new KycAuthRequestDto();
             kycAuthRequestDto.setTransactionId(kycAuthDto.getTransactionId());

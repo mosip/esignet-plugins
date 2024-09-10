@@ -60,6 +60,9 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
 
     @Value("#{'${mosip.signup.idrepo.default.selected-handles:phone}'.split(',')}")
     private List<String> defaultSelectedHandles;
+    
+    @Value("${mosip.signup.idrepo.identifier-field:phone}")
+    private String identifierField;
 
     @Value("${mosip.signup.idrepo.schema-url}")
     private String schemaUrl;
@@ -99,6 +102,9 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
 
     @Value("#{'${mosip.signup.idrepo.optional-language:}'.split(',')}")
     private List<String> optionalLanguages;
+
+    @Value("${mosip.signup.idrepo.idvid-postfix:@phone}")
+    private String postfix;
 
     @Autowired
     @Qualifier("selfTokenRestTemplate")
@@ -143,6 +149,11 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
 
     @Override
     public ProfileResult createProfile(String requestId, ProfileDto profileDto) throws ProfileException {
+    	if(identifierField != null && !profileDto.getIndividualId().equalsIgnoreCase(profileDto.getIdentity().get(identifierField).asText())) {
+            log.error("IndividualId and {} mismatch", identifierField);
+            throw new InvalidProfileException(ErrorConstants.IDENTIFIER_MISMATCH);
+        }
+
         JsonNode inputJson = profileDto.getIdentity();
         //set UIN
         ((ObjectNode) inputJson).set(UIN, objectMapper.valueToTree(getUniqueIdentifier()));
@@ -209,8 +220,15 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     @Override
     public ProfileDto getProfile(String individualId) throws ProfileException {
         try {
-            String endpoint = String.format(getIdentityEndpoint, individualId);
-            ResponseWrapper<IdentityResponse> responseWrapper = request(endpoint, HttpMethod.GET, null,
+            IdRequestByIdDTO requestByIdDTO = new IdRequestByIdDTO();
+            RequestWrapper<IdRequestByIdDTO> idDTORequestWrapper=new RequestWrapper<>();
+            individualId = StringUtils.isEmpty(postfix) ? individualId : individualId.concat(postfix);
+            requestByIdDTO.setId(individualId);
+            requestByIdDTO.setType("demo");
+            requestByIdDTO.setIdType("HANDLE");
+            idDTORequestWrapper.setRequest(requestByIdDTO);
+            idDTORequestWrapper.setRequesttime(getUTCDateTime());
+            ResponseWrapper<IdentityResponse> responseWrapper = request(getIdentityEndpoint, HttpMethod.POST, idDTORequestWrapper,
                     new ParameterizedTypeReference<ResponseWrapper<IdentityResponse>>() {});
             ProfileDto profileDto = new ProfileDto();
             profileDto.setIndividualId(responseWrapper.getResponse().getIdentity().get(UIN).textValue());
