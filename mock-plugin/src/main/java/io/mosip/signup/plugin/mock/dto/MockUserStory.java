@@ -9,5 +9,5 @@ import java.util.List;
 public class MockUserStory {
 
     private List<MockScene> scenes;
-    private JsonNode verifiedResult;
+    private JsonNode verificationResult;
 }

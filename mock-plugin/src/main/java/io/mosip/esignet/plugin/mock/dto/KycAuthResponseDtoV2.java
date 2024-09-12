@@ -5,7 +5,7 @@
  */
 package io.mosip.esignet.plugin.mock.dto;
 
-import io.mosip.esignet.api.dto.claim.VerificationDetail;
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Data;
 
 import java.util.List;
@@ -14,5 +14,5 @@ import java.util.Map;
 @Data
 public class KycAuthResponseDtoV2 extends KycAuthResponseDto {
 
-    private Map<String,List<VerificationDetail>> claimMetaData;
+    private Map<String, List<JsonNode>> claimMetadata;
 }

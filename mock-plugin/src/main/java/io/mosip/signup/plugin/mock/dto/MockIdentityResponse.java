@@ -4,5 +4,6 @@ import lombok.Data;
 
 @Data
 public class MockIdentityResponse {
-	String Status;
+
+	private String status;
 }

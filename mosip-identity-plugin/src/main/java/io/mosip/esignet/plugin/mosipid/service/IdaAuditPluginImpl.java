@@ -36,7 +36,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class IdaAuditPluginImpl implements AuditPlugin {
 
-	private static final String ESIGNET = "e-signet";
+	private static final String ESIGNET = "eSignet";
 
 	private static final String TRANSACTION = "transaction";
 

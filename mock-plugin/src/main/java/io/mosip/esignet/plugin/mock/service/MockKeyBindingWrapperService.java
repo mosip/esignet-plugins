@@ -5,6 +5,7 @@
  */
 package io.mosip.esignet.plugin.mock.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.jwk.RSAKey;
 import io.mosip.esignet.api.dto.AuthChallenge;
@@ -16,7 +17,6 @@ import io.mosip.esignet.api.exception.KycAuthException;
 import io.mosip.esignet.api.exception.SendOtpException;
 import io.mosip.esignet.api.spi.KeyBinder;
 import io.mosip.esignet.api.util.ErrorConstants;
-import io.mosip.esignet.plugin.mock.dto.IdentityData;
 import io.mosip.kernel.core.http.ResponseWrapper;
 import io.mosip.kernel.core.util.DateUtils;
 import io.mosip.kernel.keymanagerservice.dto.KeyPairGenerateRequestDto;
@@ -31,7 +31,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.RequestEntity;
 import org.springframework.stereotype.Component;
-import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -53,12 +52,9 @@ import java.util.Optional;
 public class MockKeyBindingWrapperService implements KeyBinder {
 
     public static final String BINDING_SERVICE_APP_ID = "MOCK_BINDING_SERVICE";
-    private static final String OTP_VALUE = "111111";
-    public static final String BINDING_TRANSACTION = "bindingtransaction";
-    public static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
-    @Value("${mosip.esignet.mock.authenticator.get-identity-url}")
-    private String getIdentityUrl;
+    @Value("${mosip.signup.mock.get-identity.endpoint}")
+    private String getIdentityEndpoint;
 
     @Value("#{${mosip.esignet.mock.supported.bind-auth-factor-types}}")
     private List<String> supportedBindAuthFactorTypes;
@@ -128,15 +124,14 @@ public class MockKeyBindingWrapperService implements KeyBinder {
             throw new KeyBindingException(e.getErrorCode());
         }
 
-        IdentityData identityData = null;
+        JsonNode identityData = null;
         try {
             var requestEntity = RequestEntity
-                    .get(UriComponentsBuilder.fromUriString(getIdentityUrl + "/" + individualId).build().toUri()).build();
-            var responseEntity = restTemplate.exchange(requestEntity,
-                    ResponseWrapper.class);
+                    .get(UriComponentsBuilder.fromUriString(getIdentityEndpoint + individualId).build().toUri()).build();
+            var responseEntity = restTemplate.exchange(requestEntity, ResponseWrapper.class);
             if (responseEntity.getStatusCode().is2xxSuccessful() && responseEntity.getBody() != null) {
                 var responseWrapper = responseEntity.getBody();
-                identityData = objectMapper.convertValue(responseWrapper.getResponse(), IdentityData.class);
+                identityData = objectMapper.convertValue(responseWrapper.getResponse(), JsonNode.class);
             }
         } catch (Exception e) {
             log.error("failed to fetch individual data", e);
@@ -148,9 +143,9 @@ public class MockKeyBindingWrapperService implements KeyBinder {
         try {
             RSAKey rsaKey = RSAKey.parse(new JSONObject(publicKeyJWK));
             X509V3CertificateGenerator generator = new X509V3CertificateGenerator();
-            String username = !CollectionUtils.isEmpty(identityData.getName()) ?
-                    identityData.getName().get(0).getValue() : (!CollectionUtils.isEmpty(identityData.getFullName()) ?
-                    identityData.getFullName().get(0).getValue() : "mock-user");
+            String username = identityData == null ? "mock-user" : ( identityData.hasNonNull("name") ?
+                    identityData.get("name").get(0).get("value").asText() : ( identityData.hasNonNull("fullName") ?
+                    identityData.get("fullName").get(0).get("fullName").asText() : "mock-user" ));
             generator.setSubjectDN(new X500Principal("CN=" + username));
             generator.setIssuerDN(new X500Principal("CN=Mock-IDA"));
             LocalDateTime notBeforeDate = DateUtils.getUTCCurrentDateTime();

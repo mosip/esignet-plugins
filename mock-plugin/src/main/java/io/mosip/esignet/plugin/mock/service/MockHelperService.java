@@ -37,19 +37,26 @@ import java.util.*;
 @Component
 @Slf4j
 public class MockHelperService {
+
     public static final String OIDC_PARTNER_APP_ID = "OIDC_PARTNER";
+
     private static final Base64.Encoder urlSafeEncoder = Base64.getUrlEncoder().withoutPadding();
-    public static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
     @Value("${mosip.esignet.mock.authenticator.send-otp}")
     private String sendOtpUrl;
+
     @Value("${mosip.esignet.mock.authenticator.kyc-auth-url}")
     private String kycAuthUrl;
+
     @Value("${mosip.esignet.mock.authenticator.ida.otp-channels}")
     private List<String> otpChannels;
+
     @Autowired
     private SignatureService signatureService;
+
     @Autowired
     private RestTemplate restTemplate;
+
     @Autowired
     private ObjectMapper objectMapper;
 
@@ -137,6 +144,7 @@ public class MockHelperService {
             KycAuthRequestDto kycAuthRequestDto = new KycAuthRequestDto();
             kycAuthRequestDto.setTransactionId(kycAuthDto.getTransactionId());
             kycAuthRequestDto.setIndividualId(kycAuthDto.getIndividualId());
+            kycAuthRequestDto.setClaimMetadataRequired(isClaimsMetadataRequired);
 
             for (AuthChallenge authChallenge : kycAuthDto.getChallengeList()) {
                 if (Objects.equals(authChallenge.getAuthFactorType(), "PIN")) {
@@ -192,8 +200,7 @@ public class MockHelperService {
         KycAuthResult kycAuthResult = new KycAuthResult();
         kycAuthResult.setKycToken(response.getKycToken());
         kycAuthResult.setPartnerSpecificUserToken(response.getPartnerSpecificUserToken());
-        kycAuthResult.setClaimsMetadata(response.getClaimMetaData());
-
+        kycAuthResult.setClaimsMetadata(response.getClaimMetadata());
         return kycAuthResult;
     }
 
