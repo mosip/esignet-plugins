@@ -28,10 +28,10 @@ import static io.mosip.signup.api.util.ProcessType.VIDEO;
 @Component
 public class MockIdentityVerifierPluginImpl extends IdentityVerifierPlugin {
 
-    @Value("${mosip.signup.identity-verification.mock.story-name}")
+    @Value("${mosip.signup.mock.identity-verification.story-name}")
     private String storyName;
 
-    @Value("${mosip.signup.config-server-url}")
+    @Value("${mosip.signup.mock.config-server-url}")
     private String configServerUrl;
 
     @Autowired
@@ -96,9 +96,9 @@ public class MockIdentityVerifierPluginImpl extends IdentityVerifierPlugin {
     public VerificationResult getVerificationResult(String transactionId) throws IdentityVerifierException {
         MockUserStory mockUserStory = restTemplate.getForObject(configServerUrl+storyName, MockUserStory.class);
 
-        if(mockUserStory != null && mockUserStory.getVerifiedResult() != null) {
+        if(mockUserStory != null && mockUserStory.getVerificationResult() != null) {
             try {
-                return objectMapper.treeToValue(mockUserStory.getVerifiedResult(), VerificationResult.class);
+                return objectMapper.treeToValue(mockUserStory.getVerificationResult(), VerificationResult.class);
             } catch (JsonProcessingException e) {
                log.error("Failed to parse verified attributes in the mock user story: {}", storyName, e);
             }

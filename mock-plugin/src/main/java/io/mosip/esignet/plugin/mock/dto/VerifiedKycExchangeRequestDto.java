@@ -5,6 +5,7 @@
  */
 package io.mosip.esignet.plugin.mock.dto;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -20,4 +21,5 @@ public class VerifiedKycExchangeRequestDto{
     private String individualId;
     private Map<String,Object> acceptedClaims;
     private List<String> claimLocales;
+    private Map<String, JsonNode> acceptedClaimDetail;
 }
