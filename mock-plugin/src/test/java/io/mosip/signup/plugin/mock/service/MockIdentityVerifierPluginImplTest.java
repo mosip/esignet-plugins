@@ -6,13 +6,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.mosip.signup.api.dto.FrameDetail;
 import io.mosip.signup.api.dto.IdentityVerificationDto;
-import io.mosip.signup.api.dto.VerificationDetail;
-import io.mosip.signup.api.dto.VerifiedResult;
+import io.mosip.signup.api.dto.VerificationResult;
 import io.mosip.signup.api.exception.IdentityVerifierException;
 import io.mosip.signup.api.util.VerificationStatus;
 import io.mosip.signup.plugin.mock.dto.MockScene;
 import io.mosip.signup.plugin.mock.dto.MockUserStory;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -24,9 +24,8 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+
 
 @RunWith(MockitoJUnitRunner.class)
 public class MockIdentityVerifierPluginImplTest {
@@ -40,6 +39,14 @@ public class MockIdentityVerifierPluginImplTest {
 
     @Mock
     private KafkaTemplate kafkaTemplate;
+
+    ObjectMapper objectMapper;
+
+    @Before
+    public void before(){
+        objectMapper = new ObjectMapper();
+        ReflectionTestUtils.setField(mockIdentityVerifierPlugin, "objectMapper",objectMapper);
+    }
 
 
     @Test
@@ -71,22 +78,16 @@ public class MockIdentityVerifierPluginImplTest {
     @Test
     public void getVerifiedResult_withValidTransactionId_thenPass() throws IdentityVerifierException, JsonProcessingException {
 
-        ObjectMapper objectMapper1 = new ObjectMapper();
-        ReflectionTestUtils.setField(mockIdentityVerifierPlugin, "objectMapper",objectMapper1);
+
+
         String transactionId = "transactionId123";
         MockUserStory mockUserStory = new MockUserStory();
-        VerifiedResult verifiedResult = new VerifiedResult();
-        Map<String, VerificationDetail> verificationDetailMap = new HashMap<>();
-        VerificationDetail verificationDetail = new VerificationDetail();
-        verificationDetail.setTrust_framework("trust_framework");
-        verificationDetail.setVerification_process("verification_process");
-        verificationDetailMap.put("claim", verificationDetail);
-        verifiedResult.setVerifiedClaims(verificationDetailMap);
+        VerificationResult verifiedResult = new VerificationResult();
         verifiedResult.setStatus(VerificationStatus.COMPLETED);
 
-        JsonNode jsonNode =objectMapper1.readTree(objectMapper1.writeValueAsString(verifiedResult));
+        JsonNode jsonNode =objectMapper.readTree(objectMapper.writeValueAsString(verifiedResult));
 
-        mockUserStory.setVerifiedResult(jsonNode);
+        mockUserStory.setVerificationResult(jsonNode);
         List<MockScene> mockScenes = new ArrayList<>();
         MockScene mockScene = new MockScene();
         mockScene.setFrameNumber(0);
@@ -96,7 +97,7 @@ public class MockIdentityVerifierPluginImplTest {
         mockUserStory.setScenes(mockScenes);
 
         Mockito.when(restTemplate.getForObject(Mockito.anyString(), Mockito.eq(MockUserStory.class))).thenReturn(mockUserStory);
-        VerifiedResult actualVerifiedResult = mockIdentityVerifierPlugin.getVerifiedResult(transactionId);
+        VerificationResult actualVerifiedResult = mockIdentityVerifierPlugin.getVerificationResult(transactionId);
 
         Assert.assertEquals(verifiedResult.getStatus(), actualVerifiedResult.getStatus());
         Assert.assertEquals(verifiedResult.getVerifiedClaims(), actualVerifiedResult.getVerifiedClaims());
@@ -107,13 +108,9 @@ public class MockIdentityVerifierPluginImplTest {
     @Test
     public void getVerifiedResult_withValidTransactionId_thenFail() throws IdentityVerifierException {
 
-        ObjectMapper objectMapper1 = new ObjectMapper();
-        ReflectionTestUtils.setField(mockIdentityVerifierPlugin, "objectMapper",objectMapper1);
         String transactionId = "transactionId123";
-
-
         Mockito.when(restTemplate.getForObject(Mockito.anyString(), Mockito.eq(MockUserStory.class))).thenReturn(null);
-        VerifiedResult actualVerifiedResult = mockIdentityVerifierPlugin.getVerifiedResult(transactionId);
+        VerificationResult actualVerifiedResult = mockIdentityVerifierPlugin.getVerificationResult(transactionId);
         Assert.assertEquals("mock_verification_failed", actualVerifiedResult.getErrorCode());
     }
 }
