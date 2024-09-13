@@ -6,7 +6,6 @@
 package io.mosip.esignet.plugin.mock.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.mosip.esignet.api.dto.claim.FilterCriteria;
 import io.mosip.esignet.plugin.mock.dto.KycExchangeResponseDto;
 import io.mosip.esignet.api.dto.*;
 import io.mosip.esignet.api.exception.KycAuthException;
@@ -35,7 +34,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import javax.annotation.PostConstruct;
 import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
@@ -48,10 +46,13 @@ import java.util.*;
 public class MockAuthenticationService implements Authenticator {
 
     private static final String APPLICATION_ID = "MOCK_AUTHENTICATION_SERVICE";
-    public static final String SEND_OTP_FAILED = "send_otp_failed";
 
     @Value("${mosip.esignet.mock.authenticator.kyc-exchange-url}")
     private String kycExchangeUrl;
+
+    @Value("${mosip.esignet.mock.authenticator.kyc-exchange-v2-url}")
+    private String kycExchangeV2Url;
+
     @Autowired
     private ObjectMapper objectMapper;
 
@@ -64,10 +65,6 @@ public class MockAuthenticationService implements Authenticator {
     @Autowired
     private RestTemplate restTemplate;
 
-    @PostConstruct
-    public void initialize() {
-        log.info("Started to setup MOCK IDA");
-    }
 
     @Validated
     @Override
@@ -90,7 +87,6 @@ public class MockAuthenticationService implements Authenticator {
             kycExchangeRequestDto.setAcceptedClaims(kycExchangeDto.getAcceptedClaims());
             kycExchangeRequestDto.setClaimLocales(Arrays.asList(kycExchangeDto.getClaimsLocales()));
 
-            //set signature header, body and invoke kyc exchange endpoint
             String requestBody = objectMapper.writeValueAsString(kycExchangeRequestDto);
             RequestEntity requestEntity = RequestEntity
                     .post(UriComponentsBuilder.fromUriString(kycExchangeUrl).pathSegment(relyingPartyId,
@@ -162,7 +158,7 @@ public class MockAuthenticationService implements Authenticator {
             //set signature header, body and invoke kyc exchange endpoint
             String requestBody = objectMapper.writeValueAsString(verifiedKycExchangeRequestDto);
             RequestEntity requestEntity = RequestEntity
-                    .post(UriComponentsBuilder.fromUriString(kycExchangeUrl).pathSegment(relyingPartyId,
+                    .post(UriComponentsBuilder.fromUriString(kycExchangeV2Url).pathSegment(relyingPartyId,
                             clientId).build().toUri())
                     .contentType(MediaType.APPLICATION_JSON_UTF8)
                     .body(requestBody);
@@ -196,61 +192,7 @@ public class MockAuthenticationService implements Authenticator {
         verifiedKycExchangeRequestDto.setKycToken(verifiedKycExchangeDto.getKycToken());
         verifiedKycExchangeRequestDto.setIndividualId(verifiedKycExchangeDto.getIndividualId());
         verifiedKycExchangeRequestDto.setClaimLocales(Arrays.asList(verifiedKycExchangeDto.getClaimsLocales()));
-
-        Map<String, Object> acceptedClaims = new HashMap<>();
-        //setting essential unverified claims
-        for(String claim : verifiedKycExchangeDto.getAcceptedClaims()) {
-            Map<String,Boolean> essential = new HashMap<>();
-            essential.put("essential",true);
-            acceptedClaims.put(claim,essential);
-        }
-
-        //setting essential verified claims
-        Map<String, List<Map<String, Object>>> acceptedVerifiedClaims = verifiedKycExchangeDto.getAcceptedVerifiedClaims();
-        //Group claims by trust framework and capture time information
-        Map<String, List<Map.Entry<String, Integer>>> trustFrameWorkMap = new HashMap<>();
-        /*for (Map.Entry<String, VerificationFilter> entry : acceptedVerifiedClaims.entrySet()) {
-            String claimName = entry.getKey();
-            FilterCriteria trustFrameworkCriteria = entry.getValue().getTrust_framework();
-            FilterDateTime filterDateTime = entry.getValue().getTime();
-
-            int maxAge = filterDateTime != null ? filterDateTime.getMax_age() : 999; // Default value for maxAge if not set
-
-            if(trustFrameworkCriteria!=null && !StringUtils.isEmpty(trustFrameworkCriteria.getValue())){
-                trustFrameWorkMap.computeIfAbsent(trustFrameworkCriteria.getValue(), k -> new ArrayList<>()).add(new AbstractMap.SimpleEntry<>(claimName, maxAge));
-            }else if (trustFrameworkCriteria!=null && trustFrameworkCriteria.getValues()!=null && !trustFrameworkCriteria.getValues().isEmpty()) {
-                for (String trustFramework : trustFrameworkCriteria.getValues()) {
-                    trustFrameWorkMap.computeIfAbsent(trustFramework, list -> new ArrayList<>()).add(new AbstractMap.SimpleEntry<>(claimName, maxAge));
-                }
-            }else{
-                // Handle null trust_framework separately
-                trustFrameWorkMap.computeIfAbsent(null, list -> new ArrayList<>()).add(new AbstractMap.SimpleEntry<>(claimName, maxAge));
-            }
-        }
-        // Constructing the verified_claims list
-        List<Map<String, Object>> verifiedClaimsList = new ArrayList<>();
-        for (Map.Entry<String, List<Map.Entry<String, Integer>>> group : trustFrameWorkMap.entrySet()) {
-            String trustFramework = group.getKey();
-            List<Map.Entry<String, Integer>> claimsWithMaxAge = group.getValue();
-
-            Map<String, Object> verificationMap = new HashMap<>();
-            verificationMap.put("trust_framework", trustFramework);
-            verificationMap.put("max_age", claimsWithMaxAge.iterator().next().getValue());
-
-            Map<String, Object> claimsMap = new HashMap<>();
-            for (Map.Entry<String, Integer> claimWithMaxAge : claimsWithMaxAge) {
-                String claimName = claimWithMaxAge.getKey();
-                claimsMap.put(claimName, null); // Setting all claim values to null
-            }
-            Map<String, Object> finalMap = new HashMap<>();
-            finalMap.put("verification", verificationMap);
-            finalMap.put("claims", claimsMap);
-
-            verifiedClaimsList.add(finalMap);
-        }
-        acceptedClaims.put("verified_claims",verifiedClaimsList);
-        verifiedKycExchangeRequestDto.setAcceptedClaims(acceptedClaims);*/
-
+        verifiedKycExchangeRequestDto.setAcceptedClaimDetail(verifiedKycExchangeDto.getAcceptedClaimDetails());
         return verifiedKycExchangeRequestDto;
     }
 }

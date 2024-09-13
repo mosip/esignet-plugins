@@ -1,6 +1,8 @@
 package io.mosip.esignet.plugin.mock.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.RSAKey;
@@ -8,7 +10,6 @@ import io.mosip.esignet.api.dto.*;
 import io.mosip.esignet.api.exception.KeyBindingException;
 import io.mosip.esignet.api.exception.SendOtpException;
 import io.mosip.esignet.api.util.ErrorConstants;
-import io.mosip.esignet.plugin.mock.dto.IdentityData;
 import io.mosip.kernel.core.http.ResponseWrapper;
 import io.mosip.kernel.core.keymanager.model.CertificateEntry;
 import io.mosip.kernel.keymanagerservice.dto.SignatureCertificate;
@@ -16,6 +17,7 @@ import io.mosip.kernel.keymanagerservice.dto.SignatureCertificate;
 import io.mosip.kernel.keymanagerservice.service.KeymanagerService;
 import org.bouncycastle.x509.X509V3CertificateGenerator;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -49,8 +51,7 @@ public class MockKeyBindingWrapperServiceTest {
     @Mock
     private RestTemplate restTemplate;
 
-    @Mock
-    private ObjectMapper objectMapper;
+     private ObjectMapper objectMapper = new ObjectMapper();
 
     @Mock
     private KeymanagerService keymanagerService;
@@ -58,6 +59,11 @@ public class MockKeyBindingWrapperServiceTest {
 
     @InjectMocks
     private MockKeyBindingWrapperService mockKeyBindingWrapperService;
+
+    @Before
+    public void setup() {
+        ReflectionTestUtils.setField(mockKeyBindingWrapperService, "objectMapper", objectMapper);
+    }
 
     @Test
     public void sendBindingOtp_withValidDetails_thenPass() throws SendOtpException {
@@ -97,7 +103,7 @@ public class MockKeyBindingWrapperServiceTest {
     public void doKeyBinding_withValidDetails_thenPass() throws Exception {
         ReflectionTestUtils.setField(mockKeyBindingWrapperService, "supportedBindAuthFactorTypes", List.of("WLA")) ;
         ReflectionTestUtils.setField(mockKeyBindingWrapperService, "expireInDays", 10) ;
-        ReflectionTestUtils.setField(mockKeyBindingWrapperService,"getIdentityUrl","http://localhost:8080"); ;
+        ReflectionTestUtils.setField(mockKeyBindingWrapperService,"getIdentityEndpoint","http://localhost:8080"); ;
 
         KycAuthResult kycAuthResult = new KycAuthResult();
         kycAuthResult.setKycToken("testKycToken");
@@ -105,17 +111,15 @@ public class MockKeyBindingWrapperServiceTest {
         Mockito.when(mockHelperService.doKycAuthMock(Mockito.anyString(),Mockito.anyString(),Mockito.any(),Mockito.anyBoolean()))
                 .thenReturn(kycAuthResult);
 
-        IdentityData identityData = new IdentityData();
-        identityData.setEmail("testEmail");
-        ResponseWrapper<IdentityData> responseWrapper = new ResponseWrapper<>();
+        ObjectNode identityData = objectMapper.createObjectNode();
+        identityData.put("email", "testEmail");
+        ResponseWrapper<JsonNode> responseWrapper = new ResponseWrapper<>();
         responseWrapper.setResponse(identityData);
         var responseEntity = new ResponseEntity<>(new ResponseWrapper(), HttpStatus.OK);
         Mockito.when(restTemplate.exchange(
                 Mockito.any(RequestEntity.class),
                 Mockito.eq(ResponseWrapper.class)
         )).thenReturn(responseEntity);
-
-        Mockito.when(objectMapper.convertValue(Mockito.any(),Mockito.eq(IdentityData.class))).thenReturn(identityData);
 
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
         keyPairGenerator.initialize(2048);
@@ -163,7 +167,7 @@ public class MockKeyBindingWrapperServiceTest {
     public void doKeyBinding_withInValidKycAuthResult_thenFail() throws Exception {
         ReflectionTestUtils.setField(mockKeyBindingWrapperService, "supportedBindAuthFactorTypes", List.of("WLA")) ;
         ReflectionTestUtils.setField(mockKeyBindingWrapperService, "expireInDays", 10) ;
-        ReflectionTestUtils.setField(mockKeyBindingWrapperService,"getIdentityUrl","http://localhost:8080"); ;
+        ReflectionTestUtils.setField(mockKeyBindingWrapperService,"getIdentityEndpoint","http://localhost:8080"); ;
 
         Mockito.when(mockHelperService.doKycAuthMock(Mockito.anyString(),Mockito.anyString(),Mockito.any(),Mockito.anyBoolean()))
                 .thenReturn(null);
@@ -179,7 +183,7 @@ public class MockKeyBindingWrapperServiceTest {
     public void doKeyBinding_withInValidDetails_thenFail() throws Exception {
         ReflectionTestUtils.setField(mockKeyBindingWrapperService, "supportedBindAuthFactorTypes", List.of("WLA")) ;
         ReflectionTestUtils.setField(mockKeyBindingWrapperService, "expireInDays", 10) ;
-        ReflectionTestUtils.setField(mockKeyBindingWrapperService,"getIdentityUrl","http://localhost:8080"); ;
+        ReflectionTestUtils.setField(mockKeyBindingWrapperService,"getIdentityEndpoint","http://localhost:8080"); ;
 
         KycAuthResult kycAuthResult = new KycAuthResult();
         kycAuthResult.setKycToken("testKycToken");

@@ -3,10 +3,8 @@ package io.mosip.signup.plugin.mosipid.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import io.mosip.esignet.core.util.IdentityProviderUtil;
 import io.mosip.signup.api.dto.ProfileDto;
 import io.mosip.signup.api.dto.ProfileResult;
-import io.mosip.signup.api.dto.VerificationDetail;
 import io.mosip.signup.api.exception.InvalidProfileException;
 import io.mosip.signup.api.exception.ProfileException;
 import io.mosip.signup.api.util.ProfileCreateUpdateStatus;
@@ -69,12 +67,6 @@ public class IdrepoProfileRegistryPluginImplTest {
         String individualId = "ind-456";
 
         Map<String, Object> verifiedData = new HashMap<>();
-        VerificationDetail verificationDetail = new VerificationDetail();
-        verificationDetail.setVerification_process("F1");
-        verificationDetail.setTrust_framework("trust-123");
-        verificationDetail.setTime(IdentityProviderUtil.getUTCDateTime());
-
-
         verifiedData.put("phone","+91841987567");
 
         JsonNode mockIdentity = objectMapper.valueToTree(verifiedData);
@@ -103,10 +95,6 @@ public class IdrepoProfileRegistryPluginImplTest {
         String individualId = "ind-456";
 
         Map<String, Object> verifiedData = new HashMap<>();
-        VerificationDetail verificationDetail = new VerificationDetail();
-        verificationDetail.setVerification_process("F1");
-        verificationDetail.setTrust_framework("trust-123");
-        verificationDetail.setTime(IdentityProviderUtil.getUTCDateTime());
         SimpleType [] simpleTypesArray=new SimpleType[1];
         SimpleType simpleType=new SimpleType();
         simpleType.setLanguage("eng");
@@ -142,11 +130,6 @@ public class IdrepoProfileRegistryPluginImplTest {
         String individualId = "ind-456";
 
         Map<String, Object> verifiedData = new HashMap<>();
-        VerificationDetail verificationDetail = new VerificationDetail();
-        verificationDetail.setVerification_process("F1");
-        verificationDetail.setTrust_framework("trust-123");
-        verificationDetail.setTime(IdentityProviderUtil.getUTCDateTime());
-
         JsonNode mockIdentity = objectMapper.valueToTree(verifiedData);
         ProfileDto profileDto = new ProfileDto();
         profileDto.setIndividualId(individualId);
@@ -299,14 +282,7 @@ public class IdrepoProfileRegistryPluginImplTest {
             String individualId = "ind-456";
 
             Map<String, Object> verifiedData = new HashMap<>();
-            Map<String,VerificationDetail> map=new HashMap<>();
-            VerificationDetail verificationDetail = new VerificationDetail();
-            verificationDetail.setVerification_process("F1");
-            verificationDetail.setTrust_framework("trust-123");
-            verificationDetail.setTime(IdentityProviderUtil.getUTCDateTime());
-            map.put("name", verificationDetail);
             verifiedData.put("email","123@email.com");
-            verifiedData.put("verified_claims", map);
             verifiedData.put("password","123456");
 
             JsonNode mockIdentity = objectMapper.valueToTree(verifiedData);
@@ -368,14 +344,7 @@ public class IdrepoProfileRegistryPluginImplTest {
     public void getProfile_withValidDetails_thenPass()  {
         String individualId = "1234567890";
         Map<String, Object> verifiedData = new HashMap<>();
-        Map<String,VerificationDetail> map=new HashMap<>();
-        VerificationDetail verificationDetail = new VerificationDetail();
-        verificationDetail.setVerification_process("F1");
-        verificationDetail.setTrust_framework("trust-123");
-        verificationDetail.setTime(IdentityProviderUtil.getUTCDateTime());
-        map.put("name", verificationDetail);
         verifiedData.put("email","123@email.com");
-        verifiedData.put("verified_claims", map);
         verifiedData.put("password","123456");
         verifiedData.put("UIN","1234567890");
 
@@ -391,11 +360,11 @@ public class IdrepoProfileRegistryPluginImplTest {
         ResponseEntity<ResponseWrapper<IdentityResponse>> responseEntity3=new ResponseEntity<>(responseWrapper3, HttpStatus.OK);
 
         Mockito.when(restTemplate.exchange(
-                "http://localhost:8080/identity/v1/identity/",  // Matches any URL string
-                HttpMethod.GET,  // Matches any HTTP method
-                null,  // Matches any HttpEntity
-                new ParameterizedTypeReference<ResponseWrapper<IdentityResponse>>() {}
-        )).thenReturn(responseEntity3);
+                Mockito.anyString(),
+                Mockito.any(HttpMethod.class),
+                Mockito.any(HttpEntity.class),
+                Mockito.eq(new ParameterizedTypeReference<ResponseWrapper<IdentityResponse>>() {
+                }))).thenReturn(responseEntity3);
         ProfileDto profileDto= idrepoProfileRegistryPlugin.getProfile(individualId);
         Assert.assertNotNull(profileDto);
         Assert.assertEquals(profileDto.getIndividualId(),"1234567890");
@@ -419,11 +388,11 @@ public class IdrepoProfileRegistryPluginImplTest {
         ResponseEntity<ResponseWrapper<IdentityResponse>> responseEntity3=new ResponseEntity<>(responseWrapper3, HttpStatus.OK);
 
         Mockito.when(restTemplate.exchange(
-                "http://localhost:8080/identity/v1/identity/",  // Matches any URL string
-                HttpMethod.GET,  // Matches any HTTP method
-                null,  // Matches any HttpEntity
-                new ParameterizedTypeReference<ResponseWrapper<IdentityResponse>>() {}
-        )).thenReturn(responseEntity3);
+                Mockito.anyString(),
+                Mockito.any(HttpMethod.class),
+                Mockito.any(HttpEntity.class),
+                Mockito.eq(new ParameterizedTypeReference<ResponseWrapper<IdentityResponse>>() {
+                }))).thenReturn(responseEntity3);
         ProfileDto profileDto= idrepoProfileRegistryPlugin.getProfile(individualId);
         Assert.assertNotNull(profileDto);
         Assert.assertEquals(profileDto.getIndividualId(),"1234567890");
@@ -538,14 +507,7 @@ public class IdrepoProfileRegistryPluginImplTest {
         objectMapper1.registerModule(new JavaTimeModule());
         ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "objectMapper",objectMapper1);
         Map<String, Object> verifiedData = new HashMap<>();
-        Map<String,VerificationDetail> map=new HashMap<>();
-        VerificationDetail verificationDetail = new VerificationDetail();
-        verificationDetail.setVerification_process("F1");
-        verificationDetail.setTrust_framework("trust-123");
-        verificationDetail.setTime(IdentityProviderUtil.getUTCDateTime());
-        map.put("name", verificationDetail);
         verifiedData.put("email","123@email.com");
-        verifiedData.put("verified_claims", map);
         verifiedData.put("password","123456");
         verifiedData.put("UIN","1234567890");
         JsonNode mockIdentity = objectMapper1.valueToTree(verifiedData);
@@ -560,14 +522,7 @@ public class IdrepoProfileRegistryPluginImplTest {
         objectMapper1.registerModule(new JavaTimeModule());
         ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "objectMapper",objectMapper1);
         Map<String, Object> verifiedData = new LinkedHashMap<>();
-        Map<String,VerificationDetail> map=new HashMap<>();
-        VerificationDetail verificationDetail = new VerificationDetail();
-        verificationDetail.setVerification_process("F1");
-        verificationDetail.setTrust_framework("trust-123");
-        verificationDetail.setTime(IdentityProviderUtil.getUTCDateTime());
-        map.put("name", verificationDetail);
         verifiedData.put("email","123@email.com");
-        verifiedData.put("verified_claims", map);
         verifiedData.put("UIN","1234567890");
         verifiedData.put("channel",List.of("email"));
         JsonNode mockIdentity = objectMapper1.valueToTree(verifiedData);
@@ -588,10 +543,6 @@ public class IdrepoProfileRegistryPluginImplTest {
 
     private JsonNode createIdentity() {
         Map<String, Object> verifiedData = new HashMap<>();
-        VerificationDetail verificationDetail = new VerificationDetail();
-        verificationDetail.setVerification_process("F1");
-        verificationDetail.setTrust_framework("trust-123");
-        verificationDetail.setTime(IdentityProviderUtil.getUTCDateTime());
         verifiedData.put("email","123@email.com");
         verifiedData.put("phone","+91841987567");
         return objectMapper.valueToTree(verifiedData);

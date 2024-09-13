@@ -1,9 +1,10 @@
 package io.mosip.esignet.plugin.mock.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.mosip.esignet.api.dto.*;
-import io.mosip.esignet.api.dto.claim.VerificationDetail;
 import io.mosip.esignet.api.exception.KycAuthException;
 import io.mosip.esignet.api.exception.SendOtpException;
 import io.mosip.esignet.api.util.ErrorConstants;
@@ -47,6 +48,8 @@ public class MockHelperServiceTest {
 
     @Mock
     SignatureService signatureService;
+
+    private ObjectMapper objectMapper = new ObjectMapper();
 
 
     @Before
@@ -92,13 +95,13 @@ public class MockHelperServiceTest {
         ResponseWrapper<KycAuthResponseDtoV2> responseWrapper = new ResponseWrapper<>();
         KycAuthResponseDtoV2 response = new KycAuthResponseDtoV2();
 
-        Map<String,List<VerificationDetail>> claimMetaData=new HashMap<>();
+        Map<String,List<JsonNode>> claimMetaData=new HashMap<>();
 
-        VerificationDetail verificationDetail = new VerificationDetail();
-        verificationDetail.setTrust_framework("test_trust_framework");
+        ObjectNode verificationDetail = objectMapper.createObjectNode();
+        verificationDetail.put("trust_framework", "test_trust_framework");
         claimMetaData.put("name",List.of(verificationDetail));
 
-        response.setClaimMetaData(claimMetaData);
+        response.setClaimMetadata(claimMetaData);
 
         response.setAuthStatus(true);
         response.setKycToken("test_token");
