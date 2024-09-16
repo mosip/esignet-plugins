@@ -23,7 +23,6 @@ import io.mosip.kernel.keymanagerservice.dto.KeyPairGenerateRequestDto;
 import io.mosip.kernel.keymanagerservice.dto.SignatureCertificate;
 import io.mosip.kernel.keymanagerservice.service.KeymanagerService;
 import lombok.extern.slf4j.Slf4j;
-import net.minidev.json.JSONObject;
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
 import org.bouncycastle.x509.X509V3CertificateGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -141,11 +140,11 @@ public class MockKeyBindingWrapperService implements KeyBinder {
         //create a signed certificate, with cn as username
         //certificate validity based on configuration
         try {
-            RSAKey rsaKey = RSAKey.parse(new JSONObject(publicKeyJWK));
+            RSAKey rsaKey = RSAKey.parse(objectMapper.writeValueAsString(publicKeyJWK));
             X509V3CertificateGenerator generator = new X509V3CertificateGenerator();
             String username = identityData == null ? "mock-user" : ( identityData.hasNonNull("name") ?
                     identityData.get("name").get(0).get("value").asText() : ( identityData.hasNonNull("fullName") ?
-                    identityData.get("fullName").get(0).get("fullName").asText() : "mock-user" ));
+                    identityData.get("fullName").get(0).get("value").asText() : "mock-user" ));
             generator.setSubjectDN(new X500Principal("CN=" + username));
             generator.setIssuerDN(new X500Principal("CN=Mock-IDA"));
             LocalDateTime notBeforeDate = DateUtils.getUTCCurrentDateTime();
