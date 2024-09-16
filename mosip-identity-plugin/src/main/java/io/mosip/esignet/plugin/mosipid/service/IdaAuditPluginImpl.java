@@ -127,6 +127,7 @@ public class IdaAuditPluginImpl implements AuditPlugin {
 		json.put("accessTokenHash", audit.getAccessTokenHash());
 		json.put("linkCodeHash", audit.getLinkedCodeHash());
 		json.put("linkTransactionId", audit.getLinkedTransactionId());
+		json.put("authTransactionId", audit.getAuthTransactionId());
 		return json.toString();
 	}
 
