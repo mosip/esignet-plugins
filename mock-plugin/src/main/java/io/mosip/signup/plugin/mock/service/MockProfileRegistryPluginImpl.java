@@ -87,7 +87,7 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
         JsonNode inputJson = profileDto.getIdentity();
         List<String> requiredFields = action.equals("CREATE") ? requiredFieldsOnCreate : requiredFieldsOnUpdate;
         for (String fieldName : requiredFields) {
-            if (inputJson.get(fieldName) == null || inputJson.get(fieldName).isEmpty()) {
+            if (!inputJson.hasNonNull(fieldName) || (inputJson.get(fieldName).isArray() && inputJson.get(fieldName).isEmpty())) {
                 log.error("Null value found in the required field of {}, required: {}", fieldName, requiredFieldsOnCreate);
                 throw new InvalidProfileException(fieldName.toLowerCase().concat("_required"));
             }
@@ -143,7 +143,12 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
             profileDto.setActive(true);
             return profileDto;
         } catch (ProfileException e) {
-            log.error("Failed to fetch identity from registry", e);
+            if (e.getErrorCode().equals("invalid_individual_id")) {
+                ProfileDto profileDto = new ProfileDto();
+                profileDto.setIndividualId(individualId);
+                profileDto.setActive(false);
+                return profileDto;
+            }
             throw e;
         }
     }
@@ -178,7 +183,7 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
 					httpEntity = new HttpEntity<>(request);
 				}
 				ResponseWrapper<T> responseWrapper = restTemplate.exchange(url, method, httpEntity, responseType).getBody();
-				if (responseWrapper != null && responseWrapper.getResponse() != null) {
+				if (responseWrapper != null && responseWrapper.getResponse() != null && CollectionUtils.isEmpty(responseWrapper.getErrors())) {
 					return responseWrapper;
 				}
 				log.error("{} endpoint returned error response {} ", url, responseWrapper);
@@ -217,7 +222,7 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
         RequestWrapper<JsonNode> restRequest = new RequestWrapper<>();
         restRequest.setRequestTime(getUTCDateTime());
         restRequest.setRequest(objectNode);
-        ResponseWrapper<MockIdentityResponse> responseWrapper = request(addVerifiedClaimsEndpoint, HttpMethod.PUT, restRequest,
+        ResponseWrapper<MockIdentityResponse> responseWrapper = request(addVerifiedClaimsEndpoint, HttpMethod.POST, restRequest,
                 new ParameterizedTypeReference<ResponseWrapper<MockIdentityResponse>>() {});
         return responseWrapper.getResponse();
     }
