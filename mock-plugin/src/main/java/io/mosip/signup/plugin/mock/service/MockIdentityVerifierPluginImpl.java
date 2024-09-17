@@ -5,7 +5,6 @@
  */
 package io.mosip.signup.plugin.mock.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.mosip.signup.api.dto.*;
 import io.mosip.signup.api.exception.IdentityVerifierException;
@@ -17,10 +16,16 @@ import io.mosip.signup.plugin.mock.dto.MockUserStory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static io.mosip.signup.api.util.ProcessType.VIDEO;
 
@@ -35,7 +40,7 @@ public class MockIdentityVerifierPluginImpl extends IdentityVerifierPlugin {
     private String configServerUrl;
 
     @Autowired
-    private RestTemplate restTemplate;
+    private ResourceLoader resourceLoader;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -59,7 +64,7 @@ public class MockIdentityVerifierPluginImpl extends IdentityVerifierPlugin {
 
     @Override
     public void verify(String transactionId, IdentityVerificationDto identityVerificationDto) throws IdentityVerifierException {
-        MockUserStory mockUserStory = restTemplate.getForObject(configServerUrl+storyName, MockUserStory.class);
+        MockUserStory mockUserStory = getResource(configServerUrl+storyName, MockUserStory.class);
 
         IdentityVerificationResult identityVerificationResult = new IdentityVerificationResult();
         identityVerificationResult.setId(transactionId);
@@ -94,12 +99,11 @@ public class MockIdentityVerifierPluginImpl extends IdentityVerifierPlugin {
 
     @Override
     public VerificationResult getVerificationResult(String transactionId) throws IdentityVerifierException {
-        MockUserStory mockUserStory = restTemplate.getForObject(configServerUrl+storyName, MockUserStory.class);
-
+        MockUserStory mockUserStory = getResource(configServerUrl+storyName, MockUserStory.class);
         if(mockUserStory != null && mockUserStory.getVerificationResult() != null) {
             try {
                 return objectMapper.treeToValue(mockUserStory.getVerificationResult(), VerificationResult.class);
-            } catch (JsonProcessingException e) {
+            } catch (Exception e) {
                log.error("Failed to parse verified attributes in the mock user story: {}", storyName, e);
             }
         }
@@ -107,6 +111,18 @@ public class MockIdentityVerifierPluginImpl extends IdentityVerifierPlugin {
         verificationResult.setStatus(VerificationStatus.FAILED);
         verificationResult.setErrorCode("mock_verification_failed");
         return verificationResult;
+    }
+
+    private <T> T getResource(String url, Class<T> clazz) {
+        Resource resource = resourceLoader.getResource(url);
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8))) {
+            String content = reader.lines().collect(Collectors.joining("\n"));
+            return objectMapper.readValue(content, clazz);
+        } catch (IOException e) {
+            log.error("Failed to parse data: {}", url, e);
+        }
+        throw new IdentityVerifierException("invalid_configuration");
     }
 
 }
