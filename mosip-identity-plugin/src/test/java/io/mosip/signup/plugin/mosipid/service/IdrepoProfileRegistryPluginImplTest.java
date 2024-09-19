@@ -74,12 +74,12 @@ public class IdrepoProfileRegistryPluginImplTest {
         profileDto.setIndividualId(individualId);
         profileDto.setIdentity(mockIdentity);
 
-        ResponseWrapper<SchemaResponse> responseWrapper2 = new ResponseWrapper<>();
+        ResponseWrapper<SchemaResponse> responseWrapper = new ResponseWrapper<>();
         SchemaResponse schemaResponse = new SchemaResponse();
         schemaResponse.setIdVersion(0.0);
         schemaResponse.setSchemaJson(schemaSchemaJson);
-        responseWrapper2.setResponse(schemaResponse);
-        ResponseEntity<ResponseWrapper<SchemaResponse>> responseEntity2=new ResponseEntity<>(responseWrapper2, HttpStatus.OK);
+        responseWrapper.setResponse(schemaResponse);
+        ResponseEntity<ResponseWrapper<SchemaResponse>> responseEntity2=new ResponseEntity<>(responseWrapper, HttpStatus.OK);
         Mockito.when(restTemplate.exchange(
                 "http://localhost:8080/identity/v1/schema/"+0.0,  // Matches any URL string
                 HttpMethod.GET,  // Matches any HTTP method
@@ -108,12 +108,12 @@ public class IdrepoProfileRegistryPluginImplTest {
         profileDto.setIndividualId(individualId);
         profileDto.setIdentity(mockIdentity);
 
-        ResponseWrapper<SchemaResponse> responseWrapper2 = new ResponseWrapper<>();
+        ResponseWrapper<SchemaResponse> responseWrapper = new ResponseWrapper<>();
         SchemaResponse schemaResponse = new SchemaResponse();
         schemaResponse.setIdVersion(0.0);
         schemaResponse.setSchemaJson(schemaSchemaJson);
-        responseWrapper2.setResponse(schemaResponse);
-        ResponseEntity<ResponseWrapper<SchemaResponse>> responseEntity2=new ResponseEntity<>(responseWrapper2, HttpStatus.OK);
+        responseWrapper.setResponse(schemaResponse);
+        ResponseEntity<ResponseWrapper<SchemaResponse>> responseEntity2=new ResponseEntity<>(responseWrapper, HttpStatus.OK);
         Mockito.when(restTemplate.exchange(
                 "http://localhost:8080/identity/v1/schema/"+0.0,  // Matches any URL string
                 HttpMethod.GET,  // Matches any HTTP method
@@ -135,12 +135,12 @@ public class IdrepoProfileRegistryPluginImplTest {
         profileDto.setIndividualId(individualId);
         profileDto.setIdentity(mockIdentity);
 
-        ResponseWrapper<SchemaResponse> responseWrapper2 = new ResponseWrapper<>();
+        ResponseWrapper<SchemaResponse> responseWrapper = new ResponseWrapper<>();
         SchemaResponse schemaResponse = new SchemaResponse();
         schemaResponse.setIdVersion(0.0);
         schemaResponse.setSchemaJson(schemaSchemaJson);
-        responseWrapper2.setResponse(schemaResponse);
-        ResponseEntity<ResponseWrapper<SchemaResponse>> responseEntity2=new ResponseEntity<>(responseWrapper2, HttpStatus.OK);
+        responseWrapper.setResponse(schemaResponse);
+        ResponseEntity<ResponseWrapper<SchemaResponse>> responseEntity2=new ResponseEntity<>(responseWrapper, HttpStatus.OK);
         Mockito.when(restTemplate.exchange(
                 "http://localhost:8080/identity/v1/schema/"+0.0,  // Matches any URL string
                 HttpMethod.GET,  // Matches any HTTP method
@@ -293,12 +293,12 @@ public class IdrepoProfileRegistryPluginImplTest {
             Mockito.when(profileCacheService.setHandleRequestIds(Mockito.anyString(),Mockito.anyList())).thenReturn(null);
 
 
-            ResponseWrapper<SchemaResponse> responseWrapper2 = new ResponseWrapper<>();
+            ResponseWrapper<SchemaResponse> responseWrapper= new ResponseWrapper<>();
             SchemaResponse schemaResponse = new SchemaResponse();
             schemaResponse.setIdVersion(0.0);
             schemaResponse.setSchemaJson(schemaSchemaJson);
-            responseWrapper2.setResponse(schemaResponse);
-            ResponseEntity<ResponseWrapper<SchemaResponse>> responseEntity2=new ResponseEntity<>(responseWrapper2, HttpStatus.OK);
+            responseWrapper.setResponse(schemaResponse);
+            ResponseEntity<ResponseWrapper<SchemaResponse>> responseEntity2=new ResponseEntity<>(responseWrapper, HttpStatus.OK);
             Mockito.when(restTemplate.exchange(
                     "http://localhost:8080/identity/v1/schema/"+0.0,  // Matches any URL string
                     HttpMethod.GET,  // Matches any HTTP method
@@ -350,14 +350,14 @@ public class IdrepoProfileRegistryPluginImplTest {
 
         JsonNode mockIdentity = objectMapper.valueToTree(verifiedData);
 
-        ResponseWrapper<IdentityResponse> responseWrapper3 = new ResponseWrapper<>();
+        ResponseWrapper<IdentityResponse> responseWrapper = new ResponseWrapper<>();
         IdentityResponse identityResponse = new IdentityResponse();
         identityResponse.setStatus("SUCCESS");
         identityResponse.setDocuments(List.of("Document1"));
         identityResponse.setIdentity(mockIdentity);
 
-        responseWrapper3.setResponse(identityResponse);
-        ResponseEntity<ResponseWrapper<IdentityResponse>> responseEntity3=new ResponseEntity<>(responseWrapper3, HttpStatus.OK);
+        responseWrapper.setResponse(identityResponse);
+        ResponseEntity<ResponseWrapper<IdentityResponse>> responseEntity3=new ResponseEntity<>(responseWrapper, HttpStatus.OK);
 
         Mockito.when(restTemplate.exchange(
                 Mockito.anyString(),
@@ -375,17 +375,17 @@ public class IdrepoProfileRegistryPluginImplTest {
         String individualId = "1234567890";
         JsonNode mockIdentity = createIdentity();
 
-        ResponseWrapper<IdentityResponse> responseWrapper3 = new ResponseWrapper<>();
+        ResponseWrapper<IdentityResponse> responseWrapper = new ResponseWrapper<>();
         IdentityResponse identityResponse = new IdentityResponse();
         identityResponse.setStatus("SUCCESS");
         identityResponse.setDocuments(List.of("Document1"));
         identityResponse.setIdentity(mockIdentity);
 
-        responseWrapper3.setResponse(null);
+        responseWrapper.setResponse(null);
         Error error = new Error();
         error.setErrorCode("IDR-IDC-007");
-        responseWrapper3.setErrors(List.of(error));
-        ResponseEntity<ResponseWrapper<IdentityResponse>> responseEntity3=new ResponseEntity<>(responseWrapper3, HttpStatus.OK);
+        responseWrapper.setErrors(List.of(error));
+        ResponseEntity<ResponseWrapper<IdentityResponse>> responseEntity3=new ResponseEntity<>(responseWrapper, HttpStatus.OK);
 
         Mockito.when(restTemplate.exchange(
                 Mockito.anyString(),
@@ -533,8 +533,6 @@ public class IdrepoProfileRegistryPluginImplTest {
         inputChallengeMap.put("email","123@email.com");
         inputChallengeMap.put("password","1234456");
         inputChallengeMap.put("UIN","1234567890");
-
-
         JsonNode inputChallenge = objectMapper1.valueToTree(inputChallengeMap);
 
         boolean matched=idrepoProfileRegistryPlugin.isMatch(mockIdentity, inputChallenge);

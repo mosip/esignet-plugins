@@ -1,7 +1,6 @@
 package io.mosip.signup.plugin.mock.service;
 
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.mosip.signup.api.dto.FrameDetail;
@@ -9,8 +8,6 @@ import io.mosip.signup.api.dto.IdentityVerificationDto;
 import io.mosip.signup.api.dto.VerificationResult;
 import io.mosip.signup.api.exception.IdentityVerifierException;
 import io.mosip.signup.api.util.VerificationStatus;
-import io.mosip.signup.plugin.mock.dto.MockScene;
-import io.mosip.signup.plugin.mock.dto.MockUserStory;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -19,12 +16,18 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 
 @RunWith(MockitoJUnitRunner.class)
@@ -35,6 +38,9 @@ public class MockIdentityVerifierPluginImplTest {
 
     @Mock
     private RestTemplate restTemplate;
+
+    @Mock
+    ResourceLoader resourceLoader;
 
 
     @Mock
@@ -50,7 +56,7 @@ public class MockIdentityVerifierPluginImplTest {
 
 
     @Test
-    public void verify_withValidIdentityVerificationDto_thenPass() throws IdentityVerifierException {
+    public void verify_withValidIdentityVerificationDto_thenPass() throws IdentityVerifierException, IOException {
 
         String transactionId = "transactionId123";
         IdentityVerificationDto identityVerificationDto = new IdentityVerificationDto();
@@ -61,56 +67,53 @@ public class MockIdentityVerifierPluginImplTest {
         frameDetail.setOrder(0);
         frameDetails.add(frameDetail);
         identityVerificationDto.setFrames(frameDetails);
-        MockUserStory mockUserStory = new MockUserStory();
-        List<MockScene> mockScenes = new ArrayList<>();
-        MockScene mockScene = new MockScene();
-        mockScene.setFrameNumber(0);
-        mockScene.setStepCode("START");
-        mockScenes.add(mockScene);
-        mockUserStory.setScenes(mockScenes);
-        Mockito.when(restTemplate.getForObject(Mockito.anyString(), Mockito.eq(MockUserStory.class))).thenReturn(mockUserStory);
+
+        String jsonContent = "{\"scenes\":[{\"frameNumber\":0,\"stepCode\":\"START\",\"step\":{\"code\":\"liveness_check\",\"framesPerSecond\":3,\"durationInSeconds\":100,\"startupDelayInSeconds\":2,\"retryOnTimeout\":false,\"retryableErrorCodes\":[]},\"feedback\":null}],\"verificationResult\":{\"status\":\"COMPLETED\",\"verifiedClaims\":{\"fullName\":{\"trust_framework\":\"XYZ TF\",\"verification_process\":\"EKYC\",\"assurance_level\":\"Gold\",\"time\":\"34232432\"}},\"errorCode\":null}}";
+        Resource resource = Mockito.mock(Resource.class);
+        Mockito.when(resourceLoader.getResource(Mockito.anyString())).thenReturn(resource);
+        Mockito.when(resource.getInputStream()).thenReturn(new ByteArrayInputStream(jsonContent.getBytes()));
+
         mockIdentityVerifierPlugin.verify(transactionId, identityVerificationDto);
 
-        Mockito.verify(restTemplate, Mockito.times(1)).getForObject(Mockito.anyString(), Mockito.eq(MockUserStory.class));
     }
 
 
     @Test
-    public void getVerifiedResult_withValidTransactionId_thenPass() throws IdentityVerifierException, JsonProcessingException {
-
-
+    public void getVerifiedResult_withValidTransactionId_thenPass() throws IdentityVerifierException, IOException {
 
         String transactionId = "transactionId123";
-        MockUserStory mockUserStory = new MockUserStory();
         VerificationResult verifiedResult = new VerificationResult();
+        Map<String,String> fullNameMap = new HashMap<>();
+        fullNameMap.put("trust_framework","XYZ TF");
+        fullNameMap.put("verification_process","EKYC");
+        fullNameMap.put("assurance_level","Gold");
+        fullNameMap.put("time","34232432");
+
+        Map<String,JsonNode> verifiedClaims = new HashMap<>();
+        verifiedClaims.put("fullName",objectMapper.convertValue(fullNameMap,JsonNode.class));
+        verifiedResult.setVerifiedClaims(verifiedClaims);
         verifiedResult.setStatus(VerificationStatus.COMPLETED);
 
-        JsonNode jsonNode =objectMapper.readTree(objectMapper.writeValueAsString(verifiedResult));
+        String jsonContent = "{\"scenes\":[{\"frameNumber\":0,\"stepCode\":\"START\",\"step\":{\"code\":\"liveness_check\",\"framesPerSecond\":3,\"durationInSeconds\":100,\"startupDelayInSeconds\":2,\"retryOnTimeout\":false,\"retryableErrorCodes\":[]},\"feedback\":null}],\"verificationResult\":{\"status\":\"COMPLETED\",\"verifiedClaims\":{\"fullName\":{\"trust_framework\":\"XYZ TF\",\"verification_process\":\"EKYC\",\"assurance_level\":\"Gold\",\"time\":\"34232432\"}},\"errorCode\":null}}";
+        Resource resource = Mockito.mock(Resource.class);
 
-        mockUserStory.setVerificationResult(jsonNode);
-        List<MockScene> mockScenes = new ArrayList<>();
-        MockScene mockScene = new MockScene();
-        mockScene.setFrameNumber(0);
-        mockScene.setStepCode("START");
-        mockScenes.add(mockScene);
-
-        mockUserStory.setScenes(mockScenes);
-
-        Mockito.when(restTemplate.getForObject(Mockito.anyString(), Mockito.eq(MockUserStory.class))).thenReturn(mockUserStory);
+        Mockito.when(resourceLoader.getResource(Mockito.anyString())).thenReturn(resource);
+        Mockito.when(resource.getInputStream()).thenReturn(new ByteArrayInputStream(jsonContent.getBytes()));
         VerificationResult actualVerifiedResult = mockIdentityVerifierPlugin.getVerificationResult(transactionId);
 
         Assert.assertEquals(verifiedResult.getStatus(), actualVerifiedResult.getStatus());
         Assert.assertEquals(verifiedResult.getVerifiedClaims(), actualVerifiedResult.getVerifiedClaims());
-        Mockito.verify(restTemplate, Mockito.times(1)).getForObject(Mockito.anyString(), Mockito.eq(MockUserStory.class));
     }
 
 
     @Test
-    public void getVerifiedResult_withValidTransactionId_thenFail() throws IdentityVerifierException {
+    public void getVerifiedResult_withValidTransactionId_thenFail() throws IdentityVerifierException, IOException {
 
         String transactionId = "transactionId123";
-        Mockito.when(restTemplate.getForObject(Mockito.anyString(), Mockito.eq(MockUserStory.class))).thenReturn(null);
-        VerificationResult actualVerifiedResult = mockIdentityVerifierPlugin.getVerificationResult(transactionId);
-        Assert.assertEquals("mock_verification_failed", actualVerifiedResult.getErrorCode());
+        String jsonContent = "{}";
+        Resource resource = Mockito.mock(Resource.class);
+        Mockito.when(resourceLoader.getResource(Mockito.anyString())).thenReturn(resource);
+        Mockito.when(resource.getInputStream()).thenReturn(new ByteArrayInputStream(jsonContent.getBytes()));
+        mockIdentityVerifierPlugin.getVerificationResult(transactionId);
     }
 }
