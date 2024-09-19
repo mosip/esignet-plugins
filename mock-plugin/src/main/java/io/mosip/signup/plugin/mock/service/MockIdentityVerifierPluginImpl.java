@@ -113,7 +113,7 @@ public class MockIdentityVerifierPluginImpl extends IdentityVerifierPlugin {
         return verificationResult;
     }
 
-    public  <T> T getResource(String url, Class<T> clazz) {
+    private <T> T getResource(String url, Class<T> clazz) {
         Resource resource = resourceLoader.getResource(url);
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8))) {

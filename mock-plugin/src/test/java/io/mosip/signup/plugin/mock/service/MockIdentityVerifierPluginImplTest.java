@@ -114,6 +114,8 @@ public class MockIdentityVerifierPluginImplTest {
         Resource resource = Mockito.mock(Resource.class);
         Mockito.when(resourceLoader.getResource(Mockito.anyString())).thenReturn(resource);
         Mockito.when(resource.getInputStream()).thenReturn(new ByteArrayInputStream(jsonContent.getBytes()));
-        mockIdentityVerifierPlugin.getVerificationResult(transactionId);
+        VerificationResult verificationResult = mockIdentityVerifierPlugin.getVerificationResult(transactionId);
+        Assert.assertEquals(verificationResult.getErrorCode(),"mock_verification_failed");
+        Assert.assertEquals(verificationResult.getStatus(),VerificationStatus.FAILED);
     }
 }

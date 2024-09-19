@@ -94,7 +94,7 @@ public class MockProfileRegistryPluginImplTest {
 
 
     @Test
-    public void createProfile_withValidRequestAndProfileDto_thenFail() throws ProfileException {
+    public void createProfile_withInValidRequestAndProfileDto_thenFail() throws ProfileException {
         // Arrange
         ReflectionTestUtils.setField(mockProfileRegistryPlugin, "usernameField","individualId");
         Map<String,String> verifiedData=new HashMap<>();
