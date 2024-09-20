@@ -132,7 +132,7 @@ public class MockHelperService {
             throw e;
         } catch (Exception e) {
             log.error("send otp failed", e);
-            throw new SendOtpException("send_otp_failed: " + e.getMessage());
+            throw new SendOtpException("send_otp_failed");
         }
     }
 
