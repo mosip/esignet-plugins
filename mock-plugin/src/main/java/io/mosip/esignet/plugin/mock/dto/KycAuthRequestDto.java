@@ -20,5 +20,6 @@ public class KycAuthRequestDto {
     private String biometrics;
     private String kbi;
     private List<String> tokens;
+    private String password;
     private boolean claimMetadataRequired;
 }

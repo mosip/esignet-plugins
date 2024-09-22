@@ -157,6 +157,8 @@ public class MockHelperService {
                     kycAuthRequestDto.setTokens(List.of(authChallenge.getChallenge()));
                 } else if(Objects.equals(authChallenge.getAuthFactorType(),"KBI")){
                     kycAuthRequestDto.setKbi(authChallenge.getChallenge());
+                } else if(Objects.equals(authChallenge.getAuthFactorType(),"PWD")){
+                    kycAuthRequestDto.setPassword(authChallenge.getChallenge());
                 }
                 else {
                     throw new KycAuthException("invalid_auth_challenge");
