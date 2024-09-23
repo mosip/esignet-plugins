@@ -64,10 +64,11 @@ public class MockHelperService {
 
     static {
         supportedKycAuthFormats.put("OTP", List.of("alpha-numeric"));
+        supportedKycAuthFormats.put("PWD", List.of("alpha-numeric"));
         supportedKycAuthFormats.put("PIN", List.of("number"));
         supportedKycAuthFormats.put("BIO", List.of("encoded-json"));
         supportedKycAuthFormats.put("WLA", List.of("jwt"));
-        supportedKycAuthFormats.put("KBA", List.of("base64url-encoded-json"));
+        supportedKycAuthFormats.put("KBI", List.of("base64url-encoded-json"));
     }
 
 
