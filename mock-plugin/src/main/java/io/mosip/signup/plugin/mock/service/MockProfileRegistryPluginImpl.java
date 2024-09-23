@@ -87,8 +87,8 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
         JsonNode inputJson = profileDto.getIdentity();
         List<String> requiredFields = action.equals("CREATE") ? requiredFieldsOnCreate : requiredFieldsOnUpdate;
         for (String fieldName : requiredFields) {
-            if (!inputJson.hasNonNull(fieldName) || (inputJson.get(fieldName).isArray() && inputJson.get(fieldName).isEmpty())) {
-                log.error("Null value found in the required field of {}, required: {}", fieldName, requiredFieldsOnCreate);
+            if (!fieldName.isEmpty() && (!inputJson.hasNonNull(fieldName) || (inputJson.get(fieldName).isArray() && inputJson.get(fieldName).isEmpty()))) {
+                log.error("Null value found in the required field of {}, required: {}", fieldName, requiredFields);
                 throw new InvalidProfileException(fieldName.toLowerCase().concat("_required"));
             }
         }
