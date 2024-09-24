@@ -89,7 +89,7 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
         for (String fieldName : requiredFields) {
             if (!fieldName.isEmpty() && (!inputJson.hasNonNull(fieldName) || (inputJson.get(fieldName).isArray() && inputJson.get(fieldName).isEmpty()))) {
                 log.error("Null value found in the required field of {}, required: {}", fieldName, requiredFields);
-                throw new InvalidProfileException(fieldName.toLowerCase().concat("_required"));
+                throw new InvalidProfileException("invalid_".concat(fieldName.toLowerCase()));
             }
         }
     }
