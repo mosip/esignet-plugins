@@ -158,11 +158,6 @@ public class IdaAuthenticatorImplTest {
 
 		Mockito.when(mapper.writeValueAsString(Mockito.any())).thenReturn("value");
 
-		IdaKycAuthResponse idaKycAuthResponse = new IdaKycAuthResponse();
-		idaKycAuthResponse.setAuthToken("authToken1234");
-		idaKycAuthResponse.setKycToken("kycToken1234");
-		idaKycAuthResponse.setKycStatus(true);
-
 		IdaResponseWrapper<IdaKycAuthResponse> idaResponseWrapper = new IdaResponseWrapper<>();
 		idaResponseWrapper.setTransactionID("TRAN123");
 		idaResponseWrapper.setVersion("VER1");
@@ -181,7 +176,7 @@ public class IdaAuthenticatorImplTest {
 	}
 
 	@Test
-	public void doKycAuth_withInValidStatusCode_thenFail() throws Exception {
+	public void doKycAuth_withStatusCodeAsNotSuccess_thenFail() throws Exception {
 		KycAuthDto kycAuthDto = new KycAuthDto();
 		kycAuthDto.setIndividualId("IND1234");
 		kycAuthDto.setTransactionId("TRAN1234");
@@ -193,11 +188,6 @@ public class IdaAuthenticatorImplTest {
 		kycAuthDto.setChallengeList(authChallengeList);
 
 		Mockito.when(mapper.writeValueAsString(Mockito.any())).thenReturn("value");
-
-		IdaKycAuthResponse idaKycAuthResponse = new IdaKycAuthResponse();
-		idaKycAuthResponse.setAuthToken("authToken1234");
-		idaKycAuthResponse.setKycToken("kycToken1234");
-		idaKycAuthResponse.setKycStatus(true);
 
 		IdaResponseWrapper<IdaKycAuthResponse> idaResponseWrapper = new IdaResponseWrapper<>();
 		idaResponseWrapper.setTransactionID("TRAN123");
@@ -217,7 +207,7 @@ public class IdaAuthenticatorImplTest {
 	}
 
 	@Test
-	public void doKycAuth_withAuthChallengeNull_thenFail() throws Exception {
+	public void doKycAuth_withAuthChallengeNull_thenFail()  {
 		KycAuthDto kycAuthDto = new KycAuthDto();
 		kycAuthDto.setIndividualId("IND1234");
 		kycAuthDto.setTransactionId("TRAN1234");
@@ -228,7 +218,7 @@ public class IdaAuthenticatorImplTest {
 	}
 
 	@Test
-	public void doKycAuth_withInvalidAuthChallenge_thenFail() throws Exception {
+	public void doKycAuth_withInvalidAuthChallenge_thenFail()  {
 		KycAuthDto kycAuthDto = new KycAuthDto();
 		kycAuthDto.setIndividualId("IND1234");
 		kycAuthDto.setTransactionId("TRAN1234");
@@ -391,7 +381,7 @@ public class IdaAuthenticatorImplTest {
 	}
 
 	@Test
-	public void doKycExchange_withInvalidIndividualId_throwsException() throws KycExchangeException, Exception {
+	public void doKycExchange_withInvalidIndividualId_throwsException() throws  Exception {
 		KycExchangeDto kycExchangeDto = new KycExchangeDto();
 		kycExchangeDto.setIndividualId("IND1234");
 		kycExchangeDto.setKycToken("KYCT123");

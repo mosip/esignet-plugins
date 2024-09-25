@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.mosip.signup.api.dto.FrameDetail;
 import io.mosip.signup.api.dto.IdentityVerificationDto;
+import io.mosip.signup.api.dto.IdentityVerificationResult;
 import io.mosip.signup.api.dto.VerificationResult;
 import io.mosip.signup.api.exception.IdentityVerifierException;
 import io.mosip.signup.api.util.VerificationStatus;
@@ -12,6 +13,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -20,7 +22,6 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
-import org.springframework.web.client.RestTemplate;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -37,14 +38,8 @@ public class MockIdentityVerifierPluginImplTest {
     private MockIdentityVerifierPluginImpl mockIdentityVerifierPlugin;
 
     @Mock
-    private RestTemplate restTemplate;
-
-    @Mock
     ResourceLoader resourceLoader;
 
-
-    @Mock
-    private KafkaTemplate kafkaTemplate;
 
     ObjectMapper objectMapper;
 
@@ -73,8 +68,18 @@ public class MockIdentityVerifierPluginImplTest {
         Mockito.when(resourceLoader.getResource(Mockito.anyString())).thenReturn(resource);
         Mockito.when(resource.getInputStream()).thenReturn(new ByteArrayInputStream(jsonContent.getBytes()));
 
+        KafkaTemplate<String, IdentityVerificationResult> kafkaTemplate = Mockito.mock(KafkaTemplate.class);
+        ReflectionTestUtils.setField(mockIdentityVerifierPlugin, "kafkaTemplate", kafkaTemplate);
+
+
         mockIdentityVerifierPlugin.verify(transactionId, identityVerificationDto);
 
+        Mockito.verify(resourceLoader).getResource(Mockito.anyString());
+        ArgumentCaptor<IdentityVerificationResult> resultCaptor = ArgumentCaptor.forClass(IdentityVerificationResult.class);
+        Mockito.verify(kafkaTemplate, Mockito.times(2)).send(
+                Mockito.eq("ANALYZE_FRAMES_RESULT"),
+                resultCaptor.capture()
+        );
     }
 
 
