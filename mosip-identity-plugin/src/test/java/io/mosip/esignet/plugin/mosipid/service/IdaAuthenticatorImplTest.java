@@ -154,6 +154,7 @@ public class IdaAuthenticatorImplTest {
 		Assert.assertEquals(kycAuthResult.getKycToken(), kycAuthResult.getKycToken());
 	}
 
+
 	@Test
 	public void doKycAuthV2_withValidDetails_thenPass() throws Exception {
 		KycAuthDto kycAuthDto = new KycAuthDto();
