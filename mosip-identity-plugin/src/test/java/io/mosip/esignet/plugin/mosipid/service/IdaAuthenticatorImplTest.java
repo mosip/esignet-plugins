@@ -5,18 +5,18 @@
  */
 package io.mosip.esignet.plugin.mosipid.service;
 
-import static org.mockito.ArgumentMatchers.any;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
-import io.mosip.esignet.plugin.mosipid.dto.GetAllCertificatesResponse;
-import io.mosip.esignet.plugin.mosipid.dto.IdaKycAuthRequest;
-import io.mosip.esignet.plugin.mosipid.dto.IdaKycAuthResponse;
-import io.mosip.esignet.plugin.mosipid.dto.IdaKycExchangeResponse;
-import io.mosip.esignet.plugin.mosipid.dto.IdaResponseWrapper;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.mosip.esignet.api.dto.*;
+import io.mosip.esignet.api.exception.KycAuthException;
+import io.mosip.esignet.api.exception.KycExchangeException;
+import io.mosip.esignet.api.exception.KycSigningCertificateException;
+import io.mosip.esignet.api.exception.SendOtpException;
+import io.mosip.esignet.plugin.mosipid.dto.*;
 import io.mosip.esignet.plugin.mosipid.helper.AuthTransactionHelper;
+import io.mosip.kernel.core.exception.ServiceError;
+import io.mosip.kernel.core.http.ResponseWrapper;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -34,22 +34,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.*;
 
-import io.mosip.esignet.api.dto.AuthChallenge;
-import io.mosip.esignet.api.dto.KycAuthDto;
-import io.mosip.esignet.api.dto.KycAuthResult;
-import io.mosip.esignet.api.dto.KycExchangeDto;
-import io.mosip.esignet.api.dto.KycExchangeResult;
-import io.mosip.esignet.api.dto.KycSigningCertificateData;
-import io.mosip.esignet.api.dto.SendOtpDto;
-import io.mosip.esignet.api.dto.SendOtpResult;
-import io.mosip.esignet.api.exception.KycAuthException;
-import io.mosip.esignet.api.exception.KycExchangeException;
-import io.mosip.esignet.api.exception.KycSigningCertificateException;
-import io.mosip.esignet.api.exception.SendOtpException;
-import io.mosip.kernel.core.exception.ServiceError;
-import io.mosip.kernel.core.http.ResponseWrapper;
+import static org.mockito.ArgumentMatchers.any;
 
 @SpringBootTest
 @RunWith(MockitoJUnitRunner.class)
@@ -58,8 +45,8 @@ public class IdaAuthenticatorImplTest {
 	@InjectMocks
 	IdaAuthenticatorImpl idaAuthenticatorImpl;
 
-	@Mock
-	ObjectMapper mapper;
+
+	ObjectMapper mapper = new ObjectMapper();;
 
 	@Mock
 	RestTemplate restTemplate;
@@ -85,6 +72,8 @@ public class IdaAuthenticatorImplTest {
 		ReflectionTestUtils.setField(idaAuthenticatorImpl, "kycAuthUrl", "https://testkycAuthUrl");
 		ReflectionTestUtils.setField(idaAuthenticatorImpl, "getCertsUrl", "https://testGetCertsUrl");
 		ReflectionTestUtils.setField(idaAuthenticatorImpl, "otpChannels", Arrays.asList("otp", "pin", "bio"));
+		ReflectionTestUtils.setField(idaAuthenticatorImpl, "objectMapper", mapper);
+		ReflectionTestUtils.setField(idaAuthenticatorImpl, "kycAuthUrlV2", "https://testkycAuthUrl");
 	}
 
 	@Test
@@ -99,13 +88,34 @@ public class IdaAuthenticatorImplTest {
 		authChallengeList.add(authChallenge);
 		kycAuthDto.setChallengeList(authChallengeList);
 
-		Mockito.when(mapper.writeValueAsString(Mockito.any())).thenReturn("value");
+		//Mockito.when(mapper.writeValueAsString(Mockito.any())).thenReturn("value");
 		Mockito.when(restTemplate.exchange(Mockito.<RequestEntity<Void>>any(),
 				Mockito.<ParameterizedTypeReference<IdaResponseWrapper<IdaKycAuthResponse>>>any())).thenReturn(null);
 
 		Assert.assertThrows(KycAuthException.class,
 				() -> idaAuthenticatorImpl.doKycAuth("relyingId", "clientId", kycAuthDto));
 	}
+
+	@Test
+	public void doKycAuthV2_withInvalidDetails_throwsException() throws Exception {
+		KycAuthDto kycAuthDto = new KycAuthDto();
+		kycAuthDto.setIndividualId("IND1234");
+		kycAuthDto.setTransactionId("TRAN1234");
+		AuthChallenge authChallenge = new AuthChallenge();
+		authChallenge.setAuthFactorType("PIN");
+		authChallenge.setChallenge("111111");
+		List<AuthChallenge> authChallengeList = new ArrayList<>();
+		authChallengeList.add(authChallenge);
+		kycAuthDto.setChallengeList(authChallengeList);
+
+		//Mockito.when(mapper.writeValueAsString(Mockito.any())).thenReturn("value");
+		Mockito.when(restTemplate.exchange(Mockito.<RequestEntity<Void>>any(),
+				Mockito.<ParameterizedTypeReference<IdaResponseWrapper<IdaKycAuthResponse>>>any())).thenReturn(null);
+
+		Assert.assertThrows(KycAuthException.class,
+				() -> idaAuthenticatorImpl.doKycAuth("relyingId", "clientId", true, kycAuthDto));
+	}
+
 
 	@Test
 	public void doKycAuth_withValidDetails_thenPass() throws Exception {
@@ -119,7 +129,7 @@ public class IdaAuthenticatorImplTest {
 		authChallengeList.add(authChallenge);
 		kycAuthDto.setChallengeList(authChallengeList);
 
-		Mockito.when(mapper.writeValueAsString(Mockito.any())).thenReturn("value");
+		//Mockito.when(mapper.writeValueAsString(Mockito.any())).thenReturn("value");
 
 		IdaKycAuthResponse idaKycAuthResponse = new IdaKycAuthResponse();
 		idaKycAuthResponse.setAuthToken("authToken1234");
@@ -139,6 +149,49 @@ public class IdaAuthenticatorImplTest {
 				.thenReturn(responseEntity);
 
 		KycAuthResult kycAuthResult = idaAuthenticatorImpl.doKycAuth("relyingId", "clientId", kycAuthDto);
+
+		Assert.assertEquals(kycAuthResult.getKycToken(), kycAuthResult.getKycToken());
+	}
+
+	@Test
+	public void doKycAuthV2_withValidDetails_thenPass() throws Exception {
+		KycAuthDto kycAuthDto = new KycAuthDto();
+		kycAuthDto.setIndividualId("IND1234");
+		kycAuthDto.setTransactionId("TRAN1234");
+		AuthChallenge authChallenge = new AuthChallenge();
+		authChallenge.setAuthFactorType("OTP");
+		authChallenge.setChallenge("111111");
+		List<AuthChallenge> authChallengeList = new ArrayList<>();
+		authChallengeList.add(authChallenge);
+		kycAuthDto.setChallengeList(authChallengeList);
+
+		//Mockito.when(mapper.writeValueAsString(Mockito.any())).thenReturn("value");
+
+		IdaKycAuthResponse idaKycAuthResponse = new IdaKycAuthResponse();
+		idaKycAuthResponse.setAuthToken("authToken1234");
+		idaKycAuthResponse.setKycToken("kycToken1234");
+		idaKycAuthResponse.setKycStatus(true);
+		Map<String, List<JsonNode>> verified = new HashMap<>();
+
+		ObjectNode jNode = mapper.createObjectNode();
+		jNode.put("street", "xyz");
+		jNode.put("street_no", "123");
+		verified.put("address", List.of(jNode));
+		idaKycAuthResponse.setVerifiedClaims(verified);
+
+		IdaResponseWrapper<IdaKycAuthResponse> idaResponseWrapper = new IdaResponseWrapper<>();
+		idaResponseWrapper.setResponse(idaKycAuthResponse);
+		idaResponseWrapper.setTransactionID("TRAN123");
+		idaResponseWrapper.setVersion("VER1");
+
+		ResponseEntity<IdaResponseWrapper<IdaKycAuthResponse>> responseEntity = new ResponseEntity<IdaResponseWrapper<IdaKycAuthResponse>>(
+				idaResponseWrapper, HttpStatus.OK);
+
+		Mockito.when(restTemplate.exchange(Mockito.<RequestEntity<Void>>any(),
+						Mockito.<ParameterizedTypeReference<IdaResponseWrapper<IdaKycAuthResponse>>>any()))
+				.thenReturn(responseEntity);
+
+		KycAuthResult kycAuthResult = idaAuthenticatorImpl.doKycAuth("relyingId", "clientId",true, kycAuthDto);
 
 		Assert.assertEquals(kycAuthResult.getKycToken(), kycAuthResult.getKycToken());
 	}
@@ -191,7 +244,7 @@ public class IdaAuthenticatorImplTest {
 		b.setThumbprint("Thumbprint");
 		List<IdaKycAuthRequest.Biometric> bioList = new ArrayList<>();
 		bioList.add(b);
-		Mockito.when(mapper.writeValueAsString(Mockito.any())).thenReturn("value");
+		//Mockito.when(mapper.writeValueAsString(Mockito.any())).thenReturn("value");
 		IdaKycAuthResponse idaKycAuthResponse = new IdaKycAuthResponse();
 		idaKycAuthResponse.setAuthToken("authToken1234");
 		idaKycAuthResponse.setKycToken("kycToken1234");
@@ -226,7 +279,7 @@ public class IdaAuthenticatorImplTest {
 		String[] claimsLacales = new String[] { "claims", "locales" };
 		kycExchangeDto.setClaimsLocales(claimsLacales);
 
-		Mockito.when(mapper.writeValueAsString(Mockito.any())).thenReturn("value");
+	//	Mockito.when(mapper.writeValueAsString(Mockito.any())).thenReturn("value");
 
 		IdaKycExchangeResponse idaKycExchangeResponse = new IdaKycExchangeResponse();
 		idaKycExchangeResponse.setEncryptedKyc("ENCRKYC123");
@@ -261,7 +314,7 @@ public class IdaAuthenticatorImplTest {
 		String[] claimsLacales = new String[] { "claims", "locales" };
 		kycExchangeDto.setClaimsLocales(claimsLacales);
 
-		Mockito.when(mapper.writeValueAsString(Mockito.any())).thenReturn("value");
+		//Mockito.when(mapper.writeValueAsString(Mockito.any())).thenReturn("value");
 
 		IdaKycExchangeResponse idaKycExchangeResponse = new IdaKycExchangeResponse();
 		idaKycExchangeResponse.setEncryptedKyc("ENCRKYC123");
@@ -296,7 +349,7 @@ public class IdaAuthenticatorImplTest {
 		String[] claimsLacales = new String[] { "claims", "locales" };
 		kycExchangeDto.setClaimsLocales(claimsLacales);
 
-		Mockito.when(mapper.writeValueAsString(Mockito.any())).thenReturn("value");
+	//	Mockito.when(mapper.writeValueAsString(Mockito.any())).thenReturn("value");
 
 		IdaKycExchangeResponse idaKycExchangeResponse = new IdaKycExchangeResponse();
 		idaKycExchangeResponse.setEncryptedKyc("ENCRKYC123");
@@ -329,7 +382,7 @@ public class IdaAuthenticatorImplTest {
 		String[] claimsLacales = new String[] { "claims", "locales" };
 		kycExchangeDto.setClaimsLocales(claimsLacales);
 
-		Mockito.when(mapper.writeValueAsString(Mockito.any())).thenReturn("value");
+		//Mockito.when(mapper.writeValueAsString(Mockito.any())).thenReturn("value");
 		Mockito.when(restTemplate.exchange(Mockito.<RequestEntity<Void>>any(),
 				Mockito.<ParameterizedTypeReference<IdaResponseWrapper<IdaKycExchangeResponse>>>any()))
 				.thenReturn(null);
