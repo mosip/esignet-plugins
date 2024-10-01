@@ -8,9 +8,11 @@ package io.mosip.esignet.plugin.mosipid.dto;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 
 @Data
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class IdaKycAuthRequest {
 
     private String id;
@@ -29,7 +31,7 @@ public class IdaKycAuthRequest {
     private String requestSessionKey;
     private Map<String, Object> metadata;
     private List<String> allowedKycAttributes;
-
+    private Boolean claimMetadataRequired;
     @Data
     public static class AuthRequest {
         private String otp;
