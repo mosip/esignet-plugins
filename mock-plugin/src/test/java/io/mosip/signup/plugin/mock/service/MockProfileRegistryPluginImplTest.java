@@ -82,9 +82,9 @@ public class MockProfileRegistryPluginImplTest {
         // Arrange
         ReflectionTestUtils.setField(mockProfileRegistryPlugin, "identityEndpoint","http://localhost:8080/");
         ReflectionTestUtils.setField(mockProfileRegistryPlugin, "usernameField","individualId");
-        Map<String, Object> verifiedData = new HashMap<>();
-        verifiedData.put("individualId","1234567890");
-        JsonNode mockIdentity = objectMapper.valueToTree(verifiedData);
+        Map<String, Object> identityData = new HashMap<>();
+        identityData.put("individualId","1234567890");
+        JsonNode mockIdentity = objectMapper.valueToTree(identityData);
         ProfileDto profileDto = new ProfileDto();
         profileDto.setIndividualId("1234567890");
         profileDto.setIdentity(mockIdentity);
@@ -112,9 +112,9 @@ public class MockProfileRegistryPluginImplTest {
     public void createProfile_withInValidRequestAndProfileDto_thenFail() throws ProfileException {
         // Arrange
         ReflectionTestUtils.setField(mockProfileRegistryPlugin, "usernameField","individualId");
-        Map<String,String> verifiedData=new HashMap<>();
-        verifiedData.put("individualId","1234567890");
-        JsonNode mockIdentity = objectMapper.valueToTree(verifiedData);
+        Map<String,String> identityData=new HashMap<>();
+        identityData.put("individualId","1234567890");
+        JsonNode mockIdentity = objectMapper.valueToTree(identityData);
         ProfileDto profileDto = new ProfileDto();
         profileDto.setIndividualId("123456789");
         profileDto.setIdentity(mockIdentity);
@@ -163,17 +163,17 @@ public class MockProfileRegistryPluginImplTest {
     }
 
     @Test
-    public void getProfile_withErrorCodeAsIndividualIdFail_thenFail() throws ProfileException {
+    public void getProfile_withInValidIndividualId_thenFail() throws ProfileException {
         String individualId = "1234567890";
         ReflectionTestUtils.setField(mockProfileRegistryPlugin, "getIdentityEndpoint","http://localhost:8080/");
 
-        Map<String, Object> verifiedData = new HashMap<>();
-        verifiedData.put("email","123@email.com");
-        verifiedData.put("password","123456");
-        verifiedData.put("UIN","1234567890");
-        verifiedData.put("individualId",individualId);
+        Map<String, Object> identityData = new HashMap<>();
+        identityData.put("email","123@email.com");
+        identityData.put("password","123456");
+        identityData.put("UIN","1234567890");
+        identityData.put("individualId",individualId);
 
-        JsonNode mockIdentity = objectMapper.valueToTree(verifiedData);
+        JsonNode mockIdentity = objectMapper.valueToTree(identityData);
         ResponseWrapper<JsonNode> responseWrapper = new ResponseWrapper<>();
         responseWrapper.setResponse(mockIdentity);
         Error error = new Error();
@@ -202,12 +202,12 @@ public class MockProfileRegistryPluginImplTest {
         String requestId = "req-123";
         String individualId = "ind-456";
 
-        Map<String, Object> verifiedData = new HashMap<>();
-        verifiedData.put("email","123@email.com");
-        verifiedData.put("password","123456");
+        Map<String, Object> identityData = new HashMap<>();
+        identityData.put("email","123@email.com");
+        identityData.put("password","123456");
 
         Map<String,Object> verifiedClaim=new HashMap<>();
-        verifiedClaim.put("verified_claims",verifiedData);
+        verifiedClaim.put("verified_claims",identityData);
 
         JsonNode mockIdentity = objectMapper.valueToTree(verifiedClaim);
         ProfileDto profileDto = new ProfileDto();
@@ -241,11 +241,11 @@ public class MockProfileRegistryPluginImplTest {
         String requestId = "req-123";
         String individualId = "ind-456";
 
-        Map<String, Object> verifiedData = new HashMap<>();
-        verifiedData.put("email","123@email.com");
-        verifiedData.put("password","123456");
+        Map<String, Object> identityData = new HashMap<>();
+        identityData.put("email","123@email.com");
+        identityData.put("password","123456");
 
-        JsonNode mockIdentity = objectMapper.valueToTree(verifiedData);
+        JsonNode mockIdentity = objectMapper.valueToTree(identityData);
         ProfileDto profileDto = new ProfileDto();
         profileDto.setIndividualId(individualId);
         profileDto.setIdentity(mockIdentity);
@@ -270,21 +270,21 @@ public class MockProfileRegistryPluginImplTest {
     }
 
     @Test
-    public void isMatch_withMatchingIdentityAndInputChallenge_thenPass() {
+    public void isMatch_withValidInputChallenge_thenPass() {
 
-        Map<String, Object> verifiedData = new HashMap<>();
-        verifiedData.put("email","123@email.com");
-        verifiedData.put("password","123456");
-        verifiedData.put("UIN","1234567890");
-        JsonNode mockIdentity = objectMapper.valueToTree(verifiedData);
-        JsonNode challengeIdentity=objectMapper.valueToTree(verifiedData);
+        Map<String, Object> identityData = new HashMap<>();
+        identityData.put("email","123@email.com");
+        identityData.put("password","123456");
+        identityData.put("UIN","1234567890");
+        JsonNode mockIdentity = objectMapper.valueToTree(identityData);
+        JsonNode challengeIdentity=objectMapper.valueToTree(identityData);
 
         boolean isMatch = mockProfileRegistryPlugin.isMatch(mockIdentity, challengeIdentity);
         Assert.assertTrue(isMatch);
     }
 
     @Test
-    public void isMatch_withDifferentIdentityAndInputChallenge_thenFail() {
+    public void isMatch_withInValidInputChallenge_thenFail() {
 
         Map<String, Object> identityDataMap = new HashMap<>();
         identityDataMap.put("email","123@email.com");
