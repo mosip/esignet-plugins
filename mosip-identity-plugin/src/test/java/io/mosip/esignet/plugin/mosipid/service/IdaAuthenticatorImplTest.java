@@ -176,7 +176,7 @@ public class IdaAuthenticatorImplTest {
 	}
 
 	@Test
-	public void doKycAuth_withStatusCodeAsNotSuccess_thenFail() throws Exception {
+	public void doKycAuth_withInvalidRequest_thenFail() throws Exception {
 		KycAuthDto kycAuthDto = new KycAuthDto();
 		kycAuthDto.setIndividualId("IND1234");
 		kycAuthDto.setTransactionId("TRAN1234");
