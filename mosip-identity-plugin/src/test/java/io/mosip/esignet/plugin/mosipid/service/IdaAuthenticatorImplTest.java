@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import io.mosip.esignet.api.util.ErrorConstants;
 import io.mosip.esignet.plugin.mosipid.dto.GetAllCertificatesResponse;
 import io.mosip.esignet.plugin.mosipid.dto.IdaKycAuthRequest;
 import io.mosip.esignet.plugin.mosipid.dto.IdaKycAuthResponse;
@@ -144,7 +145,69 @@ public class IdaAuthenticatorImplTest {
 	}
 
 	@Test
-	public void doKycAuth_withAuthChallengeNull_thenFail() throws Exception {
+	public void doKycAuth_withInValidResponseDetails_thenFail() throws Exception {
+		KycAuthDto kycAuthDto = new KycAuthDto();
+		kycAuthDto.setIndividualId("IND1234");
+		kycAuthDto.setTransactionId("TRAN1234");
+		AuthChallenge authChallenge = new AuthChallenge();
+		authChallenge.setAuthFactorType("OTP");
+		authChallenge.setChallenge("111111");
+		List<AuthChallenge> authChallengeList = new ArrayList<>();
+		authChallengeList.add(authChallenge);
+		kycAuthDto.setChallengeList(authChallengeList);
+
+		Mockito.when(mapper.writeValueAsString(Mockito.any())).thenReturn("value");
+
+		IdaResponseWrapper<IdaKycAuthResponse> idaResponseWrapper = new IdaResponseWrapper<>();
+		idaResponseWrapper.setTransactionID("TRAN123");
+		idaResponseWrapper.setVersion("VER1");
+
+		ResponseEntity<IdaResponseWrapper<IdaKycAuthResponse>> responseEntity = new ResponseEntity<IdaResponseWrapper<IdaKycAuthResponse>>(
+				idaResponseWrapper, HttpStatus.OK);
+
+		Mockito.when(restTemplate.exchange(Mockito.<RequestEntity<Void>>any(),
+						Mockito.<ParameterizedTypeReference<IdaResponseWrapper<IdaKycAuthResponse>>>any()))
+				.thenReturn(responseEntity);
+		try{
+			idaAuthenticatorImpl.doKycAuth("relyingId", "clientId", kycAuthDto);
+		}catch (KycAuthException e){
+			Assert.assertEquals(e.getErrorCode(), ErrorConstants.AUTH_FAILED);
+		}
+	}
+
+	@Test
+	public void doKycAuth_withInvalidRequest_thenFail() throws Exception {
+		KycAuthDto kycAuthDto = new KycAuthDto();
+		kycAuthDto.setIndividualId("IND1234");
+		kycAuthDto.setTransactionId("TRAN1234");
+		AuthChallenge authChallenge = new AuthChallenge();
+		authChallenge.setAuthFactorType("OTP");
+		authChallenge.setChallenge("111111");
+		List<AuthChallenge> authChallengeList = new ArrayList<>();
+		authChallengeList.add(authChallenge);
+		kycAuthDto.setChallengeList(authChallengeList);
+
+		Mockito.when(mapper.writeValueAsString(Mockito.any())).thenReturn("value");
+
+		IdaResponseWrapper<IdaKycAuthResponse> idaResponseWrapper = new IdaResponseWrapper<>();
+		idaResponseWrapper.setTransactionID("TRAN123");
+		idaResponseWrapper.setVersion("VER1");
+
+		ResponseEntity<IdaResponseWrapper<IdaKycAuthResponse>> responseEntity = new ResponseEntity<IdaResponseWrapper<IdaKycAuthResponse>>(
+				idaResponseWrapper, HttpStatus.BAD_REQUEST);
+
+		Mockito.when(restTemplate.exchange(Mockito.<RequestEntity<Void>>any(),
+						Mockito.<ParameterizedTypeReference<IdaResponseWrapper<IdaKycAuthResponse>>>any()))
+				.thenReturn(responseEntity);
+		try{
+			idaAuthenticatorImpl.doKycAuth("relyingId", "clientId", kycAuthDto);
+		}catch (KycAuthException e){
+			Assert.assertEquals(e.getErrorCode(), ErrorConstants.AUTH_FAILED);
+		}
+	}
+
+	@Test
+	public void doKycAuth_withAuthChallengeNull_thenFail()  {
 		KycAuthDto kycAuthDto = new KycAuthDto();
 		kycAuthDto.setIndividualId("IND1234");
 		kycAuthDto.setTransactionId("TRAN1234");
@@ -155,7 +218,7 @@ public class IdaAuthenticatorImplTest {
 	}
 
 	@Test
-	public void doKycAuth_withInvalidAuthChallenge_thenFail() throws Exception {
+	public void doKycAuth_withInvalidAuthChallenge_thenFail()  {
 		KycAuthDto kycAuthDto = new KycAuthDto();
 		kycAuthDto.setIndividualId("IND1234");
 		kycAuthDto.setTransactionId("TRAN1234");
@@ -318,7 +381,7 @@ public class IdaAuthenticatorImplTest {
 	}
 
 	@Test
-	public void doKycExchange_withInvalidIndividualId_throwsException() throws KycExchangeException, Exception {
+	public void doKycExchange_withInvalidIndividualId_throwsException() throws  Exception {
 		KycExchangeDto kycExchangeDto = new KycExchangeDto();
 		kycExchangeDto.setIndividualId("IND1234");
 		kycExchangeDto.setKycToken("KYCT123");
