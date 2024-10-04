@@ -87,6 +87,7 @@
 
 		<kernel-keymanager-service.version>1.2.1.0</kernel-keymanager-service.version>
 		<esignet.version>1.5.0-SNAPSHOT</esignet.version>
+		<esignet-signup.version>1.1.0-SNAPSHOT</esignet-signup.version>
 
 		<sonar.exclusions>**/dto/**,**/entity/**,**/exception/**,**/spi/**,**/advice/**,**/config/**</sonar.exclusions>
 		<sonar.cpd.exclusions>**/dto/**,**/entity/**,**/config/**</sonar.cpd.exclusions>
@@ -128,12 +129,6 @@
 		</dependency>
 
 		<dependency>
-			<groupId>io.mosip.signup</groupId>
-			<artifactId>signup-integration-api</artifactId>
-			<version>1.1.0-SNAPSHOT</version>
-		</dependency>
-
-		<dependency>
 			<groupId>io.mosip.kernel</groupId>
 			<artifactId>kernel-keymanager-service</artifactId>
 			<version>${kernel-keymanager-service.version}</version>
@@ -156,10 +151,11 @@
 			<version>1.7.30</version>
 			<scope>provided</scope>
 		</dependency>
+
 		<dependency>
 			<groupId>io.mosip.signup</groupId>
 			<artifactId>signup-integration-api</artifactId>
-			<version>1.1.0-SNAPSHOT</version>
+			<version>${esignet-signup.version}</version>
 			<scope>provided</scope>
 		</dependency>
 	</dependencies>
