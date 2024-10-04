@@ -70,7 +70,7 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
 
     @Value("${mosip.signup.mock.add-verified-claims.endpoint}")
     private String addVerifiedClaimsEndpoint;
-    
+
     @Autowired
     @Qualifier("selfTokenRestTemplate")
     private RestTemplate restTemplate;
@@ -194,7 +194,7 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
 				throw new ProfileException(SERVER_UNREACHABLE);
 		}
 	}
-    
+
     private MockIdentityResponse addIdentity(JsonNode identityRequest) throws ProfileException{
         RequestWrapper<JsonNode> restRequest = new RequestWrapper<>();
         restRequest.setRequestTime(getUTCDateTime());
