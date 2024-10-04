@@ -2,10 +2,11 @@
 
 ## About
 
-Implementation for all the interfaces defined in esignet-integration-api.
+Implementation for all the interfaces defined in esignet-integration-api. Mock plugin is built to use eSignet with [Mock IDA system](https://github.com/mosip/esignet-mock-services/tree/master/mock-identity-system)
 
 This library should be added as a runtime dependency to [esignet-service](https://github.com/mosip/esignet) for development purpose only.
-Note: This is not production use implementation.
+
+**Note**: This is not production use implementation.
 
 ## Configurations
 
