@@ -195,7 +195,7 @@ public class IdaAuthenticatorImplTest {
 	}
 
 	@Test
-	public void doKycAuth_withInValidResponseDetails_thenFail() throws Exception {
+	public void doKycAuth_withInValidResponseDetails_thenFail() {
 		KycAuthDto kycAuthDto = new KycAuthDto();
 		kycAuthDto.setIndividualId("IND1234");
 		kycAuthDto.setTransactionId("TRAN1234");
@@ -214,9 +214,6 @@ public class IdaAuthenticatorImplTest {
 		ResponseEntity<IdaResponseWrapper<IdaKycAuthResponse>> responseEntity = new ResponseEntity<IdaResponseWrapper<IdaKycAuthResponse>>(
 				idaResponseWrapper, HttpStatus.OK);
 
-		Mockito.when(restTemplate.exchange(Mockito.<RequestEntity<Void>>any(),
-						Mockito.<ParameterizedTypeReference<IdaResponseWrapper<IdaKycAuthResponse>>>any()))
-				.thenReturn(responseEntity);
 		try{
 			idaAuthenticatorImpl.doKycAuth("relyingId", "clientId", kycAuthDto);
 		}catch (KycAuthException e){
