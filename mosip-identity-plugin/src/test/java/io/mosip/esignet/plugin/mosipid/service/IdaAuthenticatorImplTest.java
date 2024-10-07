@@ -88,7 +88,6 @@ public class IdaAuthenticatorImplTest {
 		authChallengeList.add(authChallenge);
 		kycAuthDto.setChallengeList(authChallengeList);
 
-		//Mockito.when(mapper.writeValueAsString(Mockito.any())).thenReturn("value");
 		Mockito.when(restTemplate.exchange(Mockito.<RequestEntity<Void>>any(),
 				Mockito.<ParameterizedTypeReference<IdaResponseWrapper<IdaKycAuthResponse>>>any())).thenReturn(null);
 
@@ -108,7 +107,6 @@ public class IdaAuthenticatorImplTest {
 		authChallengeList.add(authChallenge);
 		kycAuthDto.setChallengeList(authChallengeList);
 
-		//Mockito.when(mapper.writeValueAsString(Mockito.any())).thenReturn("value");
 		Mockito.when(restTemplate.exchange(Mockito.<RequestEntity<Void>>any(),
 				Mockito.<ParameterizedTypeReference<IdaResponseWrapper<IdaKycAuthResponse>>>any())).thenReturn(null);
 
@@ -129,7 +127,6 @@ public class IdaAuthenticatorImplTest {
 		authChallengeList.add(authChallenge);
 		kycAuthDto.setChallengeList(authChallengeList);
 
-		//Mockito.when(mapper.writeValueAsString(Mockito.any())).thenReturn("value");
 
 		IdaKycAuthResponse idaKycAuthResponse = new IdaKycAuthResponse();
 		idaKycAuthResponse.setAuthToken("authToken1234");
@@ -165,7 +162,6 @@ public class IdaAuthenticatorImplTest {
 		authChallengeList.add(authChallenge);
 		kycAuthDto.setChallengeList(authChallengeList);
 
-		//Mockito.when(mapper.writeValueAsString(Mockito.any())).thenReturn("value");
 
 		IdaKycAuthResponse idaKycAuthResponse = new IdaKycAuthResponse();
 		idaKycAuthResponse.setAuthToken("authToken1234");
@@ -244,7 +240,6 @@ public class IdaAuthenticatorImplTest {
 		b.setThumbprint("Thumbprint");
 		List<IdaKycAuthRequest.Biometric> bioList = new ArrayList<>();
 		bioList.add(b);
-		//Mockito.when(mapper.writeValueAsString(Mockito.any())).thenReturn("value");
 		IdaKycAuthResponse idaKycAuthResponse = new IdaKycAuthResponse();
 		idaKycAuthResponse.setAuthToken("authToken1234");
 		idaKycAuthResponse.setKycToken("kycToken1234");
@@ -349,7 +344,6 @@ public class IdaAuthenticatorImplTest {
 		String[] claimsLacales = new String[] { "claims", "locales" };
 		kycExchangeDto.setClaimsLocales(claimsLacales);
 
-	//	Mockito.when(mapper.writeValueAsString(Mockito.any())).thenReturn("value");
 
 		IdaKycExchangeResponse idaKycExchangeResponse = new IdaKycExchangeResponse();
 		idaKycExchangeResponse.setEncryptedKyc("ENCRKYC123");
@@ -382,7 +376,6 @@ public class IdaAuthenticatorImplTest {
 		String[] claimsLacales = new String[] { "claims", "locales" };
 		kycExchangeDto.setClaimsLocales(claimsLacales);
 
-		//Mockito.when(mapper.writeValueAsString(Mockito.any())).thenReturn("value");
 		Mockito.when(restTemplate.exchange(Mockito.<RequestEntity<Void>>any(),
 				Mockito.<ParameterizedTypeReference<IdaResponseWrapper<IdaKycExchangeResponse>>>any()))
 				.thenReturn(null);

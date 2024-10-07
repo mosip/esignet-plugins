@@ -32,6 +32,7 @@ public class IdaKycAuthRequest {
     private Map<String, Object> metadata;
     private List<String> allowedKycAttributes;
     private Boolean claimMetadataRequired;
+
     @Data
     public static class AuthRequest {
         private String otp;
