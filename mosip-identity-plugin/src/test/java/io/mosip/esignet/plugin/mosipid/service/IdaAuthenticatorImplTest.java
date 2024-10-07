@@ -206,7 +206,6 @@ public class IdaAuthenticatorImplTest {
 		authChallengeList.add(authChallenge);
 		kycAuthDto.setChallengeList(authChallengeList);
 
-		Mockito.when(mapper.writeValueAsString(Mockito.any())).thenReturn("value");
 
 		IdaResponseWrapper<IdaKycAuthResponse> idaResponseWrapper = new IdaResponseWrapper<>();
 		idaResponseWrapper.setTransactionID("TRAN123");
@@ -237,7 +236,6 @@ public class IdaAuthenticatorImplTest {
 		authChallengeList.add(authChallenge);
 		kycAuthDto.setChallengeList(authChallengeList);
 
-		Mockito.when(mapper.writeValueAsString(Mockito.any())).thenReturn("value");
 
 		IdaResponseWrapper<IdaKycAuthResponse> idaResponseWrapper = new IdaResponseWrapper<>();
 		idaResponseWrapper.setTransactionID("TRAN123");
@@ -338,7 +336,6 @@ public class IdaAuthenticatorImplTest {
 		String[] claimsLacales = new String[] { "claims", "locales" };
 		kycExchangeDto.setClaimsLocales(claimsLacales);
 
-	//	Mockito.when(mapper.writeValueAsString(Mockito.any())).thenReturn("value");
 
 		IdaKycExchangeResponse idaKycExchangeResponse = new IdaKycExchangeResponse();
 		idaKycExchangeResponse.setEncryptedKyc("ENCRKYC123");
@@ -373,7 +370,6 @@ public class IdaAuthenticatorImplTest {
 		String[] claimsLacales = new String[] { "claims", "locales" };
 		kycExchangeDto.setClaimsLocales(claimsLacales);
 
-		//Mockito.when(mapper.writeValueAsString(Mockito.any())).thenReturn("value");
 
 		IdaKycExchangeResponse idaKycExchangeResponse = new IdaKycExchangeResponse();
 		idaKycExchangeResponse.setEncryptedKyc("ENCRKYC123");
