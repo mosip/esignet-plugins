@@ -47,6 +47,9 @@ public class MockAuthenticationServiceTest {
     @Mock
     KeymanagerService keymanagerService;
 
+    @Mock
+    ObjectMapper objectMapper;
+
     /*@Test
     public void doVerifiedKycExchange_withValidDetails_thenPass() throws KycExchangeException {
         ReflectionTestUtils.setField(mockAuthenticationService, "kycExchangeUrl", "http://localhost:8080/kyc/exchange");
