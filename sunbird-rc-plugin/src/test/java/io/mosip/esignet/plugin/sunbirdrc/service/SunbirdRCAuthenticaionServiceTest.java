@@ -1,4 +1,4 @@
-package io.mosip.esignet.sunbirdrc.integration.service;
+package io.mosip.esignet.plugin.sunbirdrc.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.mosip.esignet.api.dto.*;

@@ -2,14 +2,14 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>io.mosip.esignet.sunbirdrc</groupId>
-	<artifactId>sunbird-rc-esignet-integration-impl</artifactId>
+	<groupId>io.mosip.esignet.plugin.sunbirdrc</groupId>
+	<artifactId>sunbird-rc-plugin</artifactId>
 	<version>0.3.0-SNAPSHOT</version>
 	<packaging>jar</packaging>
 	
-	<name>sunbird-rc-esignet-integration-impl</name>
+	<name>sunbird-rc-plugin</name>
 	<description>Sunbird-RC plugin implementation that is used for the integration with eSignet</description>
-	<url>https://github.com/mosip/digital-credential-plugins</url>
+	<url>https://github.com/mosip/esignet-plugins</url>
 	
 	<licenses>
 		<license>
@@ -18,9 +18,9 @@
 		</license>
 	</licenses>
 	<scm>
-		<connection>scm:git:git://github.com/mosip/digital-credential-plugins.git</connection>
-		<developerConnection>scm:git:ssh://github.com:mosip/digital-credential-plugins.git</developerConnection>
-		<url>https://github.com/mosip/digital-credential-plugins</url>
+		<connection>scm:git:git://github.com/mosip/esignet-plugins.git</connection>
+		<developerConnection>scm:git:ssh://github.com:mosip/esignet-plugins.git</developerConnection>
+		<url>https://github.com/mosip/esignet-plugins</url>
 		<tag>HEAD</tag>
 	</scm>
 	<developers>
@@ -28,7 +28,7 @@
 			<name>Mosip</name>
 			<email>mosip.emailnotifier@gmail.com</email>
 			<organization>io.mosip</organization>
-			<organizationUrl>https://github.com/mosip/digital-credential-plugins</organizationUrl>
+			<organizationUrl>https://github.com/mosip/esignet-plugins</organizationUrl>
 		</developer>
 	</developers>
 	<properties>
@@ -47,6 +47,7 @@
 		<git-commit-id-plugin.version>3.0.1</git-commit-id-plugin.version>
 		<maven.jacoco.version>0.8.5</maven.jacoco.version>
 		<maven-javadoc-plugin.version>3.3.1</maven-javadoc-plugin.version>
+		<esignet.version>1.5.0-SNAPSHOT</esignet.version>
 	</properties>
 	<dependencies>
 	
@@ -67,14 +68,14 @@
 		<dependency>
 			<groupId>io.mosip.esignet</groupId>
 			<artifactId>esignet-integration-api</artifactId>
-			<version>1.2.0</version>
+			<version>${esignet.version}</version>
 			<scope>provided</scope>
 		</dependency>
 		
 		<dependency>
 			<groupId>io.mosip.kernel</groupId>
 			<artifactId>kernel-keymanager-service</artifactId>
-			<version>1.2.0.1</version>
+			<version>1.2.1.0</version>
 			<scope>provided</scope>
 			<classifier>lib</classifier>
 			<exclusions>

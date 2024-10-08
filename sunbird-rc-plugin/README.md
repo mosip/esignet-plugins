@@ -1,4 +1,4 @@
-# sunbird-rc-esignet-integration-impl
+# sunbird-rc-plugin
 
 ## About
 Implementation for all the interfaces defined in esignet-integration-api. This libaray is built as a wrapper for [sunbird-registry-system](sunbird-registry-url) service.
@@ -8,17 +8,11 @@ This library should be added as a runtime dependency to [esignet-service](https:
 ## Configurations required to added in esignet-default.properties
 
 ````
-mosip.esignet.integration.scan-base-package=io.mosip.esignet.sunbirdrc.integration
+mosip.esignet.integration.scan-base-package=io.mosip.esignet.plugin.sunbirdrc
 mosip.esignet.integration.authenticator=SunbirdRCAuthenticationService
 mosip.esignet.integration.vci-plugin=SunbirdRCVCIssuancePlugin
-mosip.esignet.integration.key-binder=MockKeyBindingWrapperService
-mosip.esignet.integration.audit-plugin=LoggerAuditService
-mosip.esignet.integration.captcha-validator=GoogleRecaptchaValidatorService
 
 
-mosip.esignet.captcha-validator.url=https://www.google.com/recaptcha/api/siteverify
-mosip.esignet.captcha-validator.secret=${esignet.captcha.secret.key}
-mosip.esignet.captcha-validator.site-key=${esignet.captcha.site.key}
 
 ##--------------------sunbird registry authentication related demo configuration-------------------------##
 
@@ -48,6 +42,6 @@ Add "bindingtransaction" cache name in "mosip.esignet.cache.names" property.
 
 ## License
 This project is licensed under the terms of [Mozilla Public License 2.0](LICENSE).
-This integration plugin is compatible with [eSignet 1.2.0](https://github.com/mosip/esignet/tree/v1.2.0) and [Sunbird-RC 1.0.0](https://github.com/Sunbird-RC/sunbird-rc-core/tree/v1.0.0)
+This integration plugin is compatible with [Sunbird-RC 1.0.0](https://github.com/Sunbird-RC/sunbird-rc-core/tree/v1.0.0)
 
 
