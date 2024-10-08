@@ -247,13 +247,11 @@ public class IdaAuthenticatorImpl implements Authenticator {
                 IdaResponseWrapper<IdaKycAuthResponse> responseWrapper = responseEntity.getBody();
                 if(responseWrapper.getResponse() != null && responseWrapper.getResponse().isKycStatus() &&
                         responseWrapper.getResponse().getKycToken() != null) {
-                    if(claimsMetadataRequired){
-                        return new KycAuthResult(responseEntity.getBody().getResponse().getKycToken(),
-                                responseEntity.getBody().getResponse().getAuthToken(),
-                                responseEntity.getBody().getResponse().getVerifiedClaims());
-                    }
-                    return new KycAuthResult(responseEntity.getBody().getResponse().getKycToken(),
-                            responseEntity.getBody().getResponse().getAuthToken());
+                    return claimsMetadataRequired ? (new KycAuthResult(responseEntity.getBody().getResponse().getKycToken(),
+                            responseEntity.getBody().getResponse().getAuthToken(),
+                            responseEntity.getBody().getResponse().getVerifiedClaims()))
+                            : (new KycAuthResult(responseEntity.getBody().getResponse().getKycToken(),
+                            responseEntity.getBody().getResponse().getAuthToken()));
                 }
                 assert responseWrapper.getResponse() != null;
                 log.error("Error response received from IDA KycStatus : {} && Errors: {}",
