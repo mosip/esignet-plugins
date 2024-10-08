@@ -4,10 +4,12 @@ package io.mosip.esignet.plugin.mock.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.mosip.esignet.api.dto.*;
+import io.mosip.esignet.api.exception.KycAuthException;
 import io.mosip.esignet.api.exception.SendOtpException;
 import io.mosip.esignet.plugin.mock.dto.KycExchangeResponseDto;
 import io.mosip.esignet.api.exception.KycExchangeException;
 import io.mosip.esignet.api.util.ErrorConstants;
+import io.mosip.esignet.plugin.mock.dto.VerifiedKycExchangeRequestDto;
 import io.mosip.kernel.core.http.ResponseWrapper;
 import io.mosip.kernel.keymanagerservice.dto.AllCertificatesDataResponseDto;
 import io.mosip.kernel.keymanagerservice.dto.CertificateDataResponseDto;
@@ -28,6 +30,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import static org.mockito.ArgumentMatchers.any;
 
 @RunWith(MockitoJUnitRunner.class)
 public class MockAuthenticationServiceTest {
@@ -43,6 +46,9 @@ public class MockAuthenticationServiceTest {
 
     @Mock
     KeymanagerService keymanagerService;
+
+    @Mock
+    ObjectMapper objectMapper;
 
     /*@Test
     public void doVerifiedKycExchange_withValidDetails_thenPass() throws KycExchangeException {
@@ -222,8 +228,6 @@ public class MockAuthenticationServiceTest {
 
         KycExchangeResult kycExchangeResult = mockAuthenticationService.doKycExchange("RP", "CL", kycExchangeDto);
         Assert.assertEquals(kycExchangeResponseDto.getKyc(), kycExchangeResult.getEncryptedKyc());
-
-
     }
 
     @Test
@@ -335,6 +339,79 @@ public class MockAuthenticationServiceTest {
         List<KycSigningCertificateData> allKycSigningCertificates = mockAuthenticationService.getAllKycSigningCertificates();
         Assert.assertNotNull(allKycSigningCertificates);
         Assert.assertEquals(allKycSigningCertificates.size(), 2);
+    }
+
+    @Test
+    public void doKycAuth_withValidDetails_thenPass() throws KycAuthException {
+        String relyingPartyId = "testRelyingPartyId";
+        String clientId = "testClientId";
+        KycAuthDto kycAuthDto = new KycAuthDto();
+        KycAuthResult expectedResult = new KycAuthResult();
+        Mockito.when(mockHelperService.doKycAuthMock(relyingPartyId, clientId, kycAuthDto, false))
+                .thenReturn(expectedResult);
+        KycAuthResult result = mockAuthenticationService.doKycAuth(relyingPartyId, clientId, false, kycAuthDto);
+        Assert.assertEquals(expectedResult, result);
+    }
+
+    @Test
+    public void doVerifiedKycExchange_withValidDetails_thenPass () throws Exception {
+        ReflectionTestUtils.setField(mockAuthenticationService, "kycExchangeV2Url", "http://localhost:8080/kyc/exchange");
+        String relyingPartyId = "testRelyingPartyId";
+        String clientId = "testClientId";
+
+        VerifiedKycExchangeDto kycExchangeDto = new VerifiedKycExchangeDto();
+        kycExchangeDto.setTransactionId("transactionId");
+        kycExchangeDto.setKycToken("kycToken");
+        kycExchangeDto.setIndividualId("individualId");
+        kycExchangeDto.setClaimsLocales(new String[]{"en"});
+        kycExchangeDto.setAcceptedClaimDetails(new HashMap<>());
+
+        VerifiedKycExchangeRequestDto verifiedRequestDto = new VerifiedKycExchangeRequestDto();
+        verifiedRequestDto.setTransactionId(kycExchangeDto.getTransactionId());
+        verifiedRequestDto.setKycToken(kycExchangeDto.getKycToken());
+        verifiedRequestDto.setIndividualId(kycExchangeDto.getIndividualId());
+        verifiedRequestDto.setClaimLocales(Arrays.asList(kycExchangeDto.getClaimsLocales()));
+        verifiedRequestDto.setAcceptedClaimDetail(kycExchangeDto.getAcceptedClaimDetails());
+
+        KycExchangeResponseDto responseDto = new KycExchangeResponseDto();
+        responseDto.setKyc("mockKyc");
+
+        ResponseWrapper<KycExchangeResponseDto> responseWrapper = new ResponseWrapper<>();
+        responseWrapper.setResponse(responseDto);
+
+        ResponseEntity<ResponseWrapper<KycExchangeResponseDto>> responseEntity =
+                new ResponseEntity<>(responseWrapper, HttpStatus.OK);
+
+        Mockito.when(restTemplate.exchange(
+                any(RequestEntity.class),
+                any(ParameterizedTypeReference.class))
+        ).thenReturn(responseEntity);
+        KycExchangeResult result = mockAuthenticationService.doVerifiedKycExchange(relyingPartyId, clientId, kycExchangeDto);
+        Assert.assertEquals("mockKyc", result.getEncryptedKyc());
+    }
+
+    @Test
+    public void doVerifiedKycExchange_withInvalidRequest_thenFail() {
+        String relyingPartyId = "testRelyingPartyId";
+        String clientId = "testClientId";
+        VerifiedKycExchangeDto kycExchangeDto = new VerifiedKycExchangeDto();
+        ResponseEntity<ResponseWrapper<KycExchangeResponseDto>> responseEntity =
+                new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        KycExchangeException exception = Assert.assertThrows(KycExchangeException.class, () ->
+                mockAuthenticationService.doVerifiedKycExchange(relyingPartyId, clientId, kycExchangeDto)
+        );
+        Assert.assertEquals("mock-ida-005", exception.getErrorCode());
+    }
+
+    @Test
+    public void doVerifiedKycExchange_throwsKycExchangeException_thenFail() {
+        String relyingPartyId = "testRelyingPartyId";
+        String clientId = "testClientId";
+        VerifiedKycExchangeDto kycExchangeDto = new VerifiedKycExchangeDto();
+        KycExchangeException exception = Assert.assertThrows(KycExchangeException.class, () ->
+                mockAuthenticationService.doVerifiedKycExchange(relyingPartyId, clientId, kycExchangeDto)
+        );
+        Assert.assertEquals("mock-ida-005", exception.getErrorCode());
     }
 }
 
