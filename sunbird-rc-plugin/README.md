@@ -16,10 +16,10 @@ mosip.esignet.integration.vci-plugin=SunbirdRCVCIssuancePlugin
 
 ##--------------------sunbird registry authentication related demo configuration-------------------------##
 
-mosip.esignet.authenticator.sunbird-rc.auth-factor.kba.individual-id-field='policyNumber'
-mosip.esignet.authenticator.sunbird-rc.auth-factor.kba.field-details={{"id":"policyNumber", "type":"text", "format":""},{"id":"name", "type":"text", "format":""},{"id":"dob", "type":"date", "format":"dd/mm/yyyy"}}
-mosip.esignet.authenticator.sunbird-rc.auth-factor.kba.registry-search-url=http://10.3.148.107/registry/api/v1/Insurance/search
-mosip.esignet.authenticator.sunbird-rc.kba.entity-id-field=osid
+mosip.esignet.authenticator.sunbird-rc.auth-factor.kbi.individual-id-field='policyNumber'
+mosip.esignet.authenticator.sunbird-rc.auth-factor.kbi.field-details={{"id":"policyNumber", "type":"text", "format":""},{"id":"name", "type":"text", "format":""},{"id":"dob", "type":"date", "format":"dd/mm/yyyy"}}
+mosip.esignet.authenticator.sunbird-rc.auth-factor.kbi.registry-search-url=http://10.3.148.107/registry/api/v1/Insurance/search
+mosip.esignet.authenticator.sunbird-rc.kbi.entity-id-field=osid
 
 ##-----------------------------VCI related demo configuration---------------------------------------------##
 

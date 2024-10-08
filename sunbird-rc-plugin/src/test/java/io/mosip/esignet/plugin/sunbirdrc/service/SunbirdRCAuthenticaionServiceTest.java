@@ -88,7 +88,7 @@ public class SunbirdRCAuthenticaionServiceTest {
         KycAuthDto kycAuthDto = new KycAuthDto(); // populate with valid data
         AuthChallenge authChallenge=new AuthChallenge();
         authChallenge.setFormat("string");
-        authChallenge.setAuthFactorType("KBA");
+        authChallenge.setAuthFactorType("KBI");
         authChallenge.setChallenge("eyJmdWxsTmFtZSI6IlphaWQgU2lkZGlxdWUiLCJkb2IiOiIyMDAwLTA3LTI2In0=");
 
         kycAuthDto.setChallengeList(List.of(authChallenge));
@@ -125,7 +125,7 @@ public class SunbirdRCAuthenticaionServiceTest {
         KycAuthDto kycAuthDto = new KycAuthDto(); // populate with valid data
         AuthChallenge authChallenge=new AuthChallenge();
         authChallenge.setFormat("string");
-        authChallenge.setAuthFactorType("KBA");
+        authChallenge.setAuthFactorType("KBI");
         authChallenge.setChallenge("eyJmdWxsTmFtZSI6IlphaWQiLCJkb2IiOiIyMDAwLTA3LTI2In0=");
 
         kycAuthDto.setChallengeList(List.of(authChallenge));
@@ -159,7 +159,7 @@ public class SunbirdRCAuthenticaionServiceTest {
         KycAuthDto kycAuthDto = new KycAuthDto(); // populate with valid data
         AuthChallenge authChallenge=new AuthChallenge();
         authChallenge.setFormat("string");
-        authChallenge.setAuthFactorType("KBA");
+        authChallenge.setAuthFactorType("KBI");
         authChallenge.setChallenge("eyJmdWxsTmFtZSI6IlphaWQgU2lkZGlxdWUiLCJkb2IiOiIyMDAwLTA3LTI2In0=");
 
         kycAuthDto.setChallengeList(List.of(authChallenge));
@@ -194,7 +194,7 @@ public class SunbirdRCAuthenticaionServiceTest {
         KycAuthDto kycAuthDto = new KycAuthDto(); // populate with valid data
         AuthChallenge authChallenge=new AuthChallenge();
         authChallenge.setFormat("string");
-        authChallenge.setAuthFactorType("KBA");
+        authChallenge.setAuthFactorType("KBI");
         authChallenge.setChallenge("eyJmdWxsTmFtZSI6IlphaWQgU2lkZGlxdWUiLCJkb2IiOiIyMDAwLTA3LTI2In0=");
 
         kycAuthDto.setChallengeList(List.of(authChallenge));

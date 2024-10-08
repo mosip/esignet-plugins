@@ -45,16 +45,16 @@ public class SunbirdRCAuthenticationService implements Authenticator {
 
     private final String FIELD_ID_KEY="id";
 
-    @Value("#{${mosip.esignet.authenticator.sunbird-rc.auth-factor.kba.field-details}}")
+    @Value("#{${mosip.esignet.authenticator.sunbird-rc.auth-factor.kbi.field-details}}")
     private List<Map<String,String>> fieldDetailList;
 
-    @Value("${mosip.esignet.authenticator.sunbird-rc.auth-factor.kba.registry-search-url}")
+    @Value("${mosip.esignet.authenticator.sunbird-rc.auth-factor.kbi.registry-search-url}")
     private String registrySearchUrl;
 
-    @Value("${mosip.esignet.authenticator.sunbird-rc.auth-factor.kba.individual-id-field}")
+    @Value("${mosip.esignet.authenticator.sunbird-rc.auth-factor.kbi.individual-id-field}")
     private String idField;
 
-    @Value("${mosip.esignet.authenticator.sunbird-rc.kba.entity-id-field}")
+    @Value("${mosip.esignet.authenticator.sunbird-rc.kbi.entity-id-field}")
     private String entityIdField;
 
     @Autowired
@@ -93,7 +93,7 @@ public class SunbirdRCAuthenticationService implements Authenticator {
                 kycAuthDto.getTransactionId(), clientId);
         try {
             for (AuthChallenge authChallenge : kycAuthDto.getChallengeList()) {
-                if(Objects.equals(authChallenge.getAuthFactorType(),"KBA")){
+                if(Objects.equals(authChallenge.getAuthFactorType(),"KBI")){
                     return validateKnowledgeBasedAuth(kycAuthDto.getIndividualId(),authChallenge);
                 }
                 throw new KycAuthException("invalid_challenge_format");
