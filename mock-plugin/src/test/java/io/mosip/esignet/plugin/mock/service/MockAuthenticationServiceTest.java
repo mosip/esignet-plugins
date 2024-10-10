@@ -300,18 +300,10 @@ public class MockAuthenticationServiceTest {
     }
 
     @Test
-    public void sendOtp_withInValidDetails_thenFail() throws SendOtpException {
-
-        SendOtpDto se = new SendOtpDto();
-        se.setTransactionId("transactionId");
-        se.setOtpChannels(Arrays.asList("email", "mobile"));
-        SendOtpResult sendOtpResult = new SendOtpResult();
-        sendOtpResult.setTransactionId("transactionId");
-        sendOtpResult.setMaskedEmail("maskedEmail");
-        sendOtpResult.setMaskedMobile("maskedMobile");
-        Mockito.when(mockHelperService.sendOtpMock(se.getTransactionId(), se.getIndividualId(), se.getOtpChannels(), "relyingPartyId", "clientId")).thenReturn(sendOtpResult);
+    public void sendOtp_withInValidOtpRequest_thenFail() {
         try{
-            mockAuthenticationService.sendOtp("relyingPartyId", "clientId", se);
+            mockAuthenticationService.sendOtp("relyingPartyId", "clientId", null);
+            Assert.fail();
         }catch (SendOtpException e){
             Assert.assertEquals(e.getErrorCode(), "invalid_transaction_id");
         }

@@ -9,6 +9,7 @@ import io.mosip.esignet.core.dto.Error;
 import io.mosip.esignet.core.dto.ResponseWrapper;
 import io.mosip.signup.api.dto.ProfileDto;
 import io.mosip.signup.api.dto.ProfileResult;
+import io.mosip.signup.api.exception.InvalidProfileException;
 import io.mosip.signup.api.exception.ProfileException;
 import io.mosip.signup.api.util.ProfileCreateUpdateStatus;
 import io.mosip.signup.plugin.mock.dto.MockIdentityResponse;
@@ -75,6 +76,38 @@ public class MockProfileRegistryPluginImplTest {
         profileDto.setIdentity(mockIdentity);
 
         mockProfileRegistryPlugin.validate(action, profileDto);
+    }
+
+
+    @Test
+    public void validate_withInValidRequiredField_thenFail() throws JsonProcessingException {
+
+        List<String> requiredField=new ArrayList<>();
+        requiredField.add("email");
+        ReflectionTestUtils.setField(mockProfileRegistryPlugin, "requiredFieldsOnCreate", requiredField);
+        String action = "CREATE";
+
+        String phone="{ \"value\": \"7408001310\", \"essential\":true }";
+        String verifiedClaims="[{\"verification\":{\"trust_framework\":{\"value\":\"income-tax\"}},\"claims\":{\"name\":null,\"email\":{\"essential\":0}}},{\"verification\":{\"trust_framework\":{\"value\":\"pwd\"}},\"claims\":{\"birthdate\":{\"essential\":true},\"address\":null}},{\"verification\":{\"trust_framework\":{\"value\":\"cbi\"}},\"claims\":{\"gender\":{\"essential\":true},\"email\":{\"essential\":true}}}]";
+        JsonNode addressNode = objectMapper.readValue(phone, JsonNode.class);
+        JsonNode verifiedClaimNode = objectMapper.readValue(verifiedClaims, JsonNode.class);
+
+        Map<String, JsonNode> userinfoMap = new HashMap<>();
+        userinfoMap.put("phone", addressNode);
+        userinfoMap.put("verified_claims", verifiedClaimNode);
+        JsonNode mockIdentity=objectMapper.valueToTree(userinfoMap);
+
+        ProfileDto profileDto = new ProfileDto();
+        profileDto.setIndividualId("individualId");
+        profileDto.setIdentity(mockIdentity);
+
+        try{
+            mockProfileRegistryPlugin.validate(action, profileDto);
+            Assert.fail();
+        }catch (InvalidProfileException e){
+            Assert.assertEquals(e.getMessage(),"invalid_email");
+        }
+
     }
 
     @Test
