@@ -260,14 +260,6 @@ public class MockHelperServiceTest {
         response.setKycToken("test_token");
         response.setPartnerSpecificUserToken("partner_token");
         responseWrapper.setResponse(response);
-        ResponseEntity<ResponseWrapper<KycAuthResponseDtoV2>> responseEntity= new ResponseEntity<>(responseWrapper, HttpStatus.OK);
-
-        Mockito.when(restTemplate.exchange(
-                Mockito.any(RequestEntity.class),
-                Mockito.eq(new ParameterizedTypeReference<ResponseWrapper<KycAuthResponseDtoV2>>() {
-                })
-        )).thenReturn(responseEntity);
-
         KycAuthDto kycAuthDto = new KycAuthDto();
         AuthChallenge authChallenge = new AuthChallenge();
         authChallenge.setAuthFactorType("abc");
@@ -300,12 +292,6 @@ public class MockHelperServiceTest {
         response.setPartnerSpecificUserToken("partner_token");
         responseWrapper.setResponse(response);
         ResponseEntity<ResponseWrapper<KycAuthResponseDtoV2>> responseEntity= new ResponseEntity<>(responseWrapper, HttpStatus.OK);
-
-        Mockito.when(restTemplate.exchange(
-                Mockito.any(RequestEntity.class),
-                Mockito.eq(new ParameterizedTypeReference<ResponseWrapper<KycAuthResponseDtoV2>>() {
-                })
-        )).thenReturn(responseEntity);
 
         KycAuthDto kycAuthDto = new KycAuthDto();
         AuthChallenge authChallenge = new AuthChallenge();
