@@ -57,19 +57,21 @@ public class MockIdentityVerifierPluginImpl extends IdentityVerifierPlugin {
 
     @Override
     public void initialize(String transactionId, IdentityVerificationInitDto identityVerificationInitDto) {
-        log.info("Transaction is initialized with individualId : {} and disabilityType: {}",
-                identityVerificationInitDto.getIndividualId(), identityVerificationInitDto.getDisabilityType());
+        log.info("Transaction is initialized for transactionId : {} and disabilityType: {}",
+                transactionId, identityVerificationInitDto.getDisabilityType());
         log.info("**** Nothing to initialize as its mock identity verification plugin ****");
     }
 
     @Override
     public void verify(String transactionId, IdentityVerificationDto identityVerificationDto) throws IdentityVerifierException {
         MockUserStory mockUserStory = getResource(configServerUrl+storyName, MockUserStory.class);
+        log.info("Loaded user story : {}", storyName);
 
         IdentityVerificationResult identityVerificationResult = new IdentityVerificationResult();
         identityVerificationResult.setId(transactionId);
         identityVerificationResult.setVerifierId(getVerifierId());
 
+        log.info("input message step code : {}", identityVerificationDto.getStepCode());
         if(isStartStep(identityVerificationDto.getStepCode())) {
             Optional<MockScene> result = Objects.requireNonNull(mockUserStory).getScenes().stream()
                     .filter(scene -> scene.getFrameNumber() == 0 && scene.getStepCode().equals(identityVerificationDto.getStepCode()))
@@ -88,7 +90,9 @@ public class MockIdentityVerifierPluginImpl extends IdentityVerifierPlugin {
                         .filter(scene -> scene.getFrameNumber() == frameDetail.getOrder() &&
                                 scene.getStepCode().equals(identityVerificationDto.getStepCode()))
                         .findFirst();
+                log.info("Search match for current frame detail {} in the story", frameDetail);
                 if(result.isPresent()) {
+                    log.info("Match found in the story : {}", result.get());
                     identityVerificationResult.setStep(result.get().getStep());
                     identityVerificationResult.setFeedback(result.get().getFeedback());
                     publishAnalysisResult(identityVerificationResult);
