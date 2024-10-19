@@ -84,19 +84,22 @@ public class MockIdentityVerifierPluginImpl extends IdentityVerifierPlugin {
             }
         }
 
-        if(identityVerificationDto.getFrames() != null) {
-            for(FrameDetail frameDetail : identityVerificationDto.getFrames()) {
-                Optional<MockScene> result = Objects.requireNonNull(mockUserStory).getScenes().stream()
-                        .filter(scene -> scene.getFrameNumber() == frameDetail.getOrder() &&
-                                scene.getStepCode().equals(identityVerificationDto.getStepCode()))
-                        .findFirst();
-                log.info("Search match for current frame detail {} in the story", frameDetail);
-                if(result.isPresent()) {
-                    log.info("Match found in the story : {}", result.get());
-                    identityVerificationResult.setStep(result.get().getStep());
-                    identityVerificationResult.setFeedback(result.get().getFeedback());
-                    publishAnalysisResult(identityVerificationResult);
-                }
+        if(identityVerificationDto.getFrames() == null || identityVerificationDto.getFrames().isEmpty()) {
+            log.info("No Frames found in the request, nothing to do");
+            return;
+        }
+
+        for(FrameDetail frameDetail : identityVerificationDto.getFrames()) {
+            Optional<MockScene> matchedScene = Objects.requireNonNull(mockUserStory).getScenes().stream()
+                    .filter(scene -> scene.getFrameNumber() == frameDetail.getOrder() &&
+                            scene.getStepCode().equals(identityVerificationDto.getStepCode()))
+                    .findFirst();
+            log.info("{} Search match for current frame {} in the story", identityVerificationDto.getStepCode(), frameDetail.getOrder());
+            if(matchedScene.isPresent()) {
+                log.info("Match found in the story : {}", matchedScene.get());
+                identityVerificationResult.setStep(matchedScene.get().getStep());
+                identityVerificationResult.setFeedback(matchedScene.get().getFeedback());
+                publishAnalysisResult(identityVerificationResult);
             }
         }
     }
