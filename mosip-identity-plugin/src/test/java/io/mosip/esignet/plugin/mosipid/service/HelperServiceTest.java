@@ -240,6 +240,27 @@ public class HelperServiceTest {
     }
 
     @Test
+    public void setAuthRequest_withWLAChallengeType_thenPass() throws Exception {
+        List<AuthChallenge> challengeList = new ArrayList<>();
+        AuthChallenge authChallenge = new AuthChallenge();
+        authChallenge.setChallenge("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0cmFuc2FjdGlvbklkIjoiMTIzNDU2Nzg5MCIsIm5hbWUiOiJKb2huIERvZSIsImlhdCI6MTUxNjIzOTAyMn0=.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c");
+        authChallenge.setAuthFactorType("wla");
+        authChallenge.setFormat("jwt");
+        challengeList.add(authChallenge);
+
+        Mockito.when(restTemplate.getForObject("https://test/test", String.class)).thenReturn("test-certificate");
+        Mockito.when(keymanagerUtil.convertToCertificate(Mockito.any(String.class))).thenReturn(TestUtil.getCertificate());
+        Mockito.when(cryptoCore.asymmetricEncrypt(Mockito.any(), Mockito.any())).thenReturn("test".getBytes());
+
+        IdaKycAuthRequest idaKycAuthRequest = new IdaKycAuthRequest();
+        helperService.setAuthRequest(challengeList, idaKycAuthRequest);
+        Assert.assertNotNull(idaKycAuthRequest.getRequest());
+        Assert.assertNotNull(idaKycAuthRequest.getRequestSessionKey());
+        Assert.assertNotNull(idaKycAuthRequest.getRequestHMAC());
+        Assert.assertNotNull(idaKycAuthRequest.getThumbprint());
+    }
+
+    @Test
     public void getIdaPartnerCertificate_withUnsetPartnerCertificate_thenPass() throws Exception {
         Mockito.when(restTemplate.getForObject("https://test/test", String.class)).thenReturn("test-certificate");
         Certificate certificate = TestUtil.getCertificate();
@@ -261,5 +282,26 @@ public class HelperServiceTest {
         jwtSignatureResponseDto.setJwtSignedData("test-jwt");
         Mockito.when(signatureService.jwtSign(Mockito.any())).thenReturn(jwtSignatureResponseDto);
         Assert.assertEquals("test-jwt", helperService.getRequestSignature("test-request-value"));
+    }
+
+    @Test
+    public void getTransactionId_test() {
+        Assert.assertNotNull(helperService.getTransactionId("idhash"));
+    }
+
+    @Test
+    public void convertLangCodesToISO3LanguageCodes_withInvalidInput_thenReturnEmpty() {
+        Assert.assertTrue(helperService.convertLangCodesToISO3LanguageCodes(null).isEmpty());
+        Assert.assertTrue(helperService.convertLangCodesToISO3LanguageCodes(new String[]{}).isEmpty());
+        Assert.assertTrue(helperService.convertLangCodesToISO3LanguageCodes(new String[]{"", ""}).isEmpty());
+        Assert.assertTrue(helperService.convertLangCodesToISO3LanguageCodes(new String[]{"e1"}).isEmpty());
+    }
+
+    @Test
+    public void convertLangCodesToISO3LanguageCodes_withValidInput_thenPass() {
+        List<String> langCodes = helperService.convertLangCodesToISO3LanguageCodes(new String[]{"en", "km"});
+        Assert.assertFalse(langCodes.isEmpty());
+        Assert.assertEquals(langCodes.get(0), "eng");
+        Assert.assertEquals(langCodes.get(1), "khm");
     }
 }
