@@ -65,13 +65,13 @@ public class MockIdentityVerifierPluginImpl extends IdentityVerifierPlugin {
     @Override
     public void verify(String transactionId, IdentityVerificationDto identityVerificationDto) throws IdentityVerifierException {
         MockUserStory mockUserStory = getResource(configServerUrl+storyName, MockUserStory.class);
-        log.info("Loaded user story : {}", storyName);
+        log.info("Loaded user story : {} for transaction: {}", storyName, transactionId);
 
         IdentityVerificationResult identityVerificationResult = new IdentityVerificationResult();
         identityVerificationResult.setId(transactionId);
         identityVerificationResult.setVerifierId(getVerifierId());
 
-        log.info("input message step code : {}", identityVerificationDto.getStepCode());
+        log.info("input message step code : {} for transaction: {}", identityVerificationDto.getStepCode(), transactionId);
         if(isStartStep(identityVerificationDto.getStepCode())) {
             Optional<MockScene> result = Objects.requireNonNull(mockUserStory).getScenes().stream()
                     .filter(scene -> scene.getFrameNumber() == 0 && scene.getStepCode().equals(identityVerificationDto.getStepCode()))
@@ -85,7 +85,7 @@ public class MockIdentityVerifierPluginImpl extends IdentityVerifierPlugin {
         }
 
         if(identityVerificationDto.getFrames() == null || identityVerificationDto.getFrames().isEmpty()) {
-            log.info("No Frames found in the request, nothing to do");
+            log.info("No Frames found in the request {}, nothing to do", transactionId);
             return;
         }
 
@@ -94,9 +94,10 @@ public class MockIdentityVerifierPluginImpl extends IdentityVerifierPlugin {
                     .filter(scene -> scene.getFrameNumber() == frameDetail.getOrder() &&
                             scene.getStepCode().equals(identityVerificationDto.getStepCode()))
                     .findFirst();
-            log.info("{} Search match for current frame {} in the story", identityVerificationDto.getStepCode(), frameDetail.getOrder());
+            log.info("{} Search match for current frame {} in the story for transaction: {}", identityVerificationDto.getStepCode(),
+                    frameDetail.getOrder(), transactionId);
             if(matchedScene.isPresent()) {
-                log.info("Match found in the story : {}", matchedScene.get());
+                log.info("Match found in the story : {} for transaction: {}", matchedScene.get(), transactionId);
                 identityVerificationResult.setStep(matchedScene.get().getStep());
                 identityVerificationResult.setFeedback(matchedScene.get().getFeedback());
                 publishAnalysisResult(identityVerificationResult);
