@@ -7,14 +7,24 @@ package io.mosip.esignet.plugin.sunbirdrc.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.jose.jwk.RSAKey;
 import io.mosip.esignet.api.dto.*;
 import io.mosip.esignet.api.exception.KycAuthException;
 import io.mosip.esignet.api.exception.KycExchangeException;
 import io.mosip.esignet.api.exception.SendOtpException;
 import io.mosip.esignet.api.spi.Authenticator;
 import io.mosip.esignet.api.util.ErrorConstants;
-import io.mosip.esignet.sunbirdrc.integration.dto.RegistrySearchRequestDto;
+import io.mosip.esignet.plugin.sunbirdrc.dto.RegistrySearchRequestDto;
+import io.mosip.kernel.keymanagerservice.dto.AllCertificatesDataResponseDto;
+import io.mosip.kernel.keymanagerservice.dto.CertificateDataResponseDto;
+import io.mosip.kernel.keymanagerservice.service.KeymanagerService;
+import io.mosip.kernel.signature.dto.JWTSignatureRequestDto;
+import io.mosip.kernel.signature.dto.JWTSignatureResponseDto;
+import io.mosip.kernel.signature.service.SignatureService;
 import lombok.extern.slf4j.Slf4j;
+import org.jose4j.jwe.ContentEncryptionAlgorithmIdentifiers;
+import org.jose4j.jwe.JsonWebEncryption;
+import org.jose4j.jwe.KeyManagementAlgorithmIdentifiers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -23,6 +33,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.client.RestTemplate;
@@ -57,11 +68,30 @@ public class SunbirdRCAuthenticationService implements Authenticator {
     @Value("${mosip.esignet.authenticator.sunbird-rc.kbi.entity-id-field}")
     private String entityIdField;
 
+    @Value("${mosip.mosip.ida.kyc.default-language:eng}")
+    private String defaultLanguage;
+
+    @Value("${mosip.mock.ida.kyc.encrypt:false}")
+    private boolean encryptKyc;
+
+    @Value("${mosip.esignet.vciplugin.sunbird-rc.credential-type.InsuranceCredential.registry-get-url}")
+    private String registryUrl;
+
     @Autowired
     private RestTemplate restTemplate;
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private KeymanagerService keymanagerService;
+
+    @Autowired
+    private SignatureService signatureService;
+
+    private static final Base64.Encoder urlSafeEncoder = Base64.getUrlEncoder().withoutPadding();
+
+    public static final String APPLICATION_ID = "OIDC_PARTNER";
 
 
     @PostConstruct
@@ -110,7 +140,92 @@ public class SunbirdRCAuthenticationService implements Authenticator {
     @Override
     public KycExchangeResult doKycExchange(String relyingPartyId, String clientId, KycExchangeDto kycExchangeDto)
             throws KycExchangeException {
-        throw new KycExchangeException(ErrorConstants.NOT_IMPLEMENTED);
+        String kycToken=kycExchangeDto.getKycToken();
+        Map<String,Object> responseRegistryMap;
+        try {
+            if (kycExchangeDto.getAcceptedClaims() == null) {
+                kycExchangeDto.setAcceptedClaims(new ArrayList<>());
+            }
+            if (kycExchangeDto.getAcceptedClaims() != null) {
+                for (String acceptedClaim : kycExchangeDto.getAcceptedClaims()) {
+                    if (!kycExchangeDto.getAcceptedClaims().contains(acceptedClaim)) {
+                        kycExchangeDto.getAcceptedClaims().add(acceptedClaim);
+                    }
+                }
+            }
+            responseRegistryMap =fetchRegistryObject(registryUrl+ kycToken);
+            if (responseRegistryMap == null) {
+                throw new KycExchangeException(ErrorConstants.DATA_EXCHANGE_FAILED);
+            }
+            Map<String, Object> kyc = buildKycDataBasedOnPolicy(responseRegistryMap,
+                    kycExchangeDto.getAcceptedClaims(), kycExchangeDto.getClaimsLocales());
+            String finalKyc = this.encryptKyc ? getJWE(relyingPartyId, signKyc(kyc)) : signKyc(kyc);
+            KycExchangeResult kycExchangeResult = new KycExchangeResult();
+            kycExchangeResult.setEncryptedKyc(finalKyc);
+            return kycExchangeResult;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private Map<String,Object> fetchRegistryObject(String entityUrl) throws KycExchangeException {
+        RequestEntity requestEntity = RequestEntity
+                .get(UriComponentsBuilder.fromUriString(entityUrl).build().toUri()).build();
+        ResponseEntity<Map<String,Object>> responseEntity = restTemplate.exchange(requestEntity,
+                new ParameterizedTypeReference<Map<String,Object>>() {});
+        if (responseEntity.getStatusCode().is2xxSuccessful() && responseEntity.getBody() != null) {
+            return responseEntity.getBody();
+        }else {
+            log.error("Sunbird service is not running. Status Code: " ,responseEntity.getStatusCode());
+            throw new KycExchangeException(ErrorConstants.DATA_EXCHANGE_FAILED);
+        }
+    }
+
+    public Map<String, Object> buildKycDataBasedOnPolicy(Map<String, Object> credentialSubject, List<String> claims, String[] locales) {
+        Map<String, Object> kyc = new HashMap<>();
+        if (CollectionUtils.isEmpty(Arrays.asList(locales))) {
+            locales = Arrays.asList(defaultLanguage).toArray(new String[0]);
+        }
+        for (String key : claims) {
+            if (credentialSubject.containsKey(key)) {
+                kyc.put(key, String.valueOf(credentialSubject.get(key)));
+            }
+        }
+        return kyc;
+    }
+
+    private String getJWE(String relyingPartyId, String signedJwt) throws Exception {
+        JsonWebEncryption jsonWebEncryption = new JsonWebEncryption();
+        jsonWebEncryption.setAlgorithmHeaderValue(KeyManagementAlgorithmIdentifiers.RSA_OAEP_256);
+        jsonWebEncryption.setEncryptionMethodHeaderParameter(ContentEncryptionAlgorithmIdentifiers.AES_256_GCM);
+        jsonWebEncryption.setPayload(signedJwt);
+        jsonWebEncryption.setContentTypeHeaderValue("JWT");
+        RSAKey rsaKey = getRelyingPartyPublicKey(relyingPartyId);
+        jsonWebEncryption.setKey(rsaKey.toPublicKey());
+        jsonWebEncryption.setKeyIdHeaderValue(rsaKey.getKeyID());
+        return jsonWebEncryption.getCompactSerialization();
+    }
+
+    private RSAKey getRelyingPartyPublicKey(String relyingPartyId) throws KycExchangeException {
+        //TODO where to store relying-party public key
+        throw new KycExchangeException(ErrorConstants.DATA_EXCHANGE_FAILED);
+    }
+
+    private String signKyc(Map<String, Object> kyc) throws JsonProcessingException {
+        String payload = objectMapper.writeValueAsString(kyc);
+        JWTSignatureRequestDto jwtSignatureRequestDto = new JWTSignatureRequestDto();
+        jwtSignatureRequestDto.setApplicationId(APPLICATION_ID);
+        jwtSignatureRequestDto.setReferenceId("");
+        jwtSignatureRequestDto.setIncludePayload(true);
+        jwtSignatureRequestDto.setIncludeCertificate(false);
+        jwtSignatureRequestDto.setDataToSign(b64Encode(payload));
+        jwtSignatureRequestDto.setIncludeCertHash(false);
+        JWTSignatureResponseDto responseDto = signatureService.jwtSign(jwtSignatureRequestDto);
+        return responseDto.getJwtSignedData();
+    }
+
+    public static String b64Encode(String value) {
+        return urlSafeEncoder.encodeToString(value.getBytes(StandardCharsets.UTF_8));
     }
 
     @Override
@@ -126,7 +241,14 @@ public class SunbirdRCAuthenticationService implements Authenticator {
 
     @Override
     public List<KycSigningCertificateData> getAllKycSigningCertificates() {
-        return new ArrayList<>();
+        List<KycSigningCertificateData> certs = new ArrayList<>();
+        AllCertificatesDataResponseDto allCertificatesDataResponseDto = keymanagerService.getAllCertificates(APPLICATION_ID,
+                Optional.empty());
+        for (CertificateDataResponseDto dto : allCertificatesDataResponseDto.getAllCertificates()) {
+            certs.add(new KycSigningCertificateData(dto.getKeyId(), dto.getCertificateData(),
+                    dto.getExpiryAt(), dto.getIssuedAt()));
+        }
+        return certs;
     }
 
     private KycAuthResult validateKnowledgeBasedAuth(String individualId, AuthChallenge authChallenge) throws KycAuthException {

@@ -260,18 +260,6 @@ public class SunbirdRCAuthenticaionServiceTest {
         }
     }
 
-
-
-    @Test
-    public void doKycExchangeNotImplemented_thenFail() {
-        try{
-            sunbirdRCAuthenticationService.doKycExchange("relyingPartyId","clientId",new KycExchangeDto());
-            Assert.fail();
-        } catch (KycExchangeException e) {
-            Assert.assertEquals(e.getErrorCode(), ErrorConstants.NOT_IMPLEMENTED);
-        }
-    }
-
     @Test
     public void sendOtpNotImplemented_thenFail() {
         try{
