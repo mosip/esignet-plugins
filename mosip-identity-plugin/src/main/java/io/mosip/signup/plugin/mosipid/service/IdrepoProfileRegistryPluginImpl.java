@@ -129,6 +129,12 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     @Value("${mosip.signup.idrepo.get-identity-fallback-path}")
     private String getIdentityEndpointFallbackPath;
 
+    @Value("${mosip.signup.idrepo.get-identity-method:POST}")
+    private String getIdentityEndpointMethod;
+
+    @Value("${mosip.signup.idrepo.get-identity-fallback-path}")
+    private String getIdentityEndpointFallbackPath;
+
     @Autowired
     @Qualifier("selfTokenRestTemplate")
     private RestTemplate restTemplate;
