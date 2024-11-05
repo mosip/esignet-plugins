@@ -59,6 +59,7 @@ public class IdrepoProfileRegistryPluginImplTest {
         ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "generateHashEndpoint","http://localhost:8080/identity/v1/identity/genereateHash/");
         ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "getIdentityEndpoint","http://localhost:8080/identity/v1/identity/");
         ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "mandatoryLanguages",List.of("eng"));
+        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "getIdentityEndpointMethod", "POST");
         ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "getStatusEndpoint","http://localhost:8080/identity/v1/identity/");
     }
 
@@ -357,6 +358,19 @@ public class IdrepoProfileRegistryPluginImplTest {
                 Mockito.eq(new ParameterizedTypeReference<ResponseWrapper<IdentityResponse>>() {
                 }))).thenReturn(responseEntity);
         ProfileDto profileDto= idrepoProfileRegistryPlugin.getProfile(individualId);
+        Assert.assertNotNull(profileDto);
+        Assert.assertEquals(profileDto.getIndividualId(),"1234567890");
+
+        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "getIdentityEndpointMethod", "GET");
+        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "getIdentityEndpointFallbackPath", "%s?type=demo&idType=HANDLE");
+        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "postfix", "@someid");
+
+        Mockito.when(restTemplate.exchange(
+                "http://localhost:8080/identity/v1/identity/1234567890@someid?type=demo&idType=HANDLE",
+                HttpMethod.GET,
+                null,
+                new ParameterizedTypeReference<ResponseWrapper<IdentityResponse>>() {})).thenReturn(responseEntity);
+        profileDto= idrepoProfileRegistryPlugin.getProfile(individualId);
         Assert.assertNotNull(profileDto);
         Assert.assertEquals(profileDto.getIndividualId(),"1234567890");
     }

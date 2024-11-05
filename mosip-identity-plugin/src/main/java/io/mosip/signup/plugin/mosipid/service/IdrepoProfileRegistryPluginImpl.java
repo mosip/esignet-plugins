@@ -103,8 +103,14 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     @Value("#{'${mosip.signup.idrepo.optional-language:}'.split(',')}")
     private List<String> optionalLanguages;
 
-    @Value("${mosip.signup.idrepo.idvid-postfix:@phone}")
+    @Value("${mosip.signup.idrepo.idvid-postfix}")
     private String postfix;
+
+    @Value("${mosip.signup.idrepo.get-identity-method:POST}")
+    private String getIdentityEndpointMethod;
+
+    @Value("${mosip.signup.idrepo.get-identity-fallback-path}")
+    private String getIdentityEndpointFallbackPath;
 
     @Autowired
     @Qualifier("selfTokenRestTemplate")
@@ -220,16 +226,28 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     @Override
     public ProfileDto getProfile(String individualId) throws ProfileException {
         try {
-            IdRequestByIdDTO requestByIdDTO = new IdRequestByIdDTO();
-            RequestWrapper<IdRequestByIdDTO> idDTORequestWrapper=new RequestWrapper<>();
             individualId = StringUtils.isEmpty(postfix) ? individualId : individualId.concat(postfix);
-            requestByIdDTO.setId(individualId);
-            requestByIdDTO.setType("demo");
-            requestByIdDTO.setIdType("HANDLE");
-            idDTORequestWrapper.setRequest(requestByIdDTO);
-            idDTORequestWrapper.setRequesttime(getUTCDateTime());
-            ResponseWrapper<IdentityResponse> responseWrapper = request(getIdentityEndpoint, HttpMethod.POST, idDTORequestWrapper,
-                    new ParameterizedTypeReference<ResponseWrapper<IdentityResponse>>() {});
+
+            ResponseWrapper<IdentityResponse> responseWrapper = null;
+            switch (getIdentityEndpointMethod.toLowerCase()) {
+                case "post" :
+                    IdRequestByIdDTO requestByIdDTO = new IdRequestByIdDTO();
+                    RequestWrapper<IdRequestByIdDTO> idDTORequestWrapper=new RequestWrapper<>();
+                    requestByIdDTO.setId(individualId);
+                    requestByIdDTO.setType("demo");
+                    requestByIdDTO.setIdType("HANDLE");
+                    idDTORequestWrapper.setRequest(requestByIdDTO);
+                    idDTORequestWrapper.setRequesttime(getUTCDateTime());
+                    responseWrapper = request(getIdentityEndpoint, HttpMethod.POST, idDTORequestWrapper,
+                            new ParameterizedTypeReference<ResponseWrapper<IdentityResponse>>() {});
+                    break;
+                case "get":
+                    String path = String.format(getIdentityEndpointFallbackPath, individualId);
+                    responseWrapper = request(getIdentityEndpoint+path, HttpMethod.GET, null,
+                            new ParameterizedTypeReference<ResponseWrapper<IdentityResponse>>() {});
+                    break;
+            }
+
             ProfileDto profileDto = new ProfileDto();
             profileDto.setIndividualId(responseWrapper.getResponse().getIdentity().get(UIN).textValue());
             profileDto.setIdentity(responseWrapper.getResponse().getIdentity());
