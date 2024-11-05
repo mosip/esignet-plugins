@@ -123,6 +123,12 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     @Value("${mosip.signup.idrepo.biometric.compression-ratio:1000}")
     private int faceImageCompressionRatio;
 
+    @Value("${mosip.signup.idrepo.get-identity-method:POST}")
+    private String getIdentityEndpointMethod;
+
+    @Value("${mosip.signup.idrepo.get-identity-fallback-path}")
+    private String getIdentityEndpointFallbackPath;
+
     @Autowired
     @Qualifier("selfTokenRestTemplate")
     private RestTemplate restTemplate;
