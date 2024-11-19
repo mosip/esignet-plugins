@@ -13,7 +13,7 @@ import io.mosip.esignet.api.exception.KycExchangeException;
 import io.mosip.esignet.api.exception.SendOtpException;
 import io.mosip.esignet.api.spi.Authenticator;
 import io.mosip.esignet.api.util.ErrorConstants;
-import io.mosip.esignet.sunbirdrc.integration.dto.RegistrySearchRequestDto;
+import io.mosip.esignet.plugin.sunbirdrc.dto.RegistrySearchRequestDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
