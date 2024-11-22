@@ -3,10 +3,7 @@ package io.mosip.signup.plugin.mock.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.mosip.signup.api.dto.FrameDetail;
-import io.mosip.signup.api.dto.IdentityVerificationDto;
-import io.mosip.signup.api.dto.IdentityVerificationResult;
-import io.mosip.signup.api.dto.VerificationResult;
+import io.mosip.signup.api.dto.*;
 import io.mosip.signup.api.exception.IdentityVerifierException;
 import io.mosip.signup.api.util.VerificationStatus;
 import org.junit.Assert;
@@ -112,7 +109,7 @@ public class MockIdentityVerifierPluginImplTest {
 
 
     @Test
-    public void getVerifiedResult_withValidTransactionId_thenFail() throws IdentityVerifierException, IOException {
+    public void getVerifiedResult_withInValidTransactionId_thenFail() throws IdentityVerifierException, IOException {
 
         String transactionId = "transactionId123";
         String jsonContent = "{}";
@@ -122,5 +119,10 @@ public class MockIdentityVerifierPluginImplTest {
         VerificationResult verificationResult = mockIdentityVerifierPlugin.getVerificationResult(transactionId);
         Assert.assertEquals(verificationResult.getErrorCode(),"mock_verification_failed");
         Assert.assertEquals(verificationResult.getStatus(),VerificationStatus.FAILED);
+    }
+    @Test
+    public void initializeWithValidDetails_thenPass(){
+
+        mockIdentityVerifierPlugin.initialize("individualId",new IdentityVerificationInitDto());
     }
 }
