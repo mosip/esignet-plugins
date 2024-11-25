@@ -68,10 +68,10 @@ public class SunbirdRCAuthenticationService implements Authenticator {
     @Value("${mosip.esignet.authenticator.sunbird-rc.kbi.entity-id-field}")
     private String entityIdField;
 
-    @Value("${mosip.mosip.ida.kyc.default-language:eng}")
+    @Value("${mosip.ida.kyc.default-language:eng}")
     private String defaultLanguage;
 
-    @Value("${mosip.mock.ida.kyc.encrypt:false}")
+    @Value("${mosip.ida.kyc.encrypt:false}")
     private boolean encryptKyc;
 
     @Value("${mosip.esignet.vciplugin.sunbird-rc.credential-type.InsuranceCredential.registry-get-url}")
@@ -146,11 +146,9 @@ public class SunbirdRCAuthenticationService implements Authenticator {
             if (kycExchangeDto.getAcceptedClaims() == null) {
                 kycExchangeDto.setAcceptedClaims(new ArrayList<>());
             }
-            if (kycExchangeDto.getAcceptedClaims() != null) {
-                for (String acceptedClaim : kycExchangeDto.getAcceptedClaims()) {
-                    if (!kycExchangeDto.getAcceptedClaims().contains(acceptedClaim)) {
-                        kycExchangeDto.getAcceptedClaims().add(acceptedClaim);
-                    }
+            for (String acceptedClaim : kycExchangeDto.getAcceptedClaims()) {
+                if (!kycExchangeDto.getAcceptedClaims().contains(acceptedClaim)) {
+                    kycExchangeDto.getAcceptedClaims().add(acceptedClaim);
                 }
             }
             responseRegistryMap =fetchRegistryObject(registryUrl+ kycToken);
