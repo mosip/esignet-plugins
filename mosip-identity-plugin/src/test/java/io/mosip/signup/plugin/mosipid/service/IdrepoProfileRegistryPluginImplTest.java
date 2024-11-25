@@ -373,6 +373,7 @@ public class IdrepoProfileRegistryPluginImplTest {
         profileDto= idrepoProfileRegistryPlugin.getProfile(individualId);
         Assert.assertNotNull(profileDto);
         Assert.assertEquals(profileDto.getIndividualId(),"1234567890");
+
     }
 
     @Test

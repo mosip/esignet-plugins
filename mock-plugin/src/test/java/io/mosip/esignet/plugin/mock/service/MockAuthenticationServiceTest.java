@@ -47,6 +47,9 @@ public class MockAuthenticationServiceTest {
     @Mock
     KeymanagerService keymanagerService;
 
+    @Mock
+    ObjectMapper objectMapper;
+
     /*@Test
     public void doVerifiedKycExchange_withValidDetails_thenPass() throws KycExchangeException {
         ReflectionTestUtils.setField(mockAuthenticationService, "kycExchangeUrl", "http://localhost:8080/kyc/exchange");
@@ -297,18 +300,10 @@ public class MockAuthenticationServiceTest {
     }
 
     @Test
-    public void sendOtp_withInValidDetails_thenFail() throws SendOtpException {
-
-        SendOtpDto se = new SendOtpDto();
-        se.setTransactionId("transactionId");
-        se.setOtpChannels(Arrays.asList("email", "mobile"));
-        SendOtpResult sendOtpResult = new SendOtpResult();
-        sendOtpResult.setTransactionId("transactionId");
-        sendOtpResult.setMaskedEmail("maskedEmail");
-        sendOtpResult.setMaskedMobile("maskedMobile");
-        Mockito.when(mockHelperService.sendOtpMock(se.getTransactionId(), se.getIndividualId(), se.getOtpChannels(), "relyingPartyId", "clientId")).thenReturn(sendOtpResult);
+    public void sendOtp_withInValidOtpRequest_thenFail() {
         try{
-            mockAuthenticationService.sendOtp("relyingPartyId", "clientId", se);
+            mockAuthenticationService.sendOtp("relyingPartyId", "clientId", null);
+            Assert.fail();
         }catch (SendOtpException e){
             Assert.assertEquals(e.getErrorCode(), "invalid_transaction_id");
         }
@@ -356,6 +351,7 @@ public class MockAuthenticationServiceTest {
         objectMapper.registerModule(new JavaTimeModule());
         ReflectionTestUtils.setField(mockAuthenticationService, "kycExchangeV2Url", "http://localhost:8080/kyc/exchange");
         ReflectionTestUtils.setField(mockAuthenticationService, "objectMapper", objectMapper);
+      
         String relyingPartyId = "testRelyingPartyId";
         String clientId = "testClientId";
 
