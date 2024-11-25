@@ -321,7 +321,6 @@ public class MockHelperServiceTest {
 
     @Test
     public void doKycAuthMock_withEmptyResponse_thenFail() throws KycAuthException {
-
         ReflectionTestUtils.setField(mockHelperService, "kycAuthUrl", "http://localhost:8080/kyc/auth");
         ReflectionTestUtils.setField(mockHelperService, "objectMapper", new ObjectMapper());
 
@@ -410,7 +409,6 @@ public class MockHelperServiceTest {
 
     @Test
     public void doKycAuthMock_withValidAuthFactorAsBIO_thenPass() throws KycAuthException {
-
         ReflectionTestUtils.setField(mockHelperService, "kycAuthUrl", "http://localhost:8080/kyc/auth");
         ReflectionTestUtils.setField(mockHelperService, "objectMapper", new ObjectMapper());
 
@@ -498,7 +496,6 @@ public class MockHelperServiceTest {
 
     @Test
     public void doKycAuthMock_withValidAuthFactorAsWLA_thenPass() throws KycAuthException {
-
         ReflectionTestUtils.setField(mockHelperService, "kycAuthUrl", "http://localhost:8080/kyc/auth");
         ReflectionTestUtils.setField(mockHelperService, "objectMapper", new ObjectMapper());
 
