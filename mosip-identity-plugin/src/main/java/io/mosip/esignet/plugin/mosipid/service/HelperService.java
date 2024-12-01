@@ -288,7 +288,7 @@ public class HelperService {
         return Arrays.stream(langCodes)
                 .map(langCode -> {
                     try {
-                        return new Locale(langCode).getISO3Language();
+                        return StringUtils.isEmpty(langCode) ? null : new Locale(langCode).getISO3Language();
                     } catch (MissingResourceException ex) {}
                     return null;
                 })
