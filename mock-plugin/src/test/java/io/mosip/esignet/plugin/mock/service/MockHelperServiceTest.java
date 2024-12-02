@@ -240,7 +240,6 @@ public class MockHelperServiceTest {
 
     @Test
     public void doKycAuthMock_withValidAuthFactorAsBIO_thenPass() throws KycAuthException {
-
         ReflectionTestUtils.setField(mockHelperService, "kycAuthUrl", "http://localhost:8080/kyc/auth");
         ReflectionTestUtils.setField(mockHelperService, "objectMapper", new ObjectMapper());
 

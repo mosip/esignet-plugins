@@ -197,7 +197,11 @@ public class MockAuthenticationServiceTest {
 
     @Test
     public void doVerifiedKycExchange_withValidDetails_thenPass () throws Exception {
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
         ReflectionTestUtils.setField(mockAuthenticationService, "kycExchangeV2Url", "http://localhost:8080/kyc/exchange");
+        ReflectionTestUtils.setField(mockAuthenticationService, "objectMapper", objectMapper);
+
         String relyingPartyId = "testRelyingPartyId";
         String clientId = "testClientId";
 
