@@ -74,8 +74,11 @@ public class SunbirdRCAuthenticationService implements Authenticator {
     @Value("${mosip.ida.kyc.encrypt:false}")
     private boolean encryptKyc;
 
-    @Value("${mosip.esignet.vciplugin.sunbird-rc.credential-type.InsuranceCredential.registry-get-url}")
+    @Value("${mosip.esignet.sunbird-rc.registry-get-url}")
     private String registryUrl;
+
+    @Value("#{${mosip.sunbird.ida.identity-openid-claims-mapping}}")
+    private Map<String,String> oidcClaimsMapping;
 
     @Autowired
     private RestTemplate restTemplate;
@@ -181,12 +184,13 @@ public class SunbirdRCAuthenticationService implements Authenticator {
 
     public Map<String, Object> buildKycDataBasedOnPolicy(Map<String, Object> credentialSubject, List<String> claims, String[] locales) {
         Map<String, Object> kyc = new HashMap<>();
-        if (CollectionUtils.isEmpty(Arrays.asList(locales))) {
-            locales = Arrays.asList(defaultLanguage).toArray(new String[0]);
-        }
-        for (String key : claims) {
-            if (credentialSubject.containsKey(key)) {
-                kyc.put(key, String.valueOf(credentialSubject.get(key)));
+        for (String claim : claims) {
+            if (oidcClaimsMapping.containsKey(claim)) {
+                String mappedKey = oidcClaimsMapping.get(claim);
+                if (credentialSubject.containsKey(mappedKey)) {
+                    Object value = credentialSubject.get(mappedKey);
+                    kyc.put(claim, value);
+                }
             }
         }
         return kyc;
