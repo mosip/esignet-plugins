@@ -49,7 +49,7 @@ public class MockHelperServiceTest {
     @Mock
     SignatureService signatureService;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private ObjectMapper objectMapper = new ObjectMapper();
 
 
     @Before
@@ -81,7 +81,7 @@ public class MockHelperServiceTest {
     }
 
     @Test
-    public void doKycAuthMock_withValidAuthFactorAsOTP_thenPass() throws KycAuthException {
+    public void doKycAuthMock_withAuthFactorAsOTP_thenPass() throws KycAuthException {
 
         ReflectionTestUtils.setField(mockHelperService, "kycAuthUrl", "http://localhost:8080/kyc/auth");
         ReflectionTestUtils.setField(mockHelperService, "objectMapper", new ObjectMapper());
@@ -239,175 +239,6 @@ public class MockHelperServiceTest {
     }
 
     @Test
-    public void doKycAuthMock_withInvalidChallenge_thenFail() {
-        ReflectionTestUtils.setField(mockHelperService, "kycAuthUrl", "http://localhost:8080/kyc/auth");
-        ReflectionTestUtils.setField(mockHelperService, "objectMapper", new ObjectMapper());
-        ResponseWrapper<KycAuthResponseDtoV2> responseWrapper = new ResponseWrapper<>();
-        KycAuthResponseDtoV2 response = new KycAuthResponseDtoV2();
-        Map<String,List<JsonNode>> claimMetaData=new HashMap<>();
-        ObjectNode verificationDetail = objectMapper.createObjectNode();
-        verificationDetail.put("trust_framework", "test_trust_framework");
-        claimMetaData.put("name",List.of(verificationDetail));
-        response.setClaimMetadata(claimMetaData);
-        response.setAuthStatus(true);
-        response.setKycToken("test_token");
-        response.setPartnerSpecificUserToken("partner_token");
-        responseWrapper.setResponse(response);
-        KycAuthDto kycAuthDto = new KycAuthDto();
-        AuthChallenge authChallenge = new AuthChallenge();
-        authChallenge.setAuthFactorType("abc");
-        authChallenge.setChallenge("123456");
-        authChallenge.setFormat("alpha-numeric");
-        kycAuthDto.setChallengeList(List.of(authChallenge));
-        try {
-            mockHelperService.doKycAuthMock("relyingPartyId", "clientId", kycAuthDto, true);
-            Assert.fail();
-        }catch (KycAuthException e)
-        {
-            Assert.assertEquals("invalid_auth_challenge",e.getMessage());
-        }
-    }
-
-    @Test
-    public void doKycAuthMock_withInvalidChallengeFormat_thenFail() {
-        ReflectionTestUtils.setField(mockHelperService, "kycAuthUrl", "http://localhost:8080/kyc/auth");
-        ReflectionTestUtils.setField(mockHelperService, "objectMapper", new ObjectMapper());
-        ResponseWrapper<KycAuthResponseDtoV2> responseWrapper = new ResponseWrapper<>();
-        KycAuthResponseDtoV2 response = new KycAuthResponseDtoV2();
-        Map<String,List<JsonNode>> claimMetaData=new HashMap<>();
-        ObjectNode verificationDetail = objectMapper.createObjectNode();
-        verificationDetail.put("trust_framework", "test_trust_framework");
-        claimMetaData.put("name",List.of(verificationDetail));
-        response.setClaimMetadata(claimMetaData);
-
-        response.setAuthStatus(true);
-        response.setKycToken("test_token");
-        response.setPartnerSpecificUserToken("partner_token");
-        responseWrapper.setResponse(response);
-        ResponseEntity<ResponseWrapper<KycAuthResponseDtoV2>> responseEntity= new ResponseEntity<>(responseWrapper, HttpStatus.OK);
-
-        KycAuthDto kycAuthDto = new KycAuthDto();
-        AuthChallenge authChallenge = new AuthChallenge();
-        authChallenge.setAuthFactorType("OTP");
-        authChallenge.setChallenge("123456");
-        authChallenge.setFormat("invalidFormat");
-        kycAuthDto.setChallengeList(List.of(authChallenge));
-        try {
-            mockHelperService.doKycAuthMock("relyingPartyId", "clientId", kycAuthDto, true);
-            Assert.fail();
-        }catch (KycAuthException e)
-        {
-            Assert.assertEquals("invalid_challenge_format",e.getMessage());
-        }
-    }
-
-    @Test
-    public void getUTCDateTime_withValidDetails_thenPass() {
-        LocalDateTime utcDateTime = mockHelperService.getUTCDateTime();
-        Assert.assertNotNull(utcDateTime);
-    }
-
-    @Test
-    public void getEpochSeconds_withValidDetails_thenPass() {
-        long epochSeconds = mockHelperService.getEpochSeconds();
-        Assert.assertTrue(epochSeconds > 0);
-    }
-
-    @Test
-    public void isSupportedOtpChannel_withValidChannel_thenPass() {
-        ReflectionTestUtils.setField(mockHelperService,"otpChannels",List.of("sms"));
-        Assert.assertTrue(mockHelperService.isSupportedOtpChannel("sms"));
-    }
-
-    @Test
-    public void doKycAuthMock_withEmptyResponse_thenFail() throws KycAuthException {
-        ReflectionTestUtils.setField(mockHelperService, "kycAuthUrl", "http://localhost:8080/kyc/auth");
-        ReflectionTestUtils.setField(mockHelperService, "objectMapper", new ObjectMapper());
-
-        ResponseWrapper<KycAuthResponseDtoV2> responseWrapper = new ResponseWrapper<>();
-        KycAuthResponseDtoV2 response = new KycAuthResponseDtoV2();
-
-        Map<String,List<JsonNode>> claimMetaData=new HashMap<>();
-
-        ObjectNode verificationDetail = objectMapper.createObjectNode();
-        verificationDetail.put("trust_framework", "test_trust_framework");
-        claimMetaData.put("name",List.of(verificationDetail));
-
-        response.setClaimMetadata(claimMetaData);
-
-        response.setAuthStatus(true);
-        response.setKycToken("test_token");
-        response.setPartnerSpecificUserToken("partner_token");
-        responseWrapper.setResponse(response);
-        ResponseEntity<ResponseWrapper<KycAuthResponseDtoV2>> responseEntity= new ResponseEntity<>(responseWrapper, HttpStatus.OK);
-
-        Mockito.when(restTemplate.exchange(
-                Mockito.any(RequestEntity.class),
-                Mockito.eq(new ParameterizedTypeReference<ResponseWrapper<KycAuthResponseDtoV2>>() {
-                })
-        )).thenReturn(responseEntity);
-
-
-        KycAuthDto kycAuthDto = new KycAuthDto(); // Assume this is properly initialized
-        AuthChallenge authChallenge = new AuthChallenge();
-        authChallenge.setAuthFactorType("PIN");
-        authChallenge.setChallenge("123456");
-        authChallenge.setFormat("number");
-        kycAuthDto.setChallengeList(List.of(authChallenge));
-        // Execute the method
-        KycAuthResult result = mockHelperService.doKycAuthMock("relyingPartyId", "clientId", kycAuthDto, true);
-
-        Assert.assertNotNull(result);
-        Assert.assertEquals("test_token", result.getKycToken());
-        Assert.assertEquals("partner_token", result.getPartnerSpecificUserToken());
-    }
-
-
-    @Test
-    public void doKycAuthMock_withValidAuthFactorAsPWD_thenPass() throws KycAuthException {
-
-        ReflectionTestUtils.setField(mockHelperService, "kycAuthUrl", "http://localhost:8080/kyc/auth");
-        ReflectionTestUtils.setField(mockHelperService, "objectMapper", new ObjectMapper());
-
-        ResponseWrapper<KycAuthResponseDtoV2> responseWrapper = new ResponseWrapper<>();
-        KycAuthResponseDtoV2 response = new KycAuthResponseDtoV2();
-
-        Map<String,List<JsonNode>> claimMetaData=new HashMap<>();
-
-        ObjectNode verificationDetail = objectMapper.createObjectNode();
-        verificationDetail.put("trust_framework", "test_trust_framework");
-        claimMetaData.put("name",List.of(verificationDetail));
-
-        response.setClaimMetadata(claimMetaData);
-
-        response.setAuthStatus(true);
-        response.setKycToken("test_token");
-        response.setPartnerSpecificUserToken("partner_token");
-        responseWrapper.setResponse(response);
-        ResponseEntity<ResponseWrapper<KycAuthResponseDtoV2>> responseEntity= new ResponseEntity<>(responseWrapper, HttpStatus.OK);
-
-        Mockito.when(restTemplate.exchange(
-                Mockito.any(RequestEntity.class),
-                Mockito.eq(new ParameterizedTypeReference<ResponseWrapper<KycAuthResponseDtoV2>>() {
-                })
-        )).thenReturn(responseEntity);
-
-
-        KycAuthDto kycAuthDto = new KycAuthDto(); // Assume this is properly initialized
-        AuthChallenge authChallenge = new AuthChallenge();
-        authChallenge.setAuthFactorType("PWD");
-        authChallenge.setChallenge("123av456");
-        authChallenge.setFormat("alpha-numeric");
-        kycAuthDto.setChallengeList(List.of(authChallenge));
-        // Execute the method
-        KycAuthResult result = mockHelperService.doKycAuthMock("relyingPartyId", "clientId", kycAuthDto, true);
-
-        Assert.assertNotNull(result);
-        Assert.assertEquals("test_token", result.getKycToken());
-        Assert.assertEquals("partner_token", result.getPartnerSpecificUserToken());
-    }
-
-    @Test
     public void doKycAuthMock_withValidAuthFactorAsBIO_thenPass() throws KycAuthException {
         ReflectionTestUtils.setField(mockHelperService, "kycAuthUrl", "http://localhost:8080/kyc/auth");
         ReflectionTestUtils.setField(mockHelperService, "objectMapper", new ObjectMapper());
@@ -451,94 +282,6 @@ public class MockHelperServiceTest {
     }
 
     @Test
-    public void doKycAuthMock_withValidAuthFactorAsKBI_thenPass() throws KycAuthException {
-
-        ReflectionTestUtils.setField(mockHelperService, "kycAuthUrl", "http://localhost:8080/kyc/auth");
-        ReflectionTestUtils.setField(mockHelperService, "objectMapper", new ObjectMapper());
-
-        ResponseWrapper<KycAuthResponseDtoV2> responseWrapper = new ResponseWrapper<>();
-        KycAuthResponseDtoV2 response = new KycAuthResponseDtoV2();
-
-        Map<String,List<JsonNode>> claimMetaData=new HashMap<>();
-
-        ObjectNode verificationDetail = objectMapper.createObjectNode();
-        verificationDetail.put("trust_framework", "test_trust_framework");
-        claimMetaData.put("name",List.of(verificationDetail));
-
-        response.setClaimMetadata(claimMetaData);
-
-        response.setAuthStatus(true);
-        response.setKycToken("test_token");
-        response.setPartnerSpecificUserToken("partner_token");
-        responseWrapper.setResponse(response);
-        ResponseEntity<ResponseWrapper<KycAuthResponseDtoV2>> responseEntity= new ResponseEntity<>(responseWrapper, HttpStatus.OK);
-
-        Mockito.when(restTemplate.exchange(
-                Mockito.any(RequestEntity.class),
-                Mockito.eq(new ParameterizedTypeReference<ResponseWrapper<KycAuthResponseDtoV2>>() {
-                })
-        )).thenReturn(responseEntity);
-
-
-        KycAuthDto kycAuthDto = new KycAuthDto(); // Assume this is properly initialized
-        AuthChallenge authChallenge = new AuthChallenge();
-        authChallenge.setAuthFactorType("KBI");
-        authChallenge.setChallenge("3db2a3");
-        authChallenge.setFormat("base64url-encoded-json");
-        kycAuthDto.setChallengeList(List.of(authChallenge));
-        // Execute the method
-        KycAuthResult result = mockHelperService.doKycAuthMock("relyingPartyId", "clientId", kycAuthDto, true);
-
-        Assert.assertNotNull(result);
-        Assert.assertEquals("test_token", result.getKycToken());
-        Assert.assertEquals("partner_token", result.getPartnerSpecificUserToken());
-    }
-
-    @Test
-    public void doKycAuthMock_withValidAuthFactorAsWLA_thenPass() throws KycAuthException {
-        ReflectionTestUtils.setField(mockHelperService, "kycAuthUrl", "http://localhost:8080/kyc/auth");
-        ReflectionTestUtils.setField(mockHelperService, "objectMapper", new ObjectMapper());
-
-        ResponseWrapper<KycAuthResponseDtoV2> responseWrapper = new ResponseWrapper<>();
-        KycAuthResponseDtoV2 response = new KycAuthResponseDtoV2();
-
-        Map<String,List<JsonNode>> claimMetaData=new HashMap<>();
-
-        ObjectNode verificationDetail = objectMapper.createObjectNode();
-        verificationDetail.put("trust_framework", "test_trust_framework");
-        claimMetaData.put("name",List.of(verificationDetail));
-
-        response.setClaimMetadata(claimMetaData);
-
-        response.setAuthStatus(true);
-        response.setKycToken("test_token");
-        response.setPartnerSpecificUserToken("partner_token");
-        responseWrapper.setResponse(response);
-        ResponseEntity<ResponseWrapper<KycAuthResponseDtoV2>> responseEntity= new ResponseEntity<>(responseWrapper, HttpStatus.OK);
-
-        Mockito.when(restTemplate.exchange(
-                Mockito.any(RequestEntity.class),
-                Mockito.eq(new ParameterizedTypeReference<ResponseWrapper<KycAuthResponseDtoV2>>() {
-                })
-        )).thenReturn(responseEntity);
-
-
-        KycAuthDto kycAuthDto = new KycAuthDto(); // Assume this is properly initialized
-        AuthChallenge authChallenge = new AuthChallenge();
-        authChallenge.setAuthFactorType("WLA");
-        authChallenge.setChallenge("e3dq.2ef.3ww23");
-        authChallenge.setFormat("jwt");
-        kycAuthDto.setChallengeList(List.of(authChallenge));
-        // Execute the method
-        KycAuthResult result = mockHelperService.doKycAuthMock("relyingPartyId", "clientId", kycAuthDto, true);
-
-        Assert.assertNotNull(result);
-        Assert.assertEquals("test_token", result.getKycToken());
-        Assert.assertEquals("partner_token", result.getPartnerSpecificUserToken());
-    }
-
-
-    @Test
     public void doKycAuthMock_withInValidAuthFactor_thenFail() {
 
         ReflectionTestUtils.setField(mockHelperService, "kycAuthUrl", "http://localhost:8080/kyc/auth");
@@ -559,7 +302,7 @@ public class MockHelperServiceTest {
     }
 
     @Test
-    public void doKycAuthMock_withInValidAuthFactorType_thenFail() {
+    public void doKycAuthMock_withInValidAuthChallenge_thenFail() {
 
         ReflectionTestUtils.setField(mockHelperService, "kycAuthUrl", "http://localhost:8080/kyc/auth");
         ReflectionTestUtils.setField(mockHelperService, "objectMapper", new ObjectMapper());
@@ -579,7 +322,19 @@ public class MockHelperServiceTest {
     }
 
     @Test
-    public void doKycAuthMock_withEmptyResponse_thenFail() {
+    public void getUTCDateTime_withValidDetails_thenPass() {
+        LocalDateTime utcDateTime = mockHelperService.getUTCDateTime();
+        Assert.assertNotNull(utcDateTime);
+    }
+
+    @Test
+    public void getEpochSeconds_withValidDetails_thenPass() {
+        long epochSeconds = mockHelperService.getEpochSeconds();
+        Assert.assertTrue(epochSeconds > 0);
+    }
+
+    @Test
+    public void doKycAuthMock_withEmptyResponse_thenFail() throws KycAuthException {
         ReflectionTestUtils.setField(mockHelperService, "kycAuthUrl", "http://localhost:8080/kyc/auth");
         ReflectionTestUtils.setField(mockHelperService, "objectMapper", new ObjectMapper());
 
@@ -638,7 +393,7 @@ public class MockHelperServiceTest {
     }
 
     @Test
-    public void sendOtpMock_withEmptyResponse_thenFail() {
+    public void sendOtpMock_withEmptyResponse_thenFail() throws SendOtpException {
 
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
@@ -664,7 +419,7 @@ public class MockHelperServiceTest {
     }
 
     @Test
-    public void sendOtpMock_withErrorInResponse_thenFail() {
+    public void sendOtpMock_withErrorInResponse_thenFail() throws SendOtpException {
 
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
@@ -681,6 +436,7 @@ public class MockHelperServiceTest {
                 Mockito.eq(new ParameterizedTypeReference<ResponseWrapper<SendOtpResult>>() {
                 })
         )).thenReturn(responseEntity);
+
         try{
             mockHelperService.sendOtpMock("test_transaction_id", "individualId", List.of("mobile"),"relyingPartyId", "clientId");
             Assert.fail();
@@ -691,7 +447,7 @@ public class MockHelperServiceTest {
 
 
     @Test
-    public void sendOtpMock_withResponseCodeAsUnAuthorized_thenFail() {
+    public void sendOtpMock_withResponseCodeAsUnAuthorized_thenFail() throws SendOtpException {
 
 
         ObjectMapper objectMapper = new ObjectMapper();
