@@ -60,7 +60,7 @@ public class MockHelperServiceTest {
         supportedKycAuthFormats.put("PIN", List.of("number"));
         supportedKycAuthFormats.put("BIO", List.of("encoded-json"));
         supportedKycAuthFormats.put("WLA", List.of("jwt"));
-        supportedKycAuthFormats.put("KBA", List.of("base64url-encoded-json"));
+        supportedKycAuthFormats.put("KBI", List.of("base64url-encoded-json"));
         supportedKycAuthFormats.put("PWD", List.of("alpha-numeric"));
 
         // Get the field
@@ -309,7 +309,7 @@ public class MockHelperServiceTest {
 
         KycAuthDto kycAuthDto = new KycAuthDto(); // Assume this is properly initialized
         AuthChallenge authChallenge = new AuthChallenge();
-        authChallenge.setAuthFactorType("KBA");
+        authChallenge.setAuthFactorType("KBI");
         authChallenge.setChallenge("e3dq.2ef.3ww23");
         authChallenge.setFormat("jwt");
         kycAuthDto.setChallengeList(List.of(authChallenge));
@@ -317,7 +317,7 @@ public class MockHelperServiceTest {
         try{
             mockHelperService.doKycAuthMock("relyingPartyId", "clientId", kycAuthDto, true);
         }catch (KycAuthException e){
-            Assert.assertEquals(e.getErrorCode(),"invalid_auth_challenge");
+            Assert.assertEquals(e.getErrorCode(),"invalid_challenge_format");
         }
     }
 
