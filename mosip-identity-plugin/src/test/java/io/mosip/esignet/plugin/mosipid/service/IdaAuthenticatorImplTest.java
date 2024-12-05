@@ -169,13 +169,17 @@ public class IdaAuthenticatorImplTest {
 		idaKycAuthResponse.setAuthToken("authToken1234");
 		idaKycAuthResponse.setKycToken("kycToken1234");
 		idaKycAuthResponse.setKycStatus(true);
-		Map<String, List<JsonNode>> verified = new HashMap<>();
 
-		ObjectNode jNode = mapper.createObjectNode();
-		jNode.put("street", "xyz");
-		jNode.put("street_no", "123");
-		verified.put("address", List.of(jNode));
-		idaKycAuthResponse.setVerifiedClaims(verified);
+		idaKycAuthResponse.setVerifiedClaimsMetadata("{\n" +
+				"    \"address\": \"null\",\n" +
+				"    \"phone\": \"null\",\n" +
+				"    \"name\": [\n" +
+				"        {\n" +
+				"            \"trust_framework\": \"test_tf\",\n" +
+				"            \"time\": \"345345\"\n" +
+				"        }\n" +
+				"    ]\n" +
+				"}");
 
 		IdaResponseWrapper<IdaKycAuthResponse> idaResponseWrapper = new IdaResponseWrapper<>();
 		idaResponseWrapper.setResponse(idaKycAuthResponse);

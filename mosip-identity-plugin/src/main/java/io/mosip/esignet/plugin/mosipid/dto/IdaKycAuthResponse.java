@@ -17,5 +17,5 @@ public class IdaKycAuthResponse {
     private String kycToken;
     private String authToken;
     private boolean kycStatus;
-    private Map<String, List<JsonNode>> verifiedClaims;
+    private String verifiedClaimsMetadata;
 }
