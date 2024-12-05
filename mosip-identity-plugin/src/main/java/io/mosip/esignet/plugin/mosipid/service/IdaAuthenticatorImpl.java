@@ -291,7 +291,6 @@ public class IdaAuthenticatorImpl implements Authenticator {
                 }
             });
 
-            // Printing the Map"address" -> {ArrayList@4563}  size = 1
             for (Map.Entry<String, List<JsonNode>> entry : claimsMetadata.entrySet()) {
                 log.info("Key: {}" , entry.getKey());
                 List<JsonNode> nodeList = entry.getValue();
