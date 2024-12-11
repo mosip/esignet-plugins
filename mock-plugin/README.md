@@ -2,7 +2,7 @@
 
 ## About
 
-Implementation for all the interfaces defined in esignet-integration-api. Mock plugin is built to use eSignet with [Mock IDA system](https://github.com/mosip/esignet-mock-services/tree/master/mock-identity-system)
+Implementation for all the interfaces defined in esignet-integration-api and signup-integration-api. Mock plugin is built to use eSignet with [Mock IDA system](https://github.com/mosip/esignet-mock-services/tree/master/mock-identity-system)
 
 This library should be added as a runtime dependency to [esignet-service](https://github.com/mosip/esignet) for development purpose only.
 
@@ -10,7 +10,9 @@ This library should be added as a runtime dependency to [esignet-service](https:
 
 ## Configurations
 
-Refer [application.properties](src/main/resources/application.properties) for all the configurations required to use this plugin implementation.
+Refer [application.properties](src/main/resources/application.properties) for all the configurations required to use this plugin implementation. All the properties 
+are set with default values. If required values can be overridden in the host application by setting them as environment variable. Refer [esignet-service](https://github.com/mosip/esignet)
+docker-compose file to see how the configuration property values can be changed.
 
 Add "bindingtransaction" cache name in "mosip.esignet.cache.names" property.
 

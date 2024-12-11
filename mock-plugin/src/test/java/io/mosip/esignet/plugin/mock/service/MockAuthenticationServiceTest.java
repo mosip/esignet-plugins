@@ -50,156 +50,6 @@ public class MockAuthenticationServiceTest {
     @Mock
     ObjectMapper objectMapper;
 
-    /*@Test
-    public void doVerifiedKycExchange_withValidDetails_thenPass() throws KycExchangeException {
-        ReflectionTestUtils.setField(mockAuthenticationService, "kycExchangeUrl", "http://localhost:8080/kyc/exchange");
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.registerModule(new JavaTimeModule());
-        ReflectionTestUtils.setField(mockAuthenticationService, "objectMapper", objectMapper);
-
-
-        VerifiedKycExchangeDto verifiedKycExchangeDto = new VerifiedKycExchangeDto();
-        verifiedKycExchangeDto.setKycToken("kycToken");
-        verifiedKycExchangeDto.setAcceptedClaims(Arrays.asList("name", "gender"));
-        verifiedKycExchangeDto.setClaimsLocales(new String[]{"eng", "hin"});
-
-
-
-        Map<String, VerificationFilter> acceptedVerifiedClaims=new HashMap<>();
-
-        VerificationFilter verificationFilterForName= new VerificationFilter();
-        FilterCriteria trustFrameWorkCriteria = new FilterCriteria();
-        trustFrameWorkCriteria.setValues(List.of("PWD", "Income-tax"));
-        FilterDateTime filterDateTime = new FilterDateTime();
-        filterDateTime.setMax_age(1000);
-        verificationFilterForName.setTime(filterDateTime);
-        verificationFilterForName.setTrust_framework(trustFrameWorkCriteria);
-
-        VerificationFilter verificationFilterForEmail= new VerificationFilter();
-        FilterCriteria trustFrameworkForEmail = new FilterCriteria();
-        trustFrameworkForEmail.setValues(List.of("PWD"));
-        filterDateTime.setMax_age(500);
-        verificationFilterForEmail.setTime(filterDateTime);
-        verificationFilterForEmail.setTrust_framework(trustFrameworkForEmail);
-
-
-        acceptedVerifiedClaims.put("name", verificationFilterForName);
-        acceptedVerifiedClaims.put("email", verificationFilterForEmail);
-
-        verifiedKycExchangeDto.setAcceptedVerifiedClaims(acceptedVerifiedClaims);
-        KycExchangeResponseDto kycExchangeResponseDto = new KycExchangeResponseDto();
-        kycExchangeResponseDto.setKyc("responseKyc");
-        ResponseWrapper responseWrapper = new ResponseWrapper();
-        responseWrapper.setResponse(kycExchangeResponseDto);
-        ResponseEntity<ResponseWrapper<KycExchangeResponseDto>> responseEntity  = new ResponseEntity(responseWrapper, HttpStatus.OK);
-        Mockito.when(restTemplate.exchange(
-                Mockito.any(RequestEntity.class),
-                Mockito.eq(new ParameterizedTypeReference<ResponseWrapper<KycExchangeResponseDto>>() {
-                })
-        )).thenReturn(responseEntity);
-
-        KycExchangeResult kycExchangeResult = mockAuthenticationService.doVerifiedKycExchange("RP", "CL", verifiedKycExchangeDto);
-        Assert.assertEquals(kycExchangeResponseDto.getKyc(), kycExchangeResult.getEncryptedKyc());
-
-    }
-
-    @Test
-    public void doVerifiedKycExchange_withEmptyResponse_thenFail() {
-        ReflectionTestUtils.setField(mockAuthenticationService, "kycExchangeUrl", "http://localhost:8080/kyc/exchange");
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.registerModule(new JavaTimeModule());
-        ReflectionTestUtils.setField(mockAuthenticationService, "objectMapper", objectMapper);
-
-        VerifiedKycExchangeDto verifiedKycExchangeDto = new VerifiedKycExchangeDto();
-        verifiedKycExchangeDto.setKycToken("kycToken");
-        verifiedKycExchangeDto.setAcceptedClaims(Arrays.asList("name", "gender"));
-        verifiedKycExchangeDto.setClaimsLocales(new String[]{"eng", "hin"});
-
-
-
-        Map<String, VerificationFilter> acceptedVerifiedClaims=new HashMap<>();
-
-        VerificationFilter verificationFilterForName= new VerificationFilter();
-        FilterCriteria trustFrameWorkCriteria = new FilterCriteria();
-        trustFrameWorkCriteria.setValues(List.of("PWD", "Income-tax"));
-        FilterDateTime filterDateTime = new FilterDateTime();
-        filterDateTime.setMax_age(1000);
-        verificationFilterForName.setTime(filterDateTime);
-        verificationFilterForName.setTrust_framework(trustFrameWorkCriteria);
-
-        VerificationFilter verificationFilterForEmail= new VerificationFilter();
-        FilterCriteria trustFrameworkForEmail = new FilterCriteria();
-        trustFrameworkForEmail.setValues(List.of("PWD"));
-        filterDateTime.setMax_age(500);
-        verificationFilterForEmail.setTime(filterDateTime);
-        verificationFilterForEmail.setTrust_framework(trustFrameworkForEmail);
-
-
-        acceptedVerifiedClaims.put("name", verificationFilterForName);
-        acceptedVerifiedClaims.put("email", verificationFilterForEmail);
-
-        verifiedKycExchangeDto.setAcceptedVerifiedClaims(acceptedVerifiedClaims);
-        ResponseWrapper responseWrapper = new ResponseWrapper();
-        responseWrapper.setResponse(null);
-        ResponseEntity<ResponseWrapper<KycExchangeResponseDto>> responseEntity = new ResponseEntity(responseWrapper, HttpStatus.OK);
-        Mockito.when(restTemplate.exchange(
-                Mockito.any(RequestEntity.class),
-                Mockito.eq(new ParameterizedTypeReference<ResponseWrapper<KycExchangeResponseDto>>() {
-                })
-        )).thenReturn(responseEntity);
-        try {
-            mockAuthenticationService.doVerifiedKycExchange("RP", "CL", verifiedKycExchangeDto);
-            Assert.fail();
-        } catch (KycExchangeException e) {
-            Assert.assertEquals(e.getErrorCode(), ErrorConstants.DATA_EXCHANGE_FAILED);
-        }
-    }
-
-    @Test
-    public void doVerifiedKycExchange_withInvalidDetails_thenFail() {
-        ReflectionTestUtils.setField(mockAuthenticationService, "kycExchangeUrl", "http://localhost:8080/kyc/exchange");
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.registerModule(new JavaTimeModule());
-        ReflectionTestUtils.setField(mockAuthenticationService, "objectMapper", objectMapper);
-
-        VerifiedKycExchangeDto verifiedKycExchangeDto = new VerifiedKycExchangeDto();
-        verifiedKycExchangeDto.setKycToken("kycToken");
-        verifiedKycExchangeDto.setAcceptedClaims(Arrays.asList("name", "gender"));
-        verifiedKycExchangeDto.setClaimsLocales(new String[]{"eng", "hin"});
-
-
-
-        Map<String, VerificationFilter> acceptedVerifiedClaims=new HashMap<>();
-
-        VerificationFilter verificationFilterForName= new VerificationFilter();
-        FilterCriteria trustFrameWorkCriteria = new FilterCriteria();
-        trustFrameWorkCriteria.setValues(List.of("PWD", "Income-tax"));
-        FilterDateTime filterDateTime = new FilterDateTime();
-        filterDateTime.setMax_age(1000);
-        verificationFilterForName.setTime(filterDateTime);
-        verificationFilterForName.setTrust_framework(trustFrameWorkCriteria);
-
-        VerificationFilter verificationFilterForEmail= new VerificationFilter();
-        FilterCriteria trustFrameworkForEmail = new FilterCriteria();
-        trustFrameworkForEmail.setValues(List.of("PWD"));
-        filterDateTime.setMax_age(500);
-        verificationFilterForEmail.setTime(filterDateTime);
-        verificationFilterForEmail.setTrust_framework(trustFrameworkForEmail);
-
-
-        acceptedVerifiedClaims.put("name", verificationFilterForName);
-        acceptedVerifiedClaims.put("email", verificationFilterForEmail);
-
-        verifiedKycExchangeDto.setAcceptedVerifiedClaims(acceptedVerifiedClaims);
-
-        try {
-            mockAuthenticationService.doVerifiedKycExchange("RP", "CL", verifiedKycExchangeDto);
-            Assert.fail();
-        } catch (KycExchangeException e) {
-            Assert.assertEquals(e.getErrorCode(),"mock-ida-005");
-        }
-    }*/
-
     @Test
     public void doKycExchange_withValidDetails_thenPass() throws KycExchangeException {
         ReflectionTestUtils.setField(mockAuthenticationService, "kycExchangeUrl", "http://localhost:8080/kyc/exchange");
@@ -300,18 +150,10 @@ public class MockAuthenticationServiceTest {
     }
 
     @Test
-    public void sendOtp_withInValidDetails_thenFail() throws SendOtpException {
-
-        SendOtpDto se = new SendOtpDto();
-        se.setTransactionId("transactionId");
-        se.setOtpChannels(Arrays.asList("email", "mobile"));
-        SendOtpResult sendOtpResult = new SendOtpResult();
-        sendOtpResult.setTransactionId("transactionId");
-        sendOtpResult.setMaskedEmail("maskedEmail");
-        sendOtpResult.setMaskedMobile("maskedMobile");
-        Mockito.when(mockHelperService.sendOtpMock(se.getTransactionId(), se.getIndividualId(), se.getOtpChannels(), "relyingPartyId", "clientId")).thenReturn(sendOtpResult);
+    public void sendOtp_withInValidOtpRequest_thenFail() {
         try{
-            mockAuthenticationService.sendOtp("relyingPartyId", "clientId", se);
+            mockAuthenticationService.sendOtp("relyingPartyId", "clientId", null);
+            Assert.fail();
         }catch (SendOtpException e){
             Assert.assertEquals(e.getErrorCode(), "invalid_transaction_id");
         }
@@ -355,7 +197,11 @@ public class MockAuthenticationServiceTest {
 
     @Test
     public void doVerifiedKycExchange_withValidDetails_thenPass () throws Exception {
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
         ReflectionTestUtils.setField(mockAuthenticationService, "kycExchangeV2Url", "http://localhost:8080/kyc/exchange");
+        ReflectionTestUtils.setField(mockAuthenticationService, "objectMapper", objectMapper);
+
         String relyingPartyId = "testRelyingPartyId";
         String clientId = "testClientId";
 
