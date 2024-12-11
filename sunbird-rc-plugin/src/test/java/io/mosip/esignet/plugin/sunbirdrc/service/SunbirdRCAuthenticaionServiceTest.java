@@ -1,11 +1,15 @@
 package io.mosip.esignet.plugin.sunbirdrc.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.mosip.esignet.api.dto.*;
 import io.mosip.esignet.api.exception.KycAuthException;
 import io.mosip.esignet.api.exception.KycExchangeException;
 import io.mosip.esignet.api.exception.SendOtpException;
 import io.mosip.esignet.api.util.ErrorConstants;
+import io.mosip.kernel.signature.dto.JWTSignatureRequestDto;
+import io.mosip.kernel.signature.dto.JWTSignatureResponseDto;
+import io.mosip.kernel.signature.service.SignatureService;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Assert;
 import org.junit.Test;
@@ -15,17 +19,12 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.RequestEntity;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @RunWith(MockitoJUnitRunner.class)
 @Slf4j
@@ -40,6 +39,8 @@ public class SunbirdRCAuthenticaionServiceTest {
     @InjectMocks
     private SunbirdRCAuthenticationService sunbirdRCAuthenticationService;
 
+    @Mock
+    private SignatureService signatureService;
 
 
     @Test
@@ -258,6 +259,57 @@ public class SunbirdRCAuthenticaionServiceTest {
         }catch (KycAuthException e){
             Assert.assertEquals(e.getMessage(),ErrorConstants.AUTH_FAILED);
         }
+    }
+
+    @Test
+    public void doKycExchangeWithValidParams_thenPass() throws KycExchangeException, JsonProcessingException {
+        Map<String,String> oidcClaimsMapping= Map.of("name","name","email","email","phone","mobile","address","address");
+        ReflectionTestUtils.setField(sunbirdRCAuthenticationService, "oidcClaimsMapping", oidcClaimsMapping);
+        ReflectionTestUtils.setField(sunbirdRCAuthenticationService, "encryptKyc", false);
+        String relyingPartyId = "relyingPartyId";
+        String clientId = "clientId";
+        KycExchangeDto kycExchangeDto = new KycExchangeDto();
+        kycExchangeDto.setKycToken("kyc-token");
+        kycExchangeDto.setAcceptedClaims(Arrays.asList("name", "address"));
+        kycExchangeDto.setClaimsLocales(new String[]{"en"});
+
+        Map<String, Object> registryData = new HashMap<>();
+        registryData.put("name", "John");
+        registryData.put("address", "address");
+
+        Map<String, Object> expectedKyc = new HashMap<>();
+        expectedKyc.put("name", "John");
+        expectedKyc.put("address", "address");
+
+        Mockito.when(restTemplate.exchange(Mockito.any(RequestEntity.class), Mockito.any(ParameterizedTypeReference.class)))
+                .thenReturn(new ResponseEntity<>(registryData, HttpStatus.OK));
+        String expectedPayload = "{\"name\":\"John\",\"address\":\"address\"}";
+        Mockito.when(objectMapper.writeValueAsString(Mockito.any()))
+                .thenReturn(expectedPayload);
+
+        JWTSignatureResponseDto signatureResponse = new JWTSignatureResponseDto();
+        signatureResponse.setJwtSignedData("signed-jwt");
+        Mockito.when(signatureService.jwtSign(Mockito.any(JWTSignatureRequestDto.class))).thenReturn(signatureResponse);
+
+        KycExchangeResult result = sunbirdRCAuthenticationService.doKycExchange(relyingPartyId, clientId, kycExchangeDto);
+
+        Assert.assertNotNull(result);
+        Assert.assertEquals("signed-jwt", result.getEncryptedKyc());
+    }
+
+    @Test
+    public void doKycExchangeWithNullRegistryData_thenFail() {
+        String relyingPartyId = "RP123";
+        String clientId = "CLIENT123";
+        KycExchangeDto kycExchangeDto = new KycExchangeDto();
+        kycExchangeDto.setKycToken("kyc-token");
+
+        Mockito.when(restTemplate.exchange(Mockito.any(RequestEntity.class), Mockito.any(ParameterizedTypeReference.class)))
+                .thenReturn(new ResponseEntity<>(null, HttpStatus.OK));
+
+        KycExchangeException exception = Assert.assertThrows(KycExchangeException.class, () ->
+                sunbirdRCAuthenticationService.doKycExchange(relyingPartyId, clientId, kycExchangeDto));
+        Assert.assertEquals(ErrorConstants.DATA_EXCHANGE_FAILED, exception.getMessage());
     }
 
     @Test

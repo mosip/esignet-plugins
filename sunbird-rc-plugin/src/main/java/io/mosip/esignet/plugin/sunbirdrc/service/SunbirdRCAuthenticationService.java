@@ -33,7 +33,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.client.RestTemplate;
@@ -68,16 +67,13 @@ public class SunbirdRCAuthenticationService implements Authenticator {
     @Value("${mosip.esignet.authenticator.sunbird-rc.kbi.entity-id-field}")
     private String entityIdField;
 
-    @Value("${mosip.ida.kyc.default-language:eng}")
-    private String defaultLanguage;
-
-    @Value("${mosip.ida.kyc.encrypt:false}")
+    @Value("${mosip.esignet.authenticator.sunbird-rc.kyc.encrypt:false}")
     private boolean encryptKyc;
 
-    @Value("${mosip.esignet.sunbird-rc.registry-get-url}")
+    @Value("${mosip.esignet.authenticator.sunbird-rc.registry-get-url}")
     private String registryUrl;
 
-    @Value("#{${mosip.sunbird.ida.identity-openid-claims-mapping}}")
+    @Value("#{${mosip.esignt.authenticator.sunbird-rc.identity-openid-claims-mapping}}")
     private Map<String,String> oidcClaimsMapping;
 
     @Autowired
@@ -165,7 +161,8 @@ public class SunbirdRCAuthenticationService implements Authenticator {
             kycExchangeResult.setEncryptedKyc(finalKyc);
             return kycExchangeResult;
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            log.error("KYC exchange failed", e);
+            throw new KycExchangeException(ErrorConstants.DATA_EXCHANGE_FAILED);
         }
     }
 
