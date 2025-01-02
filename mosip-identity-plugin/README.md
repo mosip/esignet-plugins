@@ -27,7 +27,7 @@ This library should be added as a runtime dependency to [esignet-service](https:
 1. Onboard esignet-service as a MISP(MOSIP Infra Service Provider) partner in MOSIP's Partner management portal. 
 2. Update the MISP license key in `mosip.esignet.misp.key` property.
 
-## Configurations 
+## Configurations
 
 Refer [application.properties](src/main/resources/application.properties) for all the configurations required to use this plugin implementation. All the properties
 are set with default values. If required values can be overridden in the host application by setting them as environment variable. Refer [esignet-service](https://github.com/mosip/esignet)
