@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>io.mosip.esignet</groupId>
-	<version>1.3.0-SNAPSHOT</version>
+	<version>1.3.0</version>
 	<artifactId>mosip-identity-plugin</artifactId>
 	<name>mosip-identity-plugin</name>
     <description>e-Signet Integration Implementation for MOSIP ID system</description>
