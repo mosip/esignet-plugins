@@ -5,6 +5,7 @@
  */
 package io.mosip.esignet.plugin.mosipid.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.mosip.esignet.api.dto.*;
@@ -32,8 +33,8 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -270,35 +271,11 @@ public class IdaAuthenticatorImpl implements Authenticator {
         throw new KycAuthException(ErrorConstants.AUTH_FAILED);
     }
 
+    @SuppressWarnings("unchecked")
     private Map<String, List<JsonNode>> buildVerifiedClaimsMetadata(String verifiedClaimsMetadata) {
-        Map<String, List<JsonNode>> claimsMetadata = new HashMap<>();
+        Map<String, List<JsonNode>> claimsMetadata = new LinkedHashMap<>();
         try {
-            JsonNode rootNode = objectMapper.readTree(verifiedClaimsMetadata);
-            // Extracting values from the JsonNode and populating the HashMap
-            rootNode.fields().forEachRemaining(entry -> {
-                String key = entry.getKey();
-                JsonNode value = entry.getValue();
-
-                // Handling arrays of JsonNodes
-                if (value.isArray()) {
-                    List<JsonNode> nodeList = new ArrayList<>();
-                    value.elements().forEachRemaining(nodeList::add);
-                    claimsMetadata.put(key, nodeList);
-                } else {
-                    List<JsonNode> nodeList = new ArrayList<>();
-                    nodeList.add(value);
-                    claimsMetadata.put(key, nodeList);
-                }
-            });
-
-            for (Map.Entry<String, List<JsonNode>> entry : claimsMetadata.entrySet()) {
-                log.info("Key: {}" , entry.getKey());
-                List<JsonNode> nodeList = entry.getValue();
-                for (JsonNode node : nodeList) {
-                    log.info("Value: {}" , node);
-                }
-            }
-
+            claimsMetadata = objectMapper.readValue(verifiedClaimsMetadata, Map.class);
         } catch (Exception e) {
             log.error("Unable to read claims meta data values", e);
         }
