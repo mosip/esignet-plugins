@@ -5,11 +5,20 @@
  */
 package io.mosip.esignet.plugin.mosipid.service;
 
-import java.util.*;
-
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.mosip.esignet.api.dto.*;
+import io.mosip.esignet.api.exception.KycAuthException;
+import io.mosip.esignet.api.exception.KycExchangeException;
+import io.mosip.esignet.api.exception.KycSigningCertificateException;
+import io.mosip.esignet.api.exception.SendOtpException;
+import io.mosip.esignet.api.spi.Authenticator;
+import io.mosip.esignet.api.util.ErrorConstants;
 import io.mosip.esignet.plugin.mosipid.dto.*;
 import io.mosip.esignet.plugin.mosipid.helper.AuthTransactionHelper;
+import io.mosip.kernel.core.http.ResponseWrapper;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,16 +33,10 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import io.mosip.esignet.api.exception.KycAuthException;
-import io.mosip.esignet.api.exception.KycExchangeException;
-import io.mosip.esignet.api.exception.KycSigningCertificateException;
-import io.mosip.esignet.api.exception.SendOtpException;
-import io.mosip.esignet.api.spi.Authenticator;
-import io.mosip.esignet.api.util.ErrorConstants;
-import io.mosip.kernel.core.http.ResponseWrapper;
-import lombok.extern.slf4j.Slf4j;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 
 @ConditionalOnProperty(value = "mosip.esignet.integration.authenticator", havingValue = "IdaAuthenticatorImpl")
@@ -249,7 +252,7 @@ public class IdaAuthenticatorImpl implements Authenticator {
                         responseWrapper.getResponse().getKycToken() != null) {
                     return claimsMetadataRequired ? (new KycAuthResult(responseEntity.getBody().getResponse().getKycToken(),
                             responseEntity.getBody().getResponse().getAuthToken(),
-                            responseEntity.getBody().getResponse().getVerifiedClaims()))
+                            buildVerifiedClaimsMetadata(responseEntity.getBody().getResponse().getVerifiedClaimsMetadata())))
                             : (new KycAuthResult(responseEntity.getBody().getResponse().getKycToken(),
                             responseEntity.getBody().getResponse().getAuthToken()));
                 }
@@ -267,6 +270,18 @@ public class IdaAuthenticatorImpl implements Authenticator {
         }
         throw new KycAuthException(ErrorConstants.AUTH_FAILED);
     }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, List<JsonNode>> buildVerifiedClaimsMetadata(String verifiedClaimsMetadata) {
+        Map<String, List<JsonNode>> claimsMetadata = new LinkedHashMap<>();
+        try {
+            claimsMetadata = objectMapper.readValue(verifiedClaimsMetadata, Map.class);
+        } catch (Exception e) {
+            log.error("Unable to read claims meta data values", e);
+        }
+        return claimsMetadata;
+    }
+
 
     /**
      * Method to create {@link IdaKycAuthRequest} object required in the kyc-auth flow
