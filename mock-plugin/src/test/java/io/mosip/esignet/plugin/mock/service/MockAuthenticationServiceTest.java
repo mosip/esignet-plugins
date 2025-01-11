@@ -259,6 +259,22 @@ public class MockAuthenticationServiceTest {
         );
         Assert.assertEquals("mock-ida-005", exception.getErrorCode());
     }
+
+    @Test
+    public void convertLangCodesToISO3LanguageCodes_withInvalidInput_thenReturnEmpty() {
+        Assert.assertTrue(mockAuthenticationService.convertLangCodesToISO3LanguageCodes(null).isEmpty());
+        Assert.assertTrue(mockAuthenticationService.convertLangCodesToISO3LanguageCodes(new String[]{}).isEmpty());
+        Assert.assertTrue(mockAuthenticationService.convertLangCodesToISO3LanguageCodes(new String[]{"", ""}).isEmpty());
+        Assert.assertTrue(mockAuthenticationService.convertLangCodesToISO3LanguageCodes(new String[]{"e1"}).isEmpty());
+    }
+
+    @Test
+    public void convertLangCodesToISO3LanguageCodes_withValidInput_thenPass() {
+        List<String> langCodes = mockAuthenticationService.convertLangCodesToISO3LanguageCodes(new String[]{"en", "km"});
+        Assert.assertFalse(langCodes.isEmpty());
+        Assert.assertEquals(langCodes.get(0), "eng");
+        Assert.assertEquals(langCodes.get(1), "khm");
+    }
 }
 
 
