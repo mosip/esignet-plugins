@@ -73,7 +73,7 @@ public class SunbirdRCAuthenticationService implements Authenticator {
     @Value("${mosip.esignet.authenticator.sunbird-rc.registry-get-url}")
     private String registryUrl;
 
-    @Value("#{${mosip.esignt.authenticator.sunbird-rc.identity-openid-claims-mapping}}")
+    @Value("#{${mosip.esignet.authenticator.sunbird-rc.identity-openid-claims-mapping}}")
     private Map<String,String> oidcClaimsMapping;
 
     @Autowired
@@ -153,6 +153,7 @@ public class SunbirdRCAuthenticationService implements Authenticator {
             }
             Map<String, Object> kyc = buildKycDataBasedOnPolicy(responseRegistryMap,
                     kycExchangeDto.getAcceptedClaims(), kycExchangeDto.getClaimsLocales());
+            kyc.put("sub", kycExchangeDto.getIndividualId());
             String finalKyc = this.encryptKyc ? getJWE(relyingPartyId, signKyc(kyc)) : signKyc(kyc);
             KycExchangeResult kycExchangeResult = new KycExchangeResult();
             kycExchangeResult.setEncryptedKyc(finalKyc);
