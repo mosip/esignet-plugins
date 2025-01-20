@@ -247,7 +247,9 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
                             new ParameterizedTypeReference<ResponseWrapper<IdentityResponse>>() {});
                     break;
             }
-
+            if(responseWrapper==null){
+                throw new ProfileException();
+            }
             ProfileDto profileDto = new ProfileDto();
             profileDto.setIndividualId(responseWrapper.getResponse().getIdentity().get(UIN).textValue());
             profileDto.setIdentity(responseWrapper.getResponse().getIdentity());
