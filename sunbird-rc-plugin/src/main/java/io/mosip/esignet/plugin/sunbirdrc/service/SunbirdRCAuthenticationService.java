@@ -125,8 +125,8 @@ public class SunbirdRCAuthenticationService implements Authenticator {
                 if(Objects.equals(authChallenge.getAuthFactorType(),"KBI")){
                     return validateKnowledgeBasedAuth(kycAuthDto.getIndividualId(),authChallenge);
                 }
-                throw new KycAuthException("invalid_challenge_format");
             }
+            throw new KycAuthException("invalid_challenge_format");
         } catch (KycAuthException e) {
             throw e;
         } catch (Exception e) {
@@ -268,7 +268,7 @@ public class SunbirdRCAuthenticationService implements Authenticator {
                     new ParameterizedTypeReference<List<Map<String,Object>>>() {});
             if (responseEntity.getStatusCode().is2xxSuccessful() && responseEntity.getBody() != null) {
                 List<Map<String,Object>> responseList = responseEntity.getBody();
-                if(responseList.size()==1){
+                if(responseList != null && responseList.size()==1){
                     //TODO  This need to be removed since it can contain PII
                     log.debug("getting response {}", responseEntity);
                     kycAuthResult.setKycToken((String)responseList.get(0).get(entityIdField));
