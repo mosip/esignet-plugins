@@ -128,7 +128,7 @@ public class SunbirdRCAuthenticationService implements Authenticator {
                 return validateKnowledgeBasedAuth(kycAuthDto.getIndividualId(), optionalAuthChallenge.get());
             }
             else{
-                throw new KycAuthException("invalid_challenge_format");
+                throw new KycAuthException("invalid_challenge_type");
             }
         } catch (KycAuthException e) {
             throw e;
