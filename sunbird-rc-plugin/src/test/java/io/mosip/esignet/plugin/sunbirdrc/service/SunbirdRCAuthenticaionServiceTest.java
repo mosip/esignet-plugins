@@ -242,7 +242,7 @@ public class SunbirdRCAuthenticaionServiceTest {
             sunbirdRCAuthenticationService.doKycAuth(relyingPartyId, clientId, kycAuthDto);
             Assert.fail();
         }catch (KycAuthException e){
-            Assert.assertEquals(e.getErrorCode(),"invalid_challenge_format");
+            Assert.assertEquals(e.getErrorCode(),"invalid_challenge_type");
         }
     }
 
