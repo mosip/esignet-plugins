@@ -121,12 +121,18 @@ public class SunbirdRCAuthenticationService implements Authenticator {
         log.info("Started to build kyc-auth request with transactionId : {} && clientId : {}",
                 kycAuthDto.getTransactionId(), clientId);
         try {
-            for (AuthChallenge authChallenge : kycAuthDto.getChallengeList()) {
-                if(Objects.equals(authChallenge.getAuthFactorType(),"KBI")){
-                    return validateKnowledgeBasedAuth(kycAuthDto.getIndividualId(),authChallenge);
-                }
-            }
-            throw new KycAuthException("invalid_challenge_format");
+            return kycAuthDto.getChallengeList().stream()
+                    .filter(authChallenge -> Objects.equals(authChallenge.getAuthFactorType(), "KBI"))
+                    .findFirst()
+                    .map(authChallenge -> {
+                        try {
+                            return validateKnowledgeBasedAuth(kycAuthDto.getIndividualId(), authChallenge);
+                        } catch (KycAuthException e) {
+                            //When throwing KycAuthException getting "Unhandled exception: io.mosip.esignet.api.exception.KycAuthException is shown", hence throwing RuntimeException
+                            throw new RuntimeException(e);
+                        }
+                    })
+                    .orElseThrow(() -> new KycAuthException("invalid_challenge_format"));
         } catch (KycAuthException e) {
             throw e;
         } catch (Exception e) {
