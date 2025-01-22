@@ -86,8 +86,8 @@
 		<spring.boot.version>2.3.6.RELEASE</spring.boot.version>
 
 		<kernel-keymanager-service.version>1.2.1.0</kernel-keymanager-service.version>
-		<esignet.version>1.5.0-SNAPSHOT</esignet.version>
-		<esignet-signup.version>1.1.0-SNAPSHOT</esignet-signup.version>
+		<esignet.version>1.5.0</esignet.version>
+		<esignet-signup.version>1.1.0</esignet-signup.version>
 
 		<sonar.exclusions>**/dto/**,**/entity/**,**/exception/**,**/spi/**,**/advice/**,**/config/**</sonar.exclusions>
 		<sonar.cpd.exclusions>**/dto/**,**/entity/**,**/config/**</sonar.cpd.exclusions>
