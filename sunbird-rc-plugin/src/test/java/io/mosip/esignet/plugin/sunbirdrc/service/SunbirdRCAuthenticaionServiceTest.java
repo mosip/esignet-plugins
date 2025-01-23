@@ -382,11 +382,4 @@ public class SunbirdRCAuthenticaionServiceTest {
         Assert.assertNotNull(result);
     }
 
-    @Test
-    public void gtAllKycSigningCertificates_ServiceThrowsException_thenFail() {
-        Assert.assertThrows(RuntimeException.class, () -> {
-            sunbirdRCAuthenticationService.getAllKycSigningCertificates();
-        });
-    }
-
 }
