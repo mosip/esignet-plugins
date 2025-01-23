@@ -33,10 +33,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 @ConditionalOnProperty(value = "mosip.esignet.integration.authenticator", havingValue = "IdaAuthenticatorImpl")
@@ -248,15 +245,15 @@ public class IdaAuthenticatorImpl implements Authenticator {
 
             if(responseEntity.getStatusCode().is2xxSuccessful() && responseEntity.getBody() != null) {
                 IdaResponseWrapper<IdaKycAuthResponse> responseWrapper = responseEntity.getBody();
-                if(responseWrapper.getResponse() != null && responseWrapper.getResponse().isKycStatus() &&
+                if(responseWrapper!=null && responseWrapper.getResponse() != null && responseWrapper.getResponse().isKycStatus() &&
                         responseWrapper.getResponse().getKycToken() != null) {
-                    return claimsMetadataRequired ? (new KycAuthResult(responseEntity.getBody().getResponse().getKycToken(),
-                            responseEntity.getBody().getResponse().getAuthToken(),
-                            buildVerifiedClaimsMetadata(responseEntity.getBody().getResponse().getVerifiedClaimsMetadata())))
-                            : (new KycAuthResult(responseEntity.getBody().getResponse().getKycToken(),
-                            responseEntity.getBody().getResponse().getAuthToken()));
+                    return claimsMetadataRequired ? (new KycAuthResult(responseWrapper.getResponse().getKycToken(),
+                            responseWrapper.getResponse().getAuthToken(),
+                            buildVerifiedClaimsMetadata(responseWrapper.getResponse().getVerifiedClaimsMetadata())))
+                            : (new KycAuthResult(responseWrapper.getResponse().getKycToken(),
+                            responseWrapper.getResponse().getAuthToken()));
                 }
-                assert responseWrapper.getResponse() != null;
+                assert Objects.requireNonNull(responseWrapper).getResponse() != null;
                 log.error("Error response received from IDA KycStatus : {} && Errors: {}",
                         responseWrapper.getResponse().isKycStatus(), responseWrapper.getErrors());
                 throw new KycAuthException(CollectionUtils.isEmpty(responseWrapper.getErrors()) ?
