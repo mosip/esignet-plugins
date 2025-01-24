@@ -7,6 +7,9 @@ import io.mosip.esignet.api.exception.KycAuthException;
 import io.mosip.esignet.api.exception.KycExchangeException;
 import io.mosip.esignet.api.exception.SendOtpException;
 import io.mosip.esignet.api.util.ErrorConstants;
+import io.mosip.kernel.keymanagerservice.dto.AllCertificatesDataResponseDto;
+import io.mosip.kernel.keymanagerservice.dto.CertificateDataResponseDto;
+import io.mosip.kernel.keymanagerservice.service.KeymanagerService;
 import io.mosip.kernel.signature.dto.JWTSignatureRequestDto;
 import io.mosip.kernel.signature.dto.JWTSignatureResponseDto;
 import io.mosip.kernel.signature.service.SignatureService;
@@ -41,6 +44,9 @@ public class SunbirdRCAuthenticaionServiceTest {
 
     @Mock
     private SignatureService signatureService;
+
+    @Mock
+    private KeymanagerService keymanagerService;
 
 
     @Test
@@ -313,6 +319,41 @@ public class SunbirdRCAuthenticaionServiceTest {
     }
 
     @Test
+    public void doKycExchangeWithEncryptKycAsTrue_throwKycExchangeException_thenFail() throws JsonProcessingException {
+        Map<String,String> oidcClaimsMapping= Map.of("name","name","email","email","phone","mobile","address","address");
+        ReflectionTestUtils.setField(sunbirdRCAuthenticationService, "oidcClaimsMapping", oidcClaimsMapping);
+        ReflectionTestUtils.setField(sunbirdRCAuthenticationService, "encryptKyc", true);
+        String relyingPartyId = "relyingPartyId";
+        String clientId = "clientId";
+        KycExchangeDto kycExchangeDto = new KycExchangeDto();
+        kycExchangeDto.setKycToken("kyc-token");
+        kycExchangeDto.setAcceptedClaims(Arrays.asList("name", "address"));
+        kycExchangeDto.setClaimsLocales(new String[]{"en"});
+
+        Map<String, Object> registryData = new HashMap<>();
+        registryData.put("name", "John");
+        registryData.put("address", "address");
+
+        Map<String, Object> expectedKyc = new HashMap<>();
+        expectedKyc.put("name", "John");
+        expectedKyc.put("address", "address");
+
+        Mockito.when(restTemplate.exchange(Mockito.any(RequestEntity.class), Mockito.any(ParameterizedTypeReference.class)))
+                .thenReturn(new ResponseEntity<>(registryData, HttpStatus.OK));
+        String expectedPayload = "{\"name\":\"John\",\"address\":\"address\"}";
+        Mockito.when(objectMapper.writeValueAsString(Mockito.any()))
+                .thenReturn(expectedPayload);
+
+        JWTSignatureResponseDto signatureResponse = new JWTSignatureResponseDto();
+        signatureResponse.setJwtSignedData("signed-jwt");
+        Mockito.when(signatureService.jwtSign(Mockito.any(JWTSignatureRequestDto.class))).thenReturn(signatureResponse);
+
+        KycExchangeException exception = Assert.assertThrows(KycExchangeException.class, () ->
+                sunbirdRCAuthenticationService.doKycExchange(relyingPartyId, clientId, kycExchangeDto));
+        Assert.assertEquals(ErrorConstants.DATA_EXCHANGE_FAILED, exception.getMessage());
+    }
+
+    @Test
     public void sendOtpNotImplemented_thenFail() {
         try{
             sunbirdRCAuthenticationService.sendOtp("relayingPartyId","clientId",new SendOtpDto());
@@ -326,6 +367,19 @@ public class SunbirdRCAuthenticaionServiceTest {
     public void isSupportedOtpChannel_thenFail() {
         boolean result = sunbirdRCAuthenticationService.isSupportedOtpChannel("sms");
         Assert.assertFalse(result);
+    }
+
+    @Test
+    public void getAllKycSigningCertificates_shouldReturnCertificates_thenPass() {
+        List<CertificateDataResponseDto> mockCertificates = new ArrayList<>();
+        mockCertificates.add(new CertificateDataResponseDto());
+        CertificateDataResponseDto[] certificatesArray = mockCertificates.toArray(new CertificateDataResponseDto[0]);
+        AllCertificatesDataResponseDto allCertificatesDataResponseDto=new AllCertificatesDataResponseDto();
+        allCertificatesDataResponseDto.setAllCertificates(certificatesArray);
+        Mockito.when(keymanagerService.getAllCertificates(Mockito.any(), Mockito.any(Optional.class)))
+                .thenReturn(allCertificatesDataResponseDto);
+        List<KycSigningCertificateData> result = sunbirdRCAuthenticationService.getAllKycSigningCertificates();
+        Assert.assertNotNull(result);
     }
 
 }
