@@ -271,13 +271,13 @@ public class SunbirdRCAuthenticaionServiceTest {
     public void doKycExchangeWithValidParams_thenPass() throws KycExchangeException, JsonProcessingException {
         Map<String,String> oidcClaimsMapping= Map.of("name","name","email","email","phone","mobile","address","address");
         ReflectionTestUtils.setField(sunbirdRCAuthenticationService, "oidcClaimsMapping", oidcClaimsMapping);
-        ReflectionTestUtils.setField(sunbirdRCAuthenticationService, "encryptKyc", false);
         String relyingPartyId = "relyingPartyId";
         String clientId = "clientId";
         KycExchangeDto kycExchangeDto = new KycExchangeDto();
         kycExchangeDto.setKycToken("kyc-token");
         kycExchangeDto.setAcceptedClaims(Arrays.asList("name", "address"));
         kycExchangeDto.setClaimsLocales(new String[]{"en"});
+        kycExchangeDto.setUserInfoResponseType("JWS");
 
         Map<String, Object> registryData = new HashMap<>();
         registryData.put("name", "John");
@@ -322,13 +322,13 @@ public class SunbirdRCAuthenticaionServiceTest {
     public void doKycExchangeWithEncryptKycAsTrue_throwKycExchangeException_thenFail() throws JsonProcessingException {
         Map<String,String> oidcClaimsMapping= Map.of("name","name","email","email","phone","mobile","address","address");
         ReflectionTestUtils.setField(sunbirdRCAuthenticationService, "oidcClaimsMapping", oidcClaimsMapping);
-        ReflectionTestUtils.setField(sunbirdRCAuthenticationService, "encryptKyc", true);
         String relyingPartyId = "relyingPartyId";
         String clientId = "clientId";
         KycExchangeDto kycExchangeDto = new KycExchangeDto();
         kycExchangeDto.setKycToken("kyc-token");
         kycExchangeDto.setAcceptedClaims(Arrays.asList("name", "address"));
         kycExchangeDto.setClaimsLocales(new String[]{"en"});
+        kycExchangeDto.setUserInfoResponseType("JWE");
 
         Map<String, Object> registryData = new HashMap<>();
         registryData.put("name", "John");
