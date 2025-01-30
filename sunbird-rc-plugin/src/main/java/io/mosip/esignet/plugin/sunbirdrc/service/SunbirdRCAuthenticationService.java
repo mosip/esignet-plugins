@@ -145,11 +145,11 @@ public class SunbirdRCAuthenticationService implements Authenticator {
         String kycToken=kycExchangeDto.getKycToken();
         Map<String,Object> responseRegistryMap;
         try {
-            if (kycExchangeDto.getAcceptedClaims() == null) {
-                kycExchangeDto.setAcceptedClaims(new ArrayList<>());
-            }
-            Set<String> uniqueClaims = new LinkedHashSet<>(kycExchangeDto.getAcceptedClaims());
-            kycExchangeDto.setAcceptedClaims(new ArrayList<>(uniqueClaims));
+            kycExchangeDto.setAcceptedClaims(
+                    Optional.ofNullable(kycExchangeDto.getAcceptedClaims())
+                            .map(claims -> new ArrayList<>(new LinkedHashSet<>(claims)))
+                            .orElse(new ArrayList<>())
+            );
             responseRegistryMap =fetchRegistryObject(registryUrl+ kycToken);
             if (responseRegistryMap == null) {
                 throw new KycExchangeException(ErrorConstants.DATA_EXCHANGE_FAILED);
