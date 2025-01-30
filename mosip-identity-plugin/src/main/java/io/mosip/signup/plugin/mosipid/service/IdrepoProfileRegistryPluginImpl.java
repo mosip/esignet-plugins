@@ -248,10 +248,14 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
                     break;
             }
 
+            if(responseWrapper==null || responseWrapper.getResponse() == null || responseWrapper.getResponse().getIdentity() == null){
+                throw new ProfileException(REQUEST_FAILED);
+            }
+
             ProfileDto profileDto = new ProfileDto();
             profileDto.setIndividualId(responseWrapper.getResponse().getIdentity().get(UIN).textValue());
             profileDto.setIdentity(responseWrapper.getResponse().getIdentity());
-            profileDto.setActive(responseWrapper.getResponse().getStatus().equals("ACTIVATED"));
+            profileDto.setActive("ACTIVATED".equals(responseWrapper.getResponse().getStatus()));
             return profileDto;
         } catch (ProfileException e) {
             if (e.getErrorCode().equals("IDR-IDC-007")) {

@@ -38,6 +38,7 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 @ConditionalOnProperty(value = "mosip.esignet.integration.authenticator", havingValue = "MockAuthenticationService")
@@ -85,7 +86,7 @@ public class MockAuthenticationService implements Authenticator {
             kycExchangeRequestDto.setKycToken(kycExchangeDto.getKycToken());
             kycExchangeRequestDto.setIndividualId(kycExchangeDto.getIndividualId());
             kycExchangeRequestDto.setAcceptedClaims(kycExchangeDto.getAcceptedClaims());
-            kycExchangeRequestDto.setClaimLocales(Arrays.asList(kycExchangeDto.getClaimsLocales()));
+            kycExchangeRequestDto.setClaimLocales(convertLangCodesToISO3LanguageCodes(kycExchangeDto.getClaimsLocales()));
 
             String requestBody = objectMapper.writeValueAsString(kycExchangeRequestDto);
             RequestEntity requestEntity = RequestEntity
@@ -194,5 +195,20 @@ public class MockAuthenticationService implements Authenticator {
         verifiedKycExchangeRequestDto.setClaimLocales(Arrays.asList(verifiedKycExchangeDto.getClaimsLocales()));
         verifiedKycExchangeRequestDto.setAcceptedClaimDetail(verifiedKycExchangeDto.getAcceptedClaimDetails());
         return verifiedKycExchangeRequestDto;
+    }
+
+    //Converts an array of two-letter language codes to their corresponding ISO 639-2/T language codes.
+    protected List<String> convertLangCodesToISO3LanguageCodes(String[] langCodes) {
+        if(langCodes == null || langCodes.length == 0)
+            return List.of();
+        return Arrays.stream(langCodes)
+                .map(langCode -> {
+                    try {
+                        return org.springframework.util.StringUtils.isEmpty(langCode) ? null : new Locale(langCode).getISO3Language();
+                    } catch (MissingResourceException ex) {}
+                    return null;
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
     }
 }
