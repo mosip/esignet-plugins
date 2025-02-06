@@ -67,9 +67,6 @@ public class SunbirdRCAuthenticationService implements Authenticator {
     @Value("${mosip.esignet.authenticator.sunbird-rc.kbi.entity-id-field}")
     private String entityIdField;
 
-    @Value("${mosip.esignet.authenticator.sunbird-rc.kyc.encrypt:false}")
-    private boolean encryptKyc;
-
     @Value("${mosip.esignet.authenticator.sunbird-rc.registry-get-url}")
     private String registryUrl;
 
@@ -157,7 +154,9 @@ public class SunbirdRCAuthenticationService implements Authenticator {
             Map<String, Object> kyc = buildKycDataBasedOnPolicy(responseRegistryMap,
                     kycExchangeDto.getAcceptedClaims(), kycExchangeDto.getClaimsLocales());
             kyc.put("sub", kycExchangeDto.getIndividualId());
-            String finalKyc = this.encryptKyc ? getJWE(relyingPartyId, signKyc(kyc)) : signKyc(kyc);
+            String finalKyc;
+            String userInfoResponseType = kycExchangeDto.getUserInfoResponseType();
+            finalKyc = "JWE".equals(userInfoResponseType) ? getJWE(relyingPartyId, signKyc(kyc)) : signKyc(kyc);
             KycExchangeResult kycExchangeResult = new KycExchangeResult();
             kycExchangeResult.setEncryptedKyc(finalKyc);
             return kycExchangeResult;
