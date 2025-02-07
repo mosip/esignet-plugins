@@ -47,7 +47,7 @@
 		<git-commit-id-plugin.version>3.0.1</git-commit-id-plugin.version>
 		<maven.jacoco.version>0.8.5</maven.jacoco.version>
 		<maven-javadoc-plugin.version>3.3.1</maven-javadoc-plugin.version>
-		<esignet.version>1.5.1-SNAPSHOT</esignet.version>
+		<esignet.version>1.6.0-SNAPSHOT</esignet.version>
 	</properties>
 	<dependencies>
 	
