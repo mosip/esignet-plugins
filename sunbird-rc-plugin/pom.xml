@@ -87,6 +87,10 @@
 					<groupId>org.springframework.security</groupId>
 					<artifactId>spring-security-test</artifactId>
 				</exclusion>
+				<exclusion>
+					<groupId>com.nimbusds</groupId>
+					<artifactId>nimbus-jose-jwt</artifactId>
+				</exclusion>
 			</exclusions>
 		</dependency>
 		<dependency>
