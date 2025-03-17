@@ -4,21 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 package io.mosip.esignet.plugin.mock.dto;
-
-
 import lombok.Data;
 
-import java.time.LocalDateTime;
-import java.util.List;
-
 @Data
-public class KycExchangeRequestDto {
+public class KycExchangeRequestDtoV3 extends KycExchangeRequestDtoV2{
 
-    private LocalDateTime requestDateTime;
-    private String transactionId;
-    private String kycToken;
-    private String individualId;
-    private List<String> acceptedClaims;
-    private List<String> claimLocales;
     private String responseType;
 }
