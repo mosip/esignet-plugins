@@ -87,7 +87,7 @@ public class MockAuthenticationService implements Authenticator {
             kycExchangeRequestDto.setIndividualId(kycExchangeDto.getIndividualId());
             kycExchangeRequestDto.setAcceptedClaims(kycExchangeDto.getAcceptedClaims());
             kycExchangeRequestDto.setClaimLocales(convertLangCodesToISO3LanguageCodes(kycExchangeDto.getClaimsLocales()));
-            kycExchangeRequestDto.setRespType(kycExchangeDto.getUserInfoResponseType());
+            kycExchangeRequestDto.setResponseType(kycExchangeDto.getUserInfoResponseType());
 
             String requestBody = objectMapper.writeValueAsString(kycExchangeRequestDto);
             RequestEntity requestEntity = RequestEntity
@@ -195,7 +195,7 @@ public class MockAuthenticationService implements Authenticator {
         verifiedKycExchangeRequestDto.setIndividualId(verifiedKycExchangeDto.getIndividualId());
         verifiedKycExchangeRequestDto.setClaimLocales(Arrays.asList(verifiedKycExchangeDto.getClaimsLocales()));
         verifiedKycExchangeRequestDto.setAcceptedClaimDetail(verifiedKycExchangeDto.getAcceptedClaimDetails());
-        verifiedKycExchangeRequestDto.setRespType(verifiedKycExchangeRequestDto.getRespType());
+        verifiedKycExchangeRequestDto.setResponseType(verifiedKycExchangeRequestDto.getResponseType());
         return verifiedKycExchangeRequestDto;
     }
 

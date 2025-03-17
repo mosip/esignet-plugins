@@ -22,5 +22,5 @@ public class VerifiedKycExchangeRequestDto{
     private Map<String,Object> acceptedClaims;
     private List<String> claimLocales;
     private Map<String, JsonNode> acceptedClaimDetail;
-    private String respType;
+    private String responseType;
 }
