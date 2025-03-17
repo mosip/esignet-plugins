@@ -6,6 +6,7 @@
 package io.mosip.esignet.plugin.mock.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.mosip.esignet.plugin.mock.dto.KycExchangeRequestDtoV3;
 import io.mosip.esignet.plugin.mock.dto.KycExchangeResponseDto;
 import io.mosip.esignet.api.dto.*;
 import io.mosip.esignet.api.exception.KycAuthException;
@@ -14,7 +15,7 @@ import io.mosip.esignet.api.exception.SendOtpException;
 import io.mosip.esignet.api.spi.Authenticator;
 import io.mosip.esignet.api.util.ErrorConstants;
 import io.mosip.esignet.plugin.mock.dto.KycExchangeRequestDto;
-import io.mosip.esignet.plugin.mock.dto.VerifiedKycExchangeRequestDto;
+import io.mosip.esignet.plugin.mock.dto.KycExchangeRequestDtoV2;
 import io.mosip.kernel.core.http.ResponseWrapper;
 import io.mosip.kernel.core.util.StringUtils;
 import io.mosip.kernel.keymanagerservice.dto.AllCertificatesDataResponseDto;
@@ -54,6 +55,9 @@ public class MockAuthenticationService implements Authenticator {
     @Value("${mosip.esignet.mock.authenticator.kyc-exchange-v2-url}")
     private String kycExchangeV2Url;
 
+    @Value("${mosip.esignet.mock.authenticator.kyc-exchange-v3-url}")
+    private String kycExchangeV3Url;
+
     @Autowired
     private ObjectMapper objectMapper;
 
@@ -80,17 +84,19 @@ public class MockAuthenticationService implements Authenticator {
         log.info("Started to build kyc-exchange request with transactionId : {} && clientId : {}",
                 kycExchangeDto.getTransactionId(), clientId);
         try {
-            KycExchangeRequestDto kycExchangeRequestDto = new KycExchangeRequestDto();
+            KycExchangeRequestDtoV3 kycExchangeRequestDto = new KycExchangeRequestDtoV3();
             kycExchangeRequestDto.setRequestDateTime(MockHelperService.getUTCDateTime());
             kycExchangeRequestDto.setTransactionId(kycExchangeDto.getTransactionId());
             kycExchangeRequestDto.setKycToken(kycExchangeDto.getKycToken());
             kycExchangeRequestDto.setIndividualId(kycExchangeDto.getIndividualId());
             kycExchangeRequestDto.setAcceptedClaims(kycExchangeDto.getAcceptedClaims());
             kycExchangeRequestDto.setClaimLocales(convertLangCodesToISO3LanguageCodes(kycExchangeDto.getClaimsLocales()));
+            kycExchangeRequestDto.setResponseType(kycExchangeDto.getUserInfoResponseType());
 
             String requestBody = objectMapper.writeValueAsString(kycExchangeRequestDto);
             RequestEntity requestEntity = RequestEntity
-                    .post(UriComponentsBuilder.fromUriString(kycExchangeUrl).pathSegment(relyingPartyId,
+                    .post(UriComponentsBuilder.fromUriString( kycExchangeDto.getUserInfoResponseType()!=null
+                            ? kycExchangeV3Url : kycExchangeUrl).pathSegment(relyingPartyId,
                             clientId).build().toUri())
                     .contentType(MediaType.APPLICATION_JSON_UTF8)
                     .body(requestBody);
@@ -154,10 +160,10 @@ public class MockAuthenticationService implements Authenticator {
         log.info("Started to build verified kyc-exchange request with transactionId : {} && clientId : {}",
                 kycExchangeDto.getTransactionId(), clientId);
         try {
-            VerifiedKycExchangeRequestDto verifiedKycExchangeRequestDto = buildVerifiedKycExchangeRequestDto(kycExchangeDto);
+            KycExchangeRequestDtoV2 kycExchangeRequestDtoV2 = buildVerifiedKycExchangeRequestDto(kycExchangeDto);
 
             //set signature header, body and invoke kyc exchange endpoint
-            String requestBody = objectMapper.writeValueAsString(verifiedKycExchangeRequestDto);
+            String requestBody = objectMapper.writeValueAsString(kycExchangeRequestDtoV2);
             RequestEntity requestEntity = RequestEntity
                     .post(UriComponentsBuilder.fromUriString(kycExchangeV2Url).pathSegment(relyingPartyId,
                             clientId).build().toUri())
@@ -186,15 +192,15 @@ public class MockAuthenticationService implements Authenticator {
         throw new KycExchangeException("mock-ida-005", "Failed to build kyc data");
     }
 
-    private VerifiedKycExchangeRequestDto buildVerifiedKycExchangeRequestDto(VerifiedKycExchangeDto verifiedKycExchangeDto){
-        VerifiedKycExchangeRequestDto verifiedKycExchangeRequestDto = new VerifiedKycExchangeRequestDto();
-        verifiedKycExchangeRequestDto.setRequestDateTime(MockHelperService.getUTCDateTime());
-        verifiedKycExchangeRequestDto.setTransactionId(verifiedKycExchangeDto.getTransactionId());
-        verifiedKycExchangeRequestDto.setKycToken(verifiedKycExchangeDto.getKycToken());
-        verifiedKycExchangeRequestDto.setIndividualId(verifiedKycExchangeDto.getIndividualId());
-        verifiedKycExchangeRequestDto.setClaimLocales(Arrays.asList(verifiedKycExchangeDto.getClaimsLocales()));
-        verifiedKycExchangeRequestDto.setAcceptedClaimDetail(verifiedKycExchangeDto.getAcceptedClaimDetails());
-        return verifiedKycExchangeRequestDto;
+    private KycExchangeRequestDtoV2 buildVerifiedKycExchangeRequestDto(VerifiedKycExchangeDto verifiedKycExchangeDto){
+        KycExchangeRequestDtoV2 kycExchangeRequestDtoV2 = new KycExchangeRequestDtoV2();
+        kycExchangeRequestDtoV2.setRequestDateTime(MockHelperService.getUTCDateTime());
+        kycExchangeRequestDtoV2.setTransactionId(verifiedKycExchangeDto.getTransactionId());
+        kycExchangeRequestDtoV2.setKycToken(verifiedKycExchangeDto.getKycToken());
+        kycExchangeRequestDtoV2.setIndividualId(verifiedKycExchangeDto.getIndividualId());
+        kycExchangeRequestDtoV2.setClaimLocales(Arrays.asList(verifiedKycExchangeDto.getClaimsLocales()));
+        kycExchangeRequestDtoV2.setAcceptedClaimDetail(verifiedKycExchangeDto.getAcceptedClaimDetails());
+        return kycExchangeRequestDtoV2;
     }
 
     //Converts an array of two-letter language codes to their corresponding ISO 639-2/T language codes.
