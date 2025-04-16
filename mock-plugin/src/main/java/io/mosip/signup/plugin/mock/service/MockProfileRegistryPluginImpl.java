@@ -7,24 +7,19 @@ package io.mosip.signup.plugin.mock.service;
 
 import static io.mosip.signup.api.util.ErrorConstants.SERVER_UNREACHABLE;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
@@ -77,6 +72,9 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     @Value("${mosip.signup.mock.add-verified-claims.endpoint}")
     private String addVerifiedClaimsEndpoint;
 
+    @Value("${mosip.signup.mock.get-schema.endpoint}")
+    private String getSchemaEndpoint;
+
     @Autowired
     @Qualifier("selfTokenRestTemplate")
     private RestTemplate restTemplate;
@@ -86,9 +84,6 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
 
     @Autowired
     private ResourceLoader resourceLoader;
-
-    @Value("${mosip.esignet.ui-spec.schema.url}")
-    private String schemaUrl;
 
     @Override
     public void validate(String action, ProfileDto profileDto) throws InvalidProfileException {
@@ -245,26 +240,10 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
                 .format(DateTimeFormatter.ofPattern(UTC_DATETIME_PATTERN));
     }
 
-    public Map<String, Object> getUISpecification() {
-        InputStream schemaResponse = getResource(schemaUrl);
-        ObjectMapper objectMapper = new ObjectMapper();
-        try {
-            Map<String, Object> schemaMap = objectMapper.readValue(schemaResponse, new TypeReference<Map<String, Object>>() {});
-            return schemaMap;
-        } catch (IOException e) {
-            log.error("Error parsing the UI specification schema: {}", e.getMessage(), e);
-            throw new ProfileException("ui_spec_not_found");
-        }
-    }
-
-    private InputStream getResource(String url) {
-        try {
-            Resource resource = resourceLoader.getResource(url);
-            return resource.getInputStream();
-        } catch (IOException e) {
-            log.error("Failed to parse data: {}", url, e);
-        }
-        throw new ProfileException("ui_spec_not_found");
+    public JsonNode getUISpecification() {
+        ResponseWrapper<JsonNode> responseWrapper = request(getSchemaEndpoint, HttpMethod.GET ,null,
+                new ParameterizedTypeReference<ResponseWrapper<JsonNode>>() {});
+        return responseWrapper.getResponse();
     }
 
 }
