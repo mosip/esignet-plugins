@@ -149,7 +149,7 @@ public class IdentityAPIClient {
 
     public UserInfo getUserInfoByNationalUid(String nationalUid) {
         try {
-            String token = getAuthToken("compass-admin", compassClientSecret, "client_credentials");
+            String token = getAuthToken("compass-public-client", compassClientSecret, "client_credentials");
             if (token == null || token.isEmpty()) {
                 throw new SendOtpException("Token retrieval failed");
             }
