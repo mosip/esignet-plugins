@@ -20,6 +20,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
@@ -71,12 +72,18 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     @Value("${mosip.signup.mock.add-verified-claims.endpoint}")
     private String addVerifiedClaimsEndpoint;
 
+    @Value("${mosip.signup.mock.get-schema.endpoint}")
+    private String getSchemaEndpoint;
+
     @Autowired
     @Qualifier("selfTokenRestTemplate")
     private RestTemplate restTemplate;
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private ResourceLoader resourceLoader;
 
     @Override
     public void validate(String action, ProfileDto profileDto) throws InvalidProfileException {
@@ -174,7 +181,7 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
         }
         return !inputChallenge.isEmpty() && matchCount >= inputChallenge.size();
     }
-    
+
     private <T> ResponseWrapper<T> request(String url, HttpMethod method, Object request,
             ParameterizedTypeReference<ResponseWrapper<T>> responseType) {
 		try {
@@ -203,7 +210,7 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
                 new ParameterizedTypeReference<ResponseWrapper<MockIdentityResponse>>() {});
         return responseWrapper.getResponse();
     }
-    
+
     private MockIdentityResponse updateIdentity(JsonNode identityRequest) throws ProfileException{
         RequestWrapper<JsonNode> restRequest = new RequestWrapper<>();
         restRequest.setRequestTime(getUTCDateTime());
@@ -226,11 +233,18 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
                 new ParameterizedTypeReference<ResponseWrapper<MockIdentityResponse>>() {});
         return responseWrapper.getResponse();
     }
-    
+
     private String getUTCDateTime() {
         return ZonedDateTime
                 .now(ZoneOffset.UTC)
                 .format(DateTimeFormatter.ofPattern(UTC_DATETIME_PATTERN));
     }
-    
+
+    @Override
+    public JsonNode getUISpecification() {
+        ResponseWrapper<JsonNode> responseWrapper = request(getSchemaEndpoint, HttpMethod.GET ,null,
+                new ParameterizedTypeReference<ResponseWrapper<JsonNode>>() {});
+        return responseWrapper.getResponse();
+    }
+
 }
