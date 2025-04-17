@@ -240,6 +240,7 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
                 .format(DateTimeFormatter.ofPattern(UTC_DATETIME_PATTERN));
     }
 
+    @Override
     public JsonNode getUISpecification() {
         ResponseWrapper<JsonNode> responseWrapper = request(getSchemaEndpoint, HttpMethod.GET ,null,
                 new ParameterizedTypeReference<ResponseWrapper<JsonNode>>() {});
