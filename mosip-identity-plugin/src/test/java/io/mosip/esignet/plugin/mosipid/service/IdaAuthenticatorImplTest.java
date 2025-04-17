@@ -86,6 +86,7 @@ public class IdaAuthenticatorImplTest {
 		ReflectionTestUtils.setField(idaAuthenticatorImpl, "kycAuthUrl", "https://testkycAuthUrl");
 		ReflectionTestUtils.setField(idaAuthenticatorImpl, "getCertsUrl", "https://testGetCertsUrl");
 		ReflectionTestUtils.setField(idaAuthenticatorImpl, "otpChannels", Arrays.asList("otp", "pin", "bio"));
+		ReflectionTestUtils.setField(idaAuthenticatorImpl, "objectMapper", mapper);
 	}
 
 	@Test
