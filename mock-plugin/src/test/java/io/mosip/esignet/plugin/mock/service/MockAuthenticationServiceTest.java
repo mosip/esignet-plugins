@@ -9,7 +9,7 @@ import io.mosip.esignet.api.exception.SendOtpException;
 import io.mosip.esignet.plugin.mock.dto.KycExchangeResponseDto;
 import io.mosip.esignet.api.exception.KycExchangeException;
 import io.mosip.esignet.api.util.ErrorConstants;
-import io.mosip.esignet.plugin.mock.dto.VerifiedKycExchangeRequestDto;
+import io.mosip.esignet.plugin.mock.dto.KycExchangeRequestDtoV2;
 import io.mosip.kernel.core.http.ResponseWrapper;
 import io.mosip.kernel.keymanagerservice.dto.AllCertificatesDataResponseDto;
 import io.mosip.kernel.keymanagerservice.dto.CertificateDataResponseDto;
@@ -78,6 +78,8 @@ public class MockAuthenticationServiceTest {
 
         KycExchangeResult kycExchangeResult = mockAuthenticationService.doKycExchange("RP", "CL", kycExchangeDto);
         Assert.assertEquals(kycExchangeResponseDto.getKyc(), kycExchangeResult.getEncryptedKyc());
+
+
     }
 
     @Test
@@ -212,12 +214,12 @@ public class MockAuthenticationServiceTest {
         kycExchangeDto.setClaimsLocales(new String[]{"en"});
         kycExchangeDto.setAcceptedClaimDetails(new HashMap<>());
 
-        VerifiedKycExchangeRequestDto verifiedRequestDto = new VerifiedKycExchangeRequestDto();
-        verifiedRequestDto.setTransactionId(kycExchangeDto.getTransactionId());
-        verifiedRequestDto.setKycToken(kycExchangeDto.getKycToken());
-        verifiedRequestDto.setIndividualId(kycExchangeDto.getIndividualId());
-        verifiedRequestDto.setClaimLocales(Arrays.asList(kycExchangeDto.getClaimsLocales()));
-        verifiedRequestDto.setAcceptedClaimDetail(kycExchangeDto.getAcceptedClaimDetails());
+        KycExchangeRequestDtoV2 kycExchangeRequestDtoV2 = new KycExchangeRequestDtoV2();
+        kycExchangeRequestDtoV2.setTransactionId(kycExchangeDto.getTransactionId());
+        kycExchangeRequestDtoV2.setKycToken(kycExchangeDto.getKycToken());
+        kycExchangeRequestDtoV2.setIndividualId(kycExchangeDto.getIndividualId());
+        kycExchangeRequestDtoV2.setClaimLocales(Arrays.asList(kycExchangeDto.getClaimsLocales()));
+        kycExchangeRequestDtoV2.setAcceptedClaimDetail(kycExchangeDto.getAcceptedClaimDetails());
 
         KycExchangeResponseDto responseDto = new KycExchangeResponseDto();
         responseDto.setKyc("mockKyc");

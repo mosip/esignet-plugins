@@ -367,6 +367,7 @@ public class MockHelperServiceTest {
     @Test
     public void sendOtpMock_withValidDetails_thenPass() throws SendOtpException {
 
+
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
         ReflectionTestUtils.setField(mockHelperService, "objectMapper", objectMapper);
@@ -395,6 +396,7 @@ public class MockHelperServiceTest {
     @Test
     public void sendOtpMock_withEmptyResponse_thenFail() throws SendOtpException {
 
+
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
         ReflectionTestUtils.setField(mockHelperService, "objectMapper", objectMapper);
@@ -420,6 +422,7 @@ public class MockHelperServiceTest {
 
     @Test
     public void sendOtpMock_withErrorInResponse_thenFail() throws SendOtpException {
+
 
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
@@ -473,6 +476,7 @@ public class MockHelperServiceTest {
             Assert.assertEquals(ErrorConstants.SEND_OTP_FAILED,e.getErrorCode());
         }
     }
+
 
     @Test
     public void getRequestSignatureTest() {
