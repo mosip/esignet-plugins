@@ -47,9 +47,6 @@ public class HelperService {
     @Value("${mosip.esignet.compass.authenticator.otp-value:111111}")
     private String otpValue;
 
-    @Value("#{${mosip.esignet.authenticator.compass.identity-openid-claims-mapping}}")
-    private Map<String,String> oidcClaimsMapping;
-
     @Autowired
     private CacheService cacheService;
 
@@ -140,18 +137,62 @@ public class HelperService {
     public Map<String, Object> buildKycDataBasedOnPolicy(List<String> claims, UserInfo userInfo) throws KycExchangeException {
         Map<String, Object> kyc = new HashMap<>();
         for (String claim : claims) {
-            String methodName = oidcClaimsMapping.get(claim);
-
-            if (methodName != null) {
-                try {
-                    Method method = UserInfo.class.getMethod(methodName);
-                    Object value = method.invoke(userInfo);
-                    if (value != null) {
-                        kyc.put(claim, value);
+            switch (claim) {
+                case "name":
+                    if (userInfo.getFirstNamePrimary() != null) {
+                        kyc.put("name", userInfo.getFirstNamePrimary());
                     }
-                } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-                    throw new KycExchangeException("Error invoking method for claim: "+claim,e.getMessage());
-                }
+                    break;
+                case "birthdate":
+                    if (userInfo.getDateOfBirth() != null) {
+                        kyc.put("birthdate", userInfo.getDateOfBirth());
+                    }
+                    break;
+                case "birthCountry":
+                    if (userInfo.getBirthCountry() != null) {
+                        kyc.put("birthCountry", userInfo.getBirthCountry());
+                    }
+                    break;
+                case "cardAccessNumber":
+                    if (userInfo.getCardAccessNumber() != null) {
+                        kyc.put("cardAccessNumber", userInfo.getCardAccessNumber());
+                    }
+                    break;
+                case "email":
+                    if (userInfo.getEmail() != null) {
+                        kyc.put("email", userInfo.getEmail());
+                    }
+                    break;
+                case "faceImageColor":
+                    if (userInfo.getFaceImageColor() != null) {
+                        kyc.put("faceImageColor", userInfo.getFaceImageColor());
+                    }
+                    break;
+                case "gender":
+                    if (userInfo.getGender() != null) {
+                        kyc.put("gender", userInfo.getGender());
+                    }
+                    break;
+                case "lastNameSecondary":
+                    if (userInfo.getLastNameSecondary() != null) {
+                        kyc.put("lastNameSecondary", userInfo.getLastNameSecondary());
+                    }
+                    break;
+                case "nationalUid":
+                    if (userInfo.getNationalUid() != null) {
+                        kyc.put("nationalUid", userInfo.getNationalUid());
+                    }
+                    break;
+                case "nationality":
+                    if (userInfo.getNationality() != null) {
+                        kyc.put("nationality", userInfo.getNationality());
+                    }
+                    break;
+                case "compassId":
+                    if (userInfo.getCompassId() != null) {
+                        kyc.put("compassId", userInfo.getCompassId());
+                    }
+                    break;
             }
         }
         return kyc;
