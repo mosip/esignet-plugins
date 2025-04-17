@@ -32,10 +32,16 @@ mosip.esignet.cache.expire-in-seconds={'clientdetails' : 86400, 'preauth': 180, 
   'consented': 120, 'vcissuance': ${mosip.esignet.access-token-expire-seconds}, 'apiRateLimit' : 180, 'blocked': 300, 'kycauth':1800, ,'challengehash': 1800}
 
 mosip.esignet.cache.names=clientdetails,preauth,authenticated,authcodegenerated,userinfo,linkcodegenerated,linked,linkedcode,\
-  linkedauth,consented,vcissuance,apiRateLimit,blocked,kycauth,challenghash
+  linkedauth,consented,vcissuance,apiRateLimit,blocked,kycauth,challeneghash
 
 ## Compass identity endpoint configuration, update the API credentials based on the environment
 
+mosip.esignet.send-otp.endpoint=https://api-internal.dev2.mosip.net/v1/otpmanager/otp/generate
+mosip.esignet.send-notification.endpoint=https://api-internal.dev2.mosip.net/v1/notifier/sms/send
+mosip.esignet.get-auth.endpoint=https://iam.dev2.mosip.net/auth/realms/mosip/protocol/openid-connect/token
+mosip.compass.user-info.endpoint= https://compass-admin.dev2.mosip.net/v1/admin/user-info
+mosip.esignet.client.secret=client-secret
+mosip.compass.client.secret=compass-client-secret
 
 
 ````

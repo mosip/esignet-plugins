@@ -6,6 +6,7 @@
 package io.compass.esignet.plugin.service;
 
 import com.nimbusds.jose.jwk.RSAKey;
+import io.compass.esignet.plugin.dto.UserInfo;
 import io.compass.esignet.plugin.util.IdentityAPIClient;
 import io.mosip.esignet.api.dto.AuthChallenge;
 import io.mosip.esignet.api.dto.KeyBindingResult;
@@ -81,8 +82,15 @@ public class CompassKeyBindingWrapperService implements KeyBinder {
         cacheService.setChallengeHash(challengeHash,transactionId);
         HashMap<String, String> hashMap = new LinkedHashMap<>();
         hashMap.put("{challenge}", challenge);
-        identityAPIClient.sendSMSNotification(individualId, "eng",
-                SEND_OTP_SMS_NOTIFICATION_TEMPLATE_KEY, hashMap);
+        UserInfo userInfo=identityAPIClient.getUserInfoByNationalUid(individualId);
+        String email=userInfo.getEmail();
+        identityAPIClient.sendSMSNotification(
+                new String[]{email},
+                null,
+                new String[]{"subject"},
+                new String[]{"message"},
+                null
+        );
         SendOtpResult sendOtpResult=new SendOtpResult();
         sendOtpResult.setTransactionId(transactionId);
         return sendOtpResult;

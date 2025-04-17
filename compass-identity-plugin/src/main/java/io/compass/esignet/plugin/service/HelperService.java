@@ -19,8 +19,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -34,8 +32,6 @@ import java.util.*;
 public class HelperService {
 
     public static final String ALGO_SHA3_256 = "SHA3-256";
-
-    private final String FIELD_ID_KEY="id";
 
     private static final Base64.Encoder urlSafeEncoder = Base64.getUrlEncoder().withoutPadding();
 
@@ -138,6 +134,11 @@ public class HelperService {
         Map<String, Object> kyc = new HashMap<>();
         for (String claim : claims) {
             switch (claim) {
+                case "userInfoId":
+                    if (userInfo.getUserInfoId() != null) {
+                        kyc.put("userInfoId", userInfo.getFirstNamePrimary());
+                    }
+                    break;
                 case "name":
                     if (userInfo.getFirstNamePrimary() != null) {
                         kyc.put("name", userInfo.getFirstNamePrimary());
@@ -191,6 +192,11 @@ public class HelperService {
                 case "compassId":
                     if (userInfo.getCompassId() != null) {
                         kyc.put("compassId", userInfo.getCompassId());
+                    }
+                    break;
+                case "issuanceDate":
+                    if (userInfo.getIssuanceDate() != null) {
+                        kyc.put("issuanceDate", userInfo.getCompassId());
                     }
                     break;
             }

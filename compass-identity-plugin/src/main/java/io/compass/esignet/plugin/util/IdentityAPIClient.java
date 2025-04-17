@@ -8,22 +8,19 @@ import io.mosip.esignet.core.exception.EsignetException;
 import io.mosip.esignet.core.util.IdentityProviderUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.core.env.Environment;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
-import org.springframework.scheduling.annotation.Async;
+import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.Base64;
-import java.util.List;
+
 import java.util.Map;
 
 @Component
@@ -37,23 +34,44 @@ public class IdentityAPIClient {
     private String userInfoUrl;
 
     @Autowired
-    @Qualifier("selfTokenRestTemplate")
-    private RestTemplate selfTokenRestTemplate;
-
-    @Autowired
-    private Environment environment;
+    private RestTemplate restTemplate;
 
     @Value("${mosip.esignet.send-notification.endpoint}")
     private String sendNotificationEndpoint;
 
-    @Value("{${mosip.esignet.default-language}")
-    private String defaultLanguage;
+    @Value("${mosip.esignet.client.secret}")
+    private String clientSecret ;
 
-    @Value("#{${mosip.esignet.sms-notification-template.encoded-langcodes}}")
-    private List<String> encodedLangCodes;
+    @Value("${mosip.compass.client.secret}")
+    private String compassClientSecret ;
 
-    @Value("${mosip.signup.identifier.prefix:}")
-    private String identifierPrefix;
+    @Value("${mosip.esignet.get-auth.endpoint}")
+    private String getAuthTokenEndpoint;
+
+    public String getAuthToken(String client_id,String client_secret,String grant_type)
+    {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+        MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+        body.add("client_id", client_id);
+        body.add("client_secret", client_secret);
+        body.add("grant_type", grant_type);
+
+        HttpEntity<MultiValueMap<String, String>> requestEntity = new HttpEntity<>(body, headers);
+
+        try {
+            ResponseEntity<Map> response = restTemplate.postForEntity(getAuthTokenEndpoint, requestEntity, Map.class);
+            if (response.getStatusCode().is2xxSuccessful()) {
+                Map<String, Object> responseBody = response.getBody();
+                if (responseBody != null && responseBody.containsKey("access_token")) {
+                    return responseBody.get("access_token").toString();
+                }
+            }
+        } catch (Exception e) {
+            throw new EsignetException(e.getMessage());
+        }
+        throw new EsignetException("Error fetching auth token");
+    }
 
     public String generateOTPChallenge(String challengeTransactionId) throws SendOtpException {
         OtpRequest otpRequest = new OtpRequest();
@@ -61,11 +79,21 @@ public class IdentityAPIClient {
         RequestWrapper<OtpRequest> restRequestWrapper = new RequestWrapper<>();
         restRequestWrapper.setRequestTime(IdentityProviderUtil.getUTCDateTime());
         restRequestWrapper.setRequest(otpRequest);
+        String token = getAuthToken("mosip-signup-client", clientSecret, "client_credentials");
+        if (token == null || token.isEmpty()) {
+            throw new SendOtpException("Token retrieval failed");
+        }
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Cookie", "Authorization="+token);
+
+        HttpEntity<RequestWrapper<OtpRequest>> entity = new HttpEntity<>(restRequestWrapper, headers);
 
         try {
-            ResponseWrapper<OtpResponse> responseWrapper = selfTokenRestTemplate
+            ResponseWrapper<OtpResponse> responseWrapper = restTemplate
                     .exchange(generateChallengeUrl, HttpMethod.POST,
-                            new HttpEntity<>(restRequestWrapper),
+                            entity,
                             new ParameterizedTypeReference<ResponseWrapper<OtpResponse>>() {
                             })
                     .getBody();
@@ -86,31 +114,32 @@ public class IdentityAPIClient {
     }
 
 
-    public void sendSMSNotification
-            (String number, String locale, String templateKey, Map<String, String> params) throws SendOtpException {
+    public void sendSMSNotification(String[] mailTo,
+                                    String[] mailCc,
+                                    String[] mailSubject,
+                                    String[] mailContent,
+                                    MultipartFile[] attachments) throws SendOtpException {
 
-        locale = locale != null ? locale : defaultLanguage;
-
-        String message = encodedLangCodes.contains(locale)?
-                new String(Base64.getDecoder().decode(environment.getProperty(templateKey + "." + locale))):
-                environment.getProperty(templateKey + "." + locale);
-
-        if (params != null && message != null) {
-            for (Map.Entry<String, String> entry : params.entrySet()) {
-                message = message.replace(entry.getKey(), entry.getValue());
-            }
-        }
-
-        NotificationRequest notificationRequest = new NotificationRequest(number.substring(identifierPrefix.length()), message);
+        NotificationRequest notificationRequest = new NotificationRequest(mailTo, mailCc, mailSubject, mailContent, attachments);
 
         RequestWrapper<NotificationRequest> restRequestWrapper = new RequestWrapper<>();
         restRequestWrapper.setRequestTime(IdentityProviderUtil.getUTCDateTime());
         restRequestWrapper.setRequest(notificationRequest);
+        String token = getAuthToken("mosip-signup-client", clientSecret, "client_credentials");
+        if (token == null || token.isEmpty()) {
+            throw new SendOtpException("Token retrieval failed");
+        }
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Cookie", "Authorization="+token);
+
+        HttpEntity<RequestWrapper<NotificationRequest>> entity = new HttpEntity<>(restRequestWrapper, headers);
 
         try {
-            ResponseWrapper<NotificationResponse> responseWrapper = selfTokenRestTemplate.exchange(sendNotificationEndpoint,
+            ResponseWrapper<NotificationResponse> responseWrapper = restTemplate.exchange(sendNotificationEndpoint,
                     HttpMethod.POST,
-                    new HttpEntity<>(restRequestWrapper),
+                    entity,
                     new ParameterizedTypeReference<ResponseWrapper<NotificationResponse>>(){}).getBody();
             log.debug("Notification response -> {}", responseWrapper);
         } catch (RestClientException e){
@@ -118,16 +147,23 @@ public class IdentityAPIClient {
         }
     }
 
-    @Async
-    public void sendSMSNotificationAsync
-            (String number, String locale, String templateKey, Map<String, String> params) throws SendOtpException {
-        sendSMSNotification(number, locale, templateKey, params);
-    }
-
     public UserInfo getUserInfoByNationalUid(String nationalUid) {
         try {
-            ResponseEntity<UserInfo> responseEntity = selfTokenRestTemplate.getForEntity(
+            String token = getAuthToken("compass-admin", compassClientSecret, "client_credentials");
+            if (token == null || token.isEmpty()) {
+                throw new SendOtpException("Token retrieval failed");
+            }
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("Authorization","Bearer "+token);
+
+            HttpEntity<String> entity = new HttpEntity<>(headers);
+
+            ResponseEntity<UserInfo> responseEntity = restTemplate.exchange(
                     userInfoUrl + "/{nationalUid}",
+                    HttpMethod.GET,
+                    entity,
                     UserInfo.class,
                     nationalUid
             );

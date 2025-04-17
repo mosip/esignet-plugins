@@ -11,7 +11,7 @@ public class CacheService {
 
     public static final String KYC_AUTH_CACHE="kycauth";
 
-    public static final String CHALLENGE_HASH="challengehash";
+    public static final String CHALLENGE_HASH_CACHE="challengehash";
 
     @Autowired
     CacheManager cacheManager;
@@ -25,11 +25,11 @@ public class CacheService {
     }
 
     public void setChallengeHash(String challengeHash, String transactionId) {
-        cacheManager.getCache(CHALLENGE_HASH).put(transactionId, challengeHash);
+        cacheManager.getCache(CHALLENGE_HASH_CACHE).put(transactionId, challengeHash);
     }
 
     public String getChallengeHash(String transactionId) {
-        Cache.ValueWrapper valueWrapper = cacheManager.getCache(CHALLENGE_HASH).get(transactionId);
+        Cache.ValueWrapper valueWrapper = cacheManager.getCache(CHALLENGE_HASH_CACHE).get(transactionId);
         return valueWrapper != null ? (String) valueWrapper.get() : null;
     }
 

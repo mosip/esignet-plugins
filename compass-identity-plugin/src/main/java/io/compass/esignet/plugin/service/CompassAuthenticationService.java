@@ -5,6 +5,7 @@
  */
 package io.compass.esignet.plugin.service;
 
+import io.compass.esignet.plugin.dto.UserInfo;
 import io.compass.esignet.plugin.util.IdentityAPIClient;
 import io.mosip.esignet.api.dto.*;
 import io.mosip.esignet.api.exception.KycAuthException;
@@ -112,10 +113,15 @@ public class CompassAuthenticationService implements Authenticator {
         String challenge = identityAPIClient.generateOTPChallenge(transactionId);
         String challengeHash = IdentityProviderUtil.generateB64EncodedHash(IdentityProviderUtil.ALGO_SHA3_256, challenge);
         cacheService.setChallengeHash(challengeHash,transactionId);
-        HashMap<String, String> hashMap = new LinkedHashMap<>();
-        hashMap.put("{challenge}", challenge);
-        identityAPIClient.sendSMSNotification(sendOtpDto.getIndividualId(), "en",
-                SEND_OTP_SMS_NOTIFICATION_TEMPLATE_KEY, hashMap);
+        UserInfo userInfo=identityAPIClient.getUserInfoByNationalUid(sendOtpDto.getIndividualId());
+        String email=userInfo.getEmail();
+        identityAPIClient.sendSMSNotification(
+                new String[]{email},
+                null,
+                new String[]{"subject"},
+                new String[]{"message"},
+                null
+        );
         SendOtpResult sendOtpResult=new SendOtpResult();
         sendOtpResult.setTransactionId(transactionId);
         return sendOtpResult;
