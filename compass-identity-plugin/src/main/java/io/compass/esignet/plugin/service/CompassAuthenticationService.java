@@ -19,6 +19,7 @@ import io.mosip.kernel.keymanagerservice.dto.CertificateDataResponseDto;
 import io.mosip.kernel.keymanagerservice.service.KeymanagerService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
@@ -36,8 +37,6 @@ public class CompassAuthenticationService implements Authenticator {
 
     private static final String APPLICATION_ID = "MOCK_AUTHENTICATION_SERVICE";
 
-    private static final String SEND_OTP_SMS_NOTIFICATION_TEMPLATE_KEY = "mosip.esignet.sms-notification-template.send-otp" ;
-
     @Autowired
     private KeymanagerService keymanagerService;
 
@@ -49,6 +48,15 @@ public class CompassAuthenticationService implements Authenticator {
 
     @Autowired
     private IdentityAPIClient identityAPIClient;
+
+    @Value("${mosip.compass.email.subject}")
+    private String emailSubject;
+
+    @Value("${mosip.compass.email.content}")
+    private String emailContent;
+
+    @Value("${mosip.compass.esignet.issuer-id}")
+    private String issuerId;
 
     @Validated
     @Override
@@ -88,7 +96,8 @@ public class CompassAuthenticationService implements Authenticator {
                 Map<String, Object> kyc = helperService.buildKycDataBasedOnPolicy(kycExchangeDto.getAcceptedClaims(),
                         result.getUserInfo());
                 kyc.put("sub", result.getPartnerSpecificUserToken());
-
+                kyc.put("iss", issuerId);
+                kyc.put("aud", clientId);
                 String finalKyc= helperService.signKyc(kyc);
                 KycExchangeResult kycExchangeResult = new KycExchangeResult();
                 kycExchangeResult.setEncryptedKyc(finalKyc);
@@ -115,11 +124,12 @@ public class CompassAuthenticationService implements Authenticator {
         cacheService.setChallengeHash(challengeHash,transactionId);
         UserInfo userInfo=identityAPIClient.getUserInfoByNationalUid(sendOtpDto.getIndividualId());
         String email=userInfo.getEmail();
-        identityAPIClient.sendSMSNotification(
+        String firstName=userInfo.getFirstNamePrimary();
+        identityAPIClient.sendEmailNotification(
                 new String[]{email},
                 null,
-                new String[]{"subject"},
-                new String[]{"message"},
+                new String[]{emailSubject},
+                new String[]{String.format(emailContent,firstName,challenge)},
                 null
         );
         SendOtpResult sendOtpResult=new SendOtpResult();

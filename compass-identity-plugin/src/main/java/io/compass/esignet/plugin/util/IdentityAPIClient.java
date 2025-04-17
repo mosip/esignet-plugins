@@ -114,7 +114,7 @@ public class IdentityAPIClient {
     }
 
 
-    public void sendSMSNotification(String[] mailTo,
+    public void sendEmailNotification(String[] mailTo,
                                     String[] mailCc,
                                     String[] mailSubject,
                                     String[] mailContent,

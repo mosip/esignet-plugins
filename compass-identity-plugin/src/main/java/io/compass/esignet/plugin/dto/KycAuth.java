@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class KycAuth implements Serializable {
 
+    private static final long serialVersionUID = 1L;
     private String kycToken;
     private String partnerSpecificUserToken;
     private LocalDateTime responseTime;

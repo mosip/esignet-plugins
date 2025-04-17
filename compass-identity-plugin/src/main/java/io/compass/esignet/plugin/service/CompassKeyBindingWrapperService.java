@@ -64,6 +64,12 @@ public class CompassKeyBindingWrapperService implements KeyBinder {
     @Autowired
     private IdentityAPIClient identityAPIClient;
 
+    @Value("${mosip.compass.email.subject}")
+    private String emailSubject;
+
+    @Value("${mosip.compass.email.content}")
+    private String emailContent;
+
     private static final Map<String, List<String>> supportedKeyBindingFormats = new HashMap<>();
 
     private static final String SEND_OTP_SMS_NOTIFICATION_TEMPLATE_KEY = "mosip.esignet.sms-notification-template.send-otp" ;
@@ -84,11 +90,12 @@ public class CompassKeyBindingWrapperService implements KeyBinder {
         hashMap.put("{challenge}", challenge);
         UserInfo userInfo=identityAPIClient.getUserInfoByNationalUid(individualId);
         String email=userInfo.getEmail();
-        identityAPIClient.sendSMSNotification(
+        String firstName=userInfo.getFirstNamePrimary();
+        identityAPIClient.sendEmailNotification(
                 new String[]{email},
                 null,
-                new String[]{"subject"},
-                new String[]{"message"},
+                new String[]{emailSubject},
+                new String[]{String.format(emailContent,firstName,challenge)},
                 null
         );
         SendOtpResult sendOtpResult=new SendOtpResult();

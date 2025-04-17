@@ -2,11 +2,14 @@ package io.compass.esignet.plugin.dto;
 
 import lombok.Data;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.UUID;
 
 @Data
-public class UserInfo {
+public class UserInfo  implements Serializable {
+
+    private static final long serialVersionUID = 1L;
     private UUID userInfoId;
     private String birthCountry;
     private Long cardAccessNumber;

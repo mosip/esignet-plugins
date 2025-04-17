@@ -16,9 +16,6 @@ mosip.esignet.integration.key-binder=CompassKeyBindingWrapperService
 mosip.esignet.integration.vci-plugin=NoOpVCIssuancePlugin
 
 
-## Compass mock OTP configuration
-mosip.esignet.compass.authenticator.otp-value=111111
-
 
 ## Update below cache related configuration with "kycauth" and "challengehash" cache name
 
@@ -43,11 +40,14 @@ mosip.compass.user-info.endpoint= https://compass-admin.dev2.mosip.net/v1/admin/
 mosip.esignet.client.secret=client-secret
 mosip.compass.client.secret=compass-client-secret
 
+mosip.compass.email.subject=OTP generated
+mosip.compass.email.content=Dear {}, {} is the otp generated for eSignet login.
+mosip.compass.esignet.issuer-id=esignet
+
 
 ````
 
 ## License
 This project is licensed under the terms of [Mozilla Public License 2.0](LICENSE).
-This integration plugin is compatible with [Sunbird-RC 1.0.0](https://github.com/Sunbird-RC/sunbird-rc-core/tree/v1.0.0)
 
 

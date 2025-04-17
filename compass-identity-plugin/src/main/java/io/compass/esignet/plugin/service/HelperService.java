@@ -40,9 +40,6 @@ public class HelperService {
     @Value("${mosip.esignet.compass.authenticator.otp-channels:email,phone}")
     private List<String> otpChannels;
 
-    @Value("${mosip.esignet.compass.authenticator.otp-value:111111}")
-    private String otpValue;
-
     @Autowired
     private CacheService cacheService;
 
@@ -196,7 +193,7 @@ public class HelperService {
                     break;
                 case "issuanceDate":
                     if (userInfo.getIssuanceDate() != null) {
-                        kyc.put("issuanceDate", userInfo.getCompassId());
+                        kyc.put("issuanceDate", userInfo.getIssuanceDate());
                     }
                     break;
             }
