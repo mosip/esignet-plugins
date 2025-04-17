@@ -87,7 +87,7 @@
 
 		<kernel-keymanager-service.version>1.2.1.0</kernel-keymanager-service.version>
 		<esignet.version>1.6.0-SNAPSHOT</esignet.version>
-		<esignet-signup.version>1.1.2-SNAPSHOT</esignet-signup.version>
+		<esignet-signup.version>1.2.0-SNAPSHOT</esignet-signup.version>
 
 		<sonar.exclusions>**/dto/**,**/entity/**,**/exception/**,**/spi/**,**/advice/**,**/config/**</sonar.exclusions>
 		<sonar.cpd.exclusions>**/dto/**,**/entity/**,**/config/**</sonar.cpd.exclusions>
