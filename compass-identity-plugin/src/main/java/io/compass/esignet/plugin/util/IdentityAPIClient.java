@@ -45,6 +45,12 @@ public class IdentityAPIClient {
     @Value("${mosip.compass.client.secret}")
     private String compassClientSecret ;
 
+    @Value("${mosip.esignet.client.id}")
+    private String clientId ;
+
+    @Value("${mosip.compass.client.id}")
+    private String compassClientId ;
+
     @Value("${mosip.esignet.get-auth.endpoint}")
     private String getAuthTokenEndpoint;
 
@@ -79,7 +85,7 @@ public class IdentityAPIClient {
         RequestWrapper<OtpRequest> restRequestWrapper = new RequestWrapper<>();
         restRequestWrapper.setRequestTime(IdentityProviderUtil.getUTCDateTime());
         restRequestWrapper.setRequest(otpRequest);
-        String token = getAuthToken("mosip-signup-client", clientSecret, "client_credentials");
+        String token = getAuthToken(clientId, clientSecret, "client_credentials");
         if (token == null || token.isEmpty()) {
             throw new SendOtpException("Token retrieval failed");
         }
@@ -125,7 +131,7 @@ public class IdentityAPIClient {
         RequestWrapper<NotificationRequest> restRequestWrapper = new RequestWrapper<>();
         restRequestWrapper.setRequestTime(IdentityProviderUtil.getUTCDateTime());
         restRequestWrapper.setRequest(notificationRequest);
-        String token = getAuthToken("mosip-signup-client", clientSecret, "client_credentials");
+        String token = getAuthToken(clientId, clientSecret, "client_credentials");
         if (token == null || token.isEmpty()) {
             throw new SendOtpException("Token retrieval failed");
         }
@@ -149,7 +155,7 @@ public class IdentityAPIClient {
 
     public UserInfo getUserInfoByNationalUid(String nationalUid) {
         try {
-            String token = getAuthToken("compass-public-client", compassClientSecret, "client_credentials");
+            String token = getAuthToken(compassClientId, compassClientSecret, "client_credentials");
             if (token == null || token.isEmpty()) {
                 throw new SendOtpException("Token retrieval failed");
             }

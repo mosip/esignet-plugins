@@ -61,18 +61,7 @@ public class CompassKeyBindingWrapperService implements KeyBinder {
     @Autowired
     private CacheService cacheService;
 
-    @Autowired
-    private IdentityAPIClient identityAPIClient;
-
-    @Value("${mosip.compass.email.subject}")
-    private String emailSubject;
-
-    @Value("${mosip.compass.email.content}")
-    private String emailContent;
-
     private static final Map<String, List<String>> supportedKeyBindingFormats = new HashMap<>();
-
-    private static final String SEND_OTP_SMS_NOTIFICATION_TEMPLATE_KEY = "mosip.esignet.sms-notification-template.send-otp" ;
 
     static {
         supportedKeyBindingFormats.put("WLA", List.of("jwt"));
@@ -82,24 +71,10 @@ public class CompassKeyBindingWrapperService implements KeyBinder {
     @Override
     public SendOtpResult sendBindingOtp(String individualId, List<String> otpChannels,
                                         Map<String, String> requestHeaders) throws SendOtpException {
-        String transactionId= "transactionId";
-        String challenge = identityAPIClient.generateOTPChallenge(transactionId);
-        String challengeHash = IdentityProviderUtil.generateB64EncodedHash(IdentityProviderUtil.ALGO_SHA3_256, challenge);
-        cacheService.setChallengeHash(challengeHash,transactionId);
-        HashMap<String, String> hashMap = new LinkedHashMap<>();
-        hashMap.put("{challenge}", challenge);
-        UserInfo userInfo=identityAPIClient.getUserInfoByNationalUid(individualId);
-        String email=userInfo.getEmail();
-        String firstName=userInfo.getFirstNamePrimary();
-        identityAPIClient.sendEmailNotification(
-                new String[]{email},
-                null,
-                new String[]{emailSubject},
-                new String[]{String.format(emailContent,firstName,challenge)},
-                null
-        );
-        SendOtpResult sendOtpResult=new SendOtpResult();
-        sendOtpResult.setTransactionId(transactionId);
+        SendOtpResult sendOtpResult = new SendOtpResult();
+        sendOtpResult.setMaskedEmail("");
+        sendOtpResult.setMaskedMobile("");
+        sendOtpResult.setTransactionId("transactionId");
         return sendOtpResult;
     }
 
@@ -114,7 +89,7 @@ public class CompassKeyBindingWrapperService implements KeyBinder {
 
         KycAuth kycAuth= null;
         try {
-            var kycAuthResult = helperService.validateOtpBasedAuth(individualId, challengeList.get(0), "transactionId");
+            var kycAuthResult = helperService.validateOtpForWlaBasedAuth(individualId, challengeList.get(0), "transactionId");
             if (kycAuthResult == null || kycAuthResult.getKycToken() == null) {
                 throw new KeyBindingException(ErrorConstants.KEY_BINDING_FAILED);
             }
