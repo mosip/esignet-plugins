@@ -43,6 +43,9 @@ mosip.compass.client.secret=compass-client-secret
 mosip.compass.email.subject=OTP generated
 mosip.compass.email.content=Dear {}, {} is the otp generated for eSignet login.
 mosip.compass.esignet.issuer-id=esignet
+mosip.esignet.compass.authenticator.ida.otp-value=111111
+mosip.esignet.client.id=esignet-client-id
+mosip.compass.client.id=compass-client-id
 
 
 ````

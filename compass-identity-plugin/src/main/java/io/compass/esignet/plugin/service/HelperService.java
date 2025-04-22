@@ -40,6 +40,9 @@ public class HelperService {
     @Value("${mosip.esignet.compass.authenticator.otp-channels:email,phone}")
     private List<String> otpChannels;
 
+    @Value("${mosip.esignet.compass.authenticator.ida.otp-value:111111}")
+    private String otpValue;
+
     @Autowired
     private CacheService cacheService;
 
@@ -114,6 +117,27 @@ public class HelperService {
             throw new KycAuthException(ErrorConstants.AUTH_FAILED );
         }
         throw new KycAuthException(ErrorConstants.AUTH_FAILED );
+    }
+
+    public KycAuthResult validateOtpForWlaBasedAuth(String individualId, AuthChallenge authChallenge, String transactionId) throws KycAuthException {
+        KycAuthResult kycAuthResult = new KycAuthResult();
+        if (authChallenge.getAuthFactorType().equals("OTP") && authChallenge.getFormat().equals("alpha-numeric")) {
+
+            if (authChallenge.getChallenge().equals(otpValue)) {
+                String kycToken = generateB64EncodedHash(ALGO_SHA3_256, UUID.randomUUID().toString());
+                kycAuthResult.setKycToken(kycToken);
+                kycAuthResult.setPartnerSpecificUserToken(individualId);
+                UserInfo userInfo = identityAPIClient.getUserInfoByNationalUid(individualId);
+                cacheService.setKycAuth(kycToken, new KycAuth(kycToken, kycToken, LocalDateTime.now(ZoneOffset.UTC), transactionId,
+                        individualId
+                        ,userInfo
+                ));
+                return kycAuthResult;
+            } else {
+                throw new KycAuthException(ErrorConstants.AUTH_FAILED);
+            }
+        }
+        return kycAuthResult;
     }
 
     private String generateB64EncodedHash(String algorithm, String value) throws KycAuthException {
