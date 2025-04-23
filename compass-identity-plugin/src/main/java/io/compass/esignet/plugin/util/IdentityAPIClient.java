@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -126,28 +127,32 @@ public class IdentityAPIClient {
                                     String[] mailContent,
                                     MultipartFile[] attachments) throws SendOtpException {
 
-        NotificationRequest notificationRequest = new NotificationRequest(mailTo, mailCc, mailSubject, mailContent, attachments);
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        body.add("mailTo", String.join(",", mailTo));
+        body.add("mailCc", String.join(",", mailCc));
+        body.add("mailSubject", mailSubject[0]);
+        body.add("mailContent", mailContent[0]);
 
-        RequestWrapper<NotificationRequest> restRequestWrapper = new RequestWrapper<>();
-        restRequestWrapper.setRequestTime(IdentityProviderUtil.getUTCDateTime());
-        restRequestWrapper.setRequest(notificationRequest);
         String token = getAuthToken(clientId, clientSecret, "client_credentials");
         if (token == null || token.isEmpty()) {
             throw new SendOtpException("Token retrieval failed");
         }
 
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("Cookie", "Authorization="+token);
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
-        HttpEntity<RequestWrapper<NotificationRequest>> entity = new HttpEntity<>(restRequestWrapper, headers);
+        HttpEntity<MultiValueMap<String, Object>> entity = new HttpEntity<>(body, headers);
+
+        RestTemplate restTemplate = new RestTemplate();
 
         try {
-            ResponseWrapper<NotificationResponse> responseWrapper = restTemplate.exchange(sendNotificationEndpoint,
+            ResponseEntity<String> response = restTemplate.exchange(
+                    sendNotificationEndpoint,
                     HttpMethod.POST,
                     entity,
-                    new ParameterizedTypeReference<ResponseWrapper<NotificationResponse>>(){}).getBody();
-            log.debug("Notification response -> {}", responseWrapper);
+                    String.class
+            );
         } catch (RestClientException e){
             throw new SendOtpException("otp_notification_failed");
         }

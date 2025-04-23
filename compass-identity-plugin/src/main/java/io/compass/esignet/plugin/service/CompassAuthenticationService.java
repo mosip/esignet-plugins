@@ -23,6 +23,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.multipart.MultipartFile;
+
 import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
@@ -127,10 +129,10 @@ public class CompassAuthenticationService implements Authenticator {
         String firstName=userInfo.getFirstNamePrimary();
         identityAPIClient.sendEmailNotification(
                 new String[]{email},
-                null,
+                new String[0],
                 new String[]{emailSubject},
                 new String[]{String.format(emailContent,firstName,challenge)},
-                null
+                new MultipartFile[0]
         );
         SendOtpResult sendOtpResult=new SendOtpResult();
         sendOtpResult.setTransactionId(transactionId);

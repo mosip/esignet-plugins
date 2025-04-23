@@ -34,7 +34,7 @@ mosip.esignet.cache.names=clientdetails,preauth,authenticated,authcodegenerated,
 ## Compass identity endpoint configuration, update the API credentials based on the environment
 
 mosip.esignet.send-otp.endpoint=https://api-internal.dev2.mosip.net/v1/otpmanager/otp/generate
-mosip.esignet.send-notification.endpoint=https://api-internal.dev2.mosip.net/v1/notifier/sms/send
+mosip.esignet.send-notification.endpoint=https://api-internal.dev2.mosip.net/v1/notifier/email/send
 mosip.esignet.get-auth.endpoint=https://iam.dev2.mosip.net/auth/realms/mosip/protocol/openid-connect/token
 mosip.compass.user-info.endpoint= https://compass-admin.dev2.mosip.net/v1/admin/user-info
 mosip.esignet.client.secret=client-secret
