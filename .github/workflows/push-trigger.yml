@@ -34,19 +34,19 @@ jobs:
       GPG_SECRET: ${{ secrets.GPG_SECRET }}
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
 
-  publish-mock-plugin-to-nexus:
-    if: "${{ !contains(github.ref, 'master') && github.event_name != 'pull_request' && github.event_name != 'release' && github.event_name != 'prerelease' && github.event_name != 'publish' }}"
-    needs: build-maven-mock-plugin
-    uses: mosip/kattu/.github/workflows/maven-publish-to-nexus.yml@master
-    with:
-      SERVICE_LOCATION: ./mock-plugin
-    secrets:
-      OSSRH_USER: ${{ secrets.OSSRH_USER }}
-      OSSRH_SECRET: ${{ secrets.OSSRH_SECRET }}
-      OSSRH_URL: ${{ secrets.OSSRH_SNAPSHOT_URL }}
-      OSSRH_TOKEN: ${{ secrets.OSSRH_TOKEN }}
-      GPG_SECRET: ${{ secrets.GPG_SECRET }}
-      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+#  publish-mock-plugin-to-nexus:
+#    if: "${{ !contains(github.ref, 'master') && github.event_name != 'pull_request' && github.event_name != 'release' && github.event_name != 'prerelease' && github.event_name != 'publish' }}"
+#    needs: build-maven-mock-plugin
+#    uses: mosip/kattu/.github/workflows/maven-publish-to-nexus.yml@master
+#    with:
+#      SERVICE_LOCATION: ./mock-plugin
+#    secrets:
+#      OSSRH_USER: ${{ secrets.OSSRH_USER }}
+#      OSSRH_SECRET: ${{ secrets.OSSRH_SECRET }}
+#      OSSRH_URL: ${{ secrets.OSSRH_SNAPSHOT_URL }}
+#      OSSRH_TOKEN: ${{ secrets.OSSRH_TOKEN }}
+#      GPG_SECRET: ${{ secrets.GPG_SECRET }}
+#      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
       
   sonar-analysis-mock-plugin:
     needs: build-maven-mock-plugin
@@ -75,19 +75,19 @@ jobs:
       GPG_SECRET: ${{ secrets.GPG_SECRET }}
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
 
-  publish-mosip-identity-plugin-to-nexus:
-    if: "${{ !contains(github.ref, 'master') && github.event_name != 'pull_request' && github.event_name != 'release' && github.event_name != 'prerelease' && github.event_name != 'publish' }}"
-    needs: build-maven-mosip-identity-plugin
-    uses: mosip/kattu/.github/workflows/maven-publish-to-nexus.yml@master
-    with:
-      SERVICE_LOCATION: ./mosip-identity-plugin
-    secrets:
-      OSSRH_USER: ${{ secrets.OSSRH_USER }}
-      OSSRH_SECRET: ${{ secrets.OSSRH_SECRET }}
-      OSSRH_URL: ${{ secrets.OSSRH_SNAPSHOT_URL }}
-      OSSRH_TOKEN: ${{ secrets.OSSRH_TOKEN }}
-      GPG_SECRET: ${{ secrets.GPG_SECRET }}
-      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+#  publish-mosip-identity-plugin-to-nexus:
+#    if: "${{ !contains(github.ref, 'master') && github.event_name != 'pull_request' && github.event_name != 'release' && github.event_name != 'prerelease' && github.event_name != 'publish' }}"
+#    needs: build-maven-mosip-identity-plugin
+#    uses: mosip/kattu/.github/workflows/maven-publish-to-nexus.yml@master
+#    with:
+#      SERVICE_LOCATION: ./mosip-identity-plugin
+#    secrets:
+#      OSSRH_USER: ${{ secrets.OSSRH_USER }}
+#      OSSRH_SECRET: ${{ secrets.OSSRH_SECRET }}
+#      OSSRH_URL: ${{ secrets.OSSRH_SNAPSHOT_URL }}
+#      OSSRH_TOKEN: ${{ secrets.OSSRH_TOKEN }}
+#      GPG_SECRET: ${{ secrets.GPG_SECRET }}
+#      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
       
   sonar-analysis-mosip-identity-plugin:
     needs: build-maven-mosip-identity-plugin
@@ -116,19 +116,19 @@ jobs:
       GPG_SECRET: ${{ secrets.GPG_SECRET }}
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
 
-  publish-sunbird-rc-plugin-to-nexus:
-    if: "${{ !contains(github.ref, 'master') && github.event_name != 'pull_request' && github.event_name != 'release' && github.event_name != 'prerelease' && github.event_name != 'publish' }}"
-    needs: build-maven-sunbird-rc-plugin
-    uses: mosip/kattu/.github/workflows/maven-publish-to-nexus.yml@master
-    with:
-      SERVICE_LOCATION: ./sunbird-rc-plugin
-    secrets:
-      OSSRH_USER: ${{ secrets.OSSRH_USER }}
-      OSSRH_SECRET: ${{ secrets.OSSRH_SECRET }}
-      OSSRH_URL: ${{ secrets.OSSRH_SNAPSHOT_URL }}
-      OSSRH_TOKEN: ${{ secrets.OSSRH_TOKEN }}
-      GPG_SECRET: ${{ secrets.GPG_SECRET }}
-      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+#  publish-sunbird-rc-plugin-to-nexus:
+#    if: "${{ !contains(github.ref, 'master') && github.event_name != 'pull_request' && github.event_name != 'release' && github.event_name != 'prerelease' && github.event_name != 'publish' }}"
+#    needs: build-maven-sunbird-rc-plugin
+#    uses: mosip/kattu/.github/workflows/maven-publish-to-nexus.yml@master
+#    with:
+#      SERVICE_LOCATION: ./sunbird-rc-plugin
+#    secrets:
+#      OSSRH_USER: ${{ secrets.OSSRH_USER }}
+#      OSSRH_SECRET: ${{ secrets.OSSRH_SECRET }}
+#      OSSRH_URL: ${{ secrets.OSSRH_SNAPSHOT_URL }}
+#      OSSRH_TOKEN: ${{ secrets.OSSRH_TOKEN }}
+#      GPG_SECRET: ${{ secrets.GPG_SECRET }}
+#      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
 
   sonar-analysis-sunbird-rc-plugin:
     needs: build-maven-sunbird-rc-plugin
