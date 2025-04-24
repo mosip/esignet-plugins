@@ -160,9 +160,6 @@ public class HelperService {
                         kyc.put("userInfoId", userInfo.getFirstNamePrimary());
                     }
                     break;
-                case "name":
-                    kyc.put("name", userInfo.getFirstNamePrimary() + " " + userInfo.getLastNameSecondary());
-                    break;
                 case "birthdate":
                     if (userInfo.getDateOfBirth() != null) {
                         kyc.put("birthdate", userInfo.getDateOfBirth());
@@ -193,10 +190,11 @@ public class HelperService {
                         kyc.put("gender", userInfo.getGender());
                     }
                     break;
-                case "lastNameSecondary":
-                    if (userInfo.getLastNameSecondary() != null) {
-                        kyc.put("lastNameSecondary", userInfo.getLastNameSecondary());
-                    }
+                case "first_name":
+                    kyc.put("first_name", userInfo.getFirstNamePrimary());
+                    break;
+                case "last_name":
+                    kyc.put("last_name", userInfo.getLastNameSecondary());
                     break;
                 case "nationalUid":
                     if (userInfo.getNationalUid() != null) {
