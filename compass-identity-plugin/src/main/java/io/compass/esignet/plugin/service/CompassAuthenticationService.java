@@ -14,6 +14,7 @@ import io.mosip.esignet.api.exception.SendOtpException;
 import io.mosip.esignet.api.spi.Authenticator;
 import io.compass.esignet.plugin.dto.KycAuth;
 import io.mosip.esignet.core.util.IdentityProviderUtil;
+import io.mosip.kernel.core.util.StringUtils;
 import io.mosip.kernel.keymanagerservice.dto.AllCertificatesDataResponseDto;
 import io.mosip.kernel.keymanagerservice.dto.CertificateDataResponseDto;
 import io.mosip.kernel.keymanagerservice.service.KeymanagerService;
@@ -29,7 +30,6 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.util.*;
-
 
 
 @ConditionalOnProperty(value = "mosip.esignet.integration.authenticator", havingValue = "CompassAuthenticationService")
@@ -136,7 +136,23 @@ public class CompassAuthenticationService implements Authenticator {
         );
         SendOtpResult sendOtpResult=new SendOtpResult();
         sendOtpResult.setTransactionId(transactionId);
+        sendOtpResult.setMaskedEmail(maskEmail(email));
         return sendOtpResult;
+    }
+
+    public String maskEmail(String email) {
+        if (StringUtils.isEmpty(email) || !email.contains("@")) {
+            return email;
+        }
+        String[] parts = email.split("@", 2);
+        String local = parts[0];
+        String domain = parts[1];
+
+        StringBuilder masked = new StringBuilder();
+        for (int i = 0; i < local.length(); i++) {
+            masked.append(i % 3 == 0 ? local.charAt(i) : 'X');
+        }
+        return masked + "@" + domain;
     }
 
     @Override

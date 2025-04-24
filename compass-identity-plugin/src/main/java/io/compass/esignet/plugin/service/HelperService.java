@@ -25,6 +25,8 @@ import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 @Component
@@ -161,9 +163,7 @@ public class HelperService {
                     }
                     break;
                 case "name":
-                    if (userInfo.getFirstNamePrimary() != null) {
-                        kyc.put("name", userInfo.getFirstNamePrimary());
-                    }
+                    kyc.put("name", userInfo.getFirstNamePrimary() + " " + userInfo.getLastNameSecondary());
                     break;
                 case "birthdate":
                     if (userInfo.getDateOfBirth() != null) {
@@ -185,9 +185,9 @@ public class HelperService {
                         kyc.put("email", userInfo.getEmail());
                     }
                     break;
-                case "faceImageColor":
+                case "picture":
                     if (userInfo.getFaceImageColor() != null) {
-                        kyc.put("faceImageColor", userInfo.getFaceImageColor());
+                        kyc.put("faceImageColor", "data:image/jpeg;base64," + userInfo.getFaceImageColor());
                     }
                     break;
                 case "gender":
