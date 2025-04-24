@@ -22,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -136,7 +137,23 @@ public class CompassAuthenticationService implements Authenticator {
         );
         SendOtpResult sendOtpResult=new SendOtpResult();
         sendOtpResult.setTransactionId(transactionId);
+        sendOtpResult.setMaskedEmail(maskEmail(email));
         return sendOtpResult;
+    }
+
+    public String maskEmail(String email) {
+        if (StringUtils.isEmpty(email) || !email.contains("@")) {
+            return email;
+        }
+        String[] parts = email.split("@", 2);
+        String local = parts[0];
+        String domain = parts[1];
+
+        StringBuilder masked = new StringBuilder();
+        for (int i = 0; i < local.length(); i++) {
+            masked.append(i % 3 == 0 ? local.charAt(i) : 'X');
+        }
+        return masked + "@" + domain;
     }
 
     @Override

@@ -185,9 +185,9 @@ public class HelperService {
                         kyc.put("email", userInfo.getEmail());
                     }
                     break;
-                case "faceImageColor":
+                case "picture":
                     if (userInfo.getFaceImageColor() != null) {
-                        kyc.put("faceImageColor", userInfo.getFaceImageColor());
+                        kyc.put("picture",  userInfo.getFaceImageColor());
                     }
                     break;
                 case "gender":
@@ -195,10 +195,11 @@ public class HelperService {
                         kyc.put("gender", userInfo.getGender());
                     }
                     break;
-                case "lastNameSecondary":
-                    if (userInfo.getLastNameSecondary() != null) {
-                        kyc.put("lastNameSecondary", userInfo.getLastNameSecondary());
-                    }
+                case "first_name":
+                    kyc.put("first_name", userInfo.getFirstNamePrimary());
+                    break;
+                case "last_name":
+                    kyc.put("last_name", userInfo.getLastNameSecondary());
                     break;
                 case "nationalUid":
                     if (userInfo.getNationalUid() != null) {
