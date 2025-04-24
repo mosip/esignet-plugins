@@ -187,7 +187,7 @@ public class HelperService {
                     break;
                 case "picture":
                     if (userInfo.getFaceImageColor() != null) {
-                        kyc.put("faceImageColor", "data:image/jpeg;base64," + userInfo.getFaceImageColor());
+                        kyc.put("picture", "data:image/jpeg;base64," + userInfo.getFaceImageColor());
                     }
                     break;
                 case "gender":
