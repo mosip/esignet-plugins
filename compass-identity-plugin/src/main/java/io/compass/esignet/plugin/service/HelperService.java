@@ -160,6 +160,11 @@ public class HelperService {
                         kyc.put("userInfoId", userInfo.getFirstNamePrimary());
                     }
                     break;
+                case "name":
+                    if (userInfo.getFirstNamePrimary() != null) {
+                        kyc.put("name", userInfo.getFirstNamePrimary());
+                    }
+                    break;
                 case "birthdate":
                     if (userInfo.getDateOfBirth() != null) {
                         kyc.put("birthdate", userInfo.getDateOfBirth());
@@ -182,7 +187,7 @@ public class HelperService {
                     break;
                 case "picture":
                     if (userInfo.getFaceImageColor() != null) {
-                        kyc.put("picture", "data:image/jpeg;base64," + userInfo.getFaceImageColor());
+                        kyc.put("picture",  userInfo.getFaceImageColor());
                     }
                     break;
                 case "gender":
