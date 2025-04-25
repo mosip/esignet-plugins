@@ -186,10 +186,10 @@ public class IdentityAPIClient {
             }
 
             log.error("Failed to fetch user info for National UID: {}. Response: {}", nationalUid, userInfo);
-            throw new EsignetException("user_info_not_found");
+            throw new EsignetException("invalid_individual_id");
         } catch (Exception ex) {
             log.error("Failed to fetch user info for National UID: {}. Error: {}", nationalUid, ex.getMessage(), ex);
-            throw new EsignetException("user_info_fetch_failed");
+            throw new EsignetException("invalid_individual_id");
         }
     }
 
