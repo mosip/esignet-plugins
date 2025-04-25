@@ -12,7 +12,7 @@ public class UserInfo  implements Serializable {
     private static final long serialVersionUID = 1L;
     private UUID userInfoId;
     private String birthCountry;
-    private Long cardAccessNumber;
+    private String cardAccessNumber;
     private LocalDate dateOfBirth;
     private String email;
     private String faceImageColor;
