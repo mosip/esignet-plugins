@@ -165,9 +165,9 @@ public class HelperService {
                         kyc.put("name", userInfo.getFirstNamePrimary());
                     }
                     break;
-                case "birthdate":
+                case "date_of_birth":
                     if (userInfo.getDateOfBirth() != null) {
-                        kyc.put("birthdate", userInfo.getDateOfBirth());
+                        kyc.put("date_of_birth", userInfo.getDateOfBirth());
                     }
                     break;
                 case "birthCountry":
@@ -180,14 +180,14 @@ public class HelperService {
                         kyc.put("cardAccessNumber", userInfo.getCardAccessNumber());
                     }
                     break;
-                case "email":
+                case "email_id":
                     if (userInfo.getEmail() != null) {
-                        kyc.put("email", userInfo.getEmail());
+                        kyc.put("email_id", userInfo.getEmail());
                     }
                     break;
-                case "picture":
+                case "photo":
                     if (userInfo.getFaceImageColor() != null) {
-                        kyc.put("picture",  userInfo.getFaceImageColor());
+                        kyc.put("photo",  userInfo.getFaceImageColor());
                     }
                     break;
                 case "gender":
