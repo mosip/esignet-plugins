@@ -11,6 +11,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import io.micrometer.core.annotation.Timed;
+import io.mosip.esignet.core.util.IdentityProviderUtil;
+import io.mosip.esignet.plugin.mosipid.dto.VerificationMetadata;
 import io.mosip.signup.plugin.mosipid.dto.*;
 import io.mosip.signup.plugin.mosipid.util.ErrorConstants;
 import io.mosip.signup.plugin.mosipid.util.ProfileCacheService;
@@ -130,7 +132,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
         }
 
         JsonNode inputJson = profileDto.getIdentity();
-        double version = inputJson.has(ID_SCHEMA_VERSION_FIELD_ID) ? inputJson.get(ID_SCHEMA_VERSION_FIELD_ID).asDouble() : 0;
+        double version = inputJson.has(ID_SCHEMA_VERSION_FIELD_ID) ? inputJson.get(ID_SCHEMA_VERSION_FIELD_ID).asDouble() : 0.4;
         SchemaResponse schemaResponse = getSchemaJson(version);
         ((ObjectNode) inputJson).set(ID_SCHEMA_VERSION_FIELD_ID, objectMapper.valueToTree(schemaResponse.getIdVersion()));
 
@@ -195,10 +197,6 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
         //set UIN
         //((ObjectNode) inputJson).set("UIN", objectMapper.valueToTree(profileDto.getUniqueUserId()));
         ((ObjectNode) inputJson).set(UIN, objectMapper.valueToTree(profileDto.getIndividualId()));
-
-        if(!inputJson.has(SELECTED_HANDLES_FIELD_ID) && !CollectionUtils.isEmpty(defaultSelectedHandles)){
-            ((ObjectNode) inputJson).set(SELECTED_HANDLES_FIELD_ID, objectMapper.valueToTree(defaultSelectedHandles));
-        }
 
         //Build identity request
         IdentityRequest identityRequest = buildIdentityRequest(inputJson, true);
@@ -355,6 +353,9 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
         restRequest.setVersion(identityRequestVersion);
         restRequest.setRequesttime(getUTCDateTime());
         restRequest.setRequest(identityRequest);
+
+        log.info("UPDATE REQUEST **********************"+ updateIdentityRequestID);
+        log.info("UPDATE REQUEST **********************"+ restRequest);
         ResponseWrapper<IdentityResponse> responseWrapper = request(identityEndpoint, HttpMethod.PATCH, restRequest,
                 new ParameterizedTypeReference<ResponseWrapper<IdentityResponse>>() {});
         return responseWrapper.getResponse();
@@ -388,6 +389,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
             if(request != null) {
                 httpEntity = new HttpEntity<>(request);
             }
+            log.info("UPDATE REQUEST ********************** http"+ httpEntity);
             ResponseWrapper<T> responseWrapper = restTemplate.exchange(
                     url,
                     method,
@@ -418,7 +420,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     }
 
     private IdentityRequest buildIdentityRequest(JsonNode inputJson, boolean isUpdate) {
-        double version = inputJson.has(ID_SCHEMA_VERSION_FIELD_ID) ? inputJson.get(ID_SCHEMA_VERSION_FIELD_ID).asDouble() : 0;
+        double version = inputJson.has(ID_SCHEMA_VERSION_FIELD_ID) ? inputJson.get(ID_SCHEMA_VERSION_FIELD_ID).asDouble() : 0.4;
         SchemaResponse schemaResponse = getSchemaJson(version);
         ((ObjectNode) inputJson).set(ID_SCHEMA_VERSION_FIELD_ID, objectMapper.valueToTree(schemaResponse.getIdVersion()));
 
@@ -432,12 +434,60 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
 
         //if verified claims exists then pass it in the request as "verifiedAttributes"
         if(inputJson.has("verified_claims")) {
-            identityRequest.setVerifiedAttributes(inputJson.get("verified_claims"));
+            identityRequest.setVerifiedAttributes(buildVerifiedClaims(inputJson.get("verified_claims")));
             ((ObjectNode) inputJson).remove("verified_claims");
         }
 
         identityRequest.setIdentity(inputJson);
         return identityRequest;
+    }
+
+    /**
+     * Method to build List<VerificationMetadata> from the verified claims
+     * @param verifiedClaims {@link JsonNode}
+     * @return List<VerificationMetadata> verifiedAttributes
+     */
+    private List<VerificationMetadata> buildVerifiedClaims(JsonNode verifiedClaims) {
+        List<VerificationMetadata> verifiedAttributes = new ArrayList<>();
+
+        for (Iterator<Map.Entry<String, JsonNode>> it = verifiedClaims.fields(); it.hasNext(); ) {
+            Map.Entry<String, JsonNode> entry = it.next();
+            String claim = entry.getKey();
+            JsonNode value = entry.getValue();
+
+            VerificationMetadata metadata = new VerificationMetadata();
+            metadata.setTrustFramework(value.get("trust_framework").asText());
+            metadata.setVerificationProcess(value.get("verification_process").asText());
+            metadata.setClaims(Collections.singletonList(claim));
+
+            Map<String, Object> metaMap = new HashMap<>();
+            if (value.has("trust_framework")) {
+                String tf = value.get("trust_framework").asText();
+                metadata.setTrustFramework(tf);
+                metaMap.put("trust_framework", tf);
+            }
+            if (value.has("verification_process")) {
+                String vp = value.get("verification_process").asText();
+                metadata.setVerificationProcess(vp);
+                metaMap.put("verification_process", vp);
+            }
+
+            // Add timestamp
+            metaMap.put("time", IdentityProviderUtil.getUTCDateTime());
+
+            // Add any other fields to metadata
+            value.fields().forEachRemaining(field -> {
+                String key = field.getKey();
+                if (!key.equals("trust_framework") && !key.equals("verification_process")) {
+                    metaMap.put(key, field.getValue().asText());
+                }
+            });
+            metadata.setMetadata(metaMap);
+
+            verifiedAttributes.add(metadata);
+        }
+
+        return verifiedAttributes;
     }
 
     private String getUTCDateTime() {

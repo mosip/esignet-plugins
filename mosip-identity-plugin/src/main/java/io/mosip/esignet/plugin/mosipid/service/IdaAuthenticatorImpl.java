@@ -8,6 +8,7 @@ package io.mosip.esignet.plugin.mosipid.service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.mosip.esignet.api.dto.*;
 import io.mosip.esignet.api.exception.KycAuthException;
 import io.mosip.esignet.api.exception.KycExchangeException;
@@ -33,7 +34,10 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.io.IOException;
 import java.util.*;
+
+import static io.mosip.esignet.core.constants.Constants.VERIFIED_CLAIMS;
 
 
 @ConditionalOnProperty(value = "mosip.esignet.integration.authenticator", havingValue = "IdaAuthenticatorImpl")
@@ -68,6 +72,9 @@ public class IdaAuthenticatorImpl implements Authenticator {
 
     @Value("${mosip.esignet.authenticator.ida.kyc-exchange-url}")
     private String kycExchangeUrl;
+
+    @Value("${mosip.esignet.authenticator.ida.kyc-exchange-url-v2}")
+    private String kycExchangeUrlV2; // to be defined in properties for ex: https://api-internal.dev1.mosip.net/idauthentication/v1/kyc-exchange/v2/delegated/IdP_LK/Auth-Partner_ID/OIDC-client-id
 
     @Value("${mosip.esignet.authenticator.ida.otp-channels}")
     private List<String> otpChannels;
@@ -123,10 +130,16 @@ public class IdaAuthenticatorImpl implements Authenticator {
             idaKycExchangeRequest.setRespType(kycExchangeDto.getUserInfoResponseType()); //may be either JWT or JWE
             idaKycExchangeRequest.setIndividualId(kycExchangeDto.getIndividualId());
 
+            if(kycExchangeDto instanceof VerifiedKycExchangeDto){
+                setClaims((VerifiedKycExchangeDto) kycExchangeDto, idaKycExchangeRequest);
+            }
+
+
             //set signature header, body and invoke kyc exchange endpoint
             String requestBody = objectMapper.writeValueAsString(idaKycExchangeRequest);
             RequestEntity requestEntity = RequestEntity
-                    .post(UriComponentsBuilder.fromUriString(kycExchangeUrl).pathSegment(relyingPartyId,
+                    .post(UriComponentsBuilder.fromUriString((kycExchangeDto instanceof VerifiedKycExchangeDto) ?
+                            kycExchangeUrlV2 : kycExchangeUrl).pathSegment(relyingPartyId,
                             clientId).build().toUri())
                     .contentType(MediaType.APPLICATION_JSON_UTF8)
                     .header(SIGNATURE_HEADER_NAME, helperService.getRequestSignature(requestBody))
@@ -150,6 +163,28 @@ public class IdaAuthenticatorImpl implements Authenticator {
             log.error("IDA Kyc-exchange failed with clientId : {}", clientId, e);
         }
         throw new KycExchangeException();
+    }
+
+    /**
+     * Set the verfied and unVerified consented claims to {@link IdaKycExchangeRequest} object
+     * @param kycExchangeDto {@link KycExchangeDto}
+     * @param idaKycExchangeRequest {@link IdaKycExchangeRequest}
+     */
+    private void setClaims(VerifiedKycExchangeDto kycExchangeDto, IdaKycExchangeRequest idaKycExchangeRequest) {
+        if(kycExchangeDto != null){
+            Map<String, JsonNode> acceptedClaimDetails = kycExchangeDto.getAcceptedClaimDetails();
+            if(acceptedClaimDetails!=null && acceptedClaimDetails.get(VERIFIED_CLAIMS)!=null){
+                List<Map<String, Object>> verifiedClaimsList = objectMapper.convertValue(kycExchangeDto.getAcceptedClaimDetails()
+                        .get(VERIFIED_CLAIMS), new TypeReference<>() {});
+                idaKycExchangeRequest.setVerifiedConsentedClaims(verifiedClaimsList);
+            }
+
+            Map<String, JsonNode> unVerifiedConsentedClaims = getUnVerifiedConsentedClaims(acceptedClaimDetails);
+            if(!CollectionUtils.isEmpty(unVerifiedConsentedClaims)){
+                Map<String, Object> unVerifiedConsentedClaim = objectMapper.convertValue(unVerifiedConsentedClaims, new TypeReference<>() {});
+                idaKycExchangeRequest.setUnVerifiedConsentedClaims(unVerifiedConsentedClaim);
+            }
+        }
     }
 
     @Override
@@ -268,15 +303,37 @@ public class IdaAuthenticatorImpl implements Authenticator {
         throw new KycAuthException(ErrorConstants.AUTH_FAILED);
     }
 
-    @SuppressWarnings("unchecked")
+
+    /**
+     * Method to build VerifiedClaimsMetadata from the string of VerifiedClaimsMetadata from IDA response
+     * @param verifiedClaimsMetadata string of claims metadata
+     * @return Map<String, List<JsonNode>> claimsMetadata
+     */
     private Map<String, List<JsonNode>> buildVerifiedClaimsMetadata(String verifiedClaimsMetadata) {
         Map<String, List<JsonNode>> claimsMetadata = new LinkedHashMap<>();
         try {
-            claimsMetadata = objectMapper.readValue(verifiedClaimsMetadata, Map.class);
+            JsonNode jsonNode =  objectMapper.readTree(verifiedClaimsMetadata);
+            replaceNullStrings((ObjectNode) jsonNode);
+            claimsMetadata = objectMapper.convertValue(jsonNode, new TypeReference<>() {});
+
         } catch (Exception e) {
             log.error("Unable to read claims meta data values", e);
         }
         return claimsMetadata;
+    }
+
+    /**
+     * Replace null strings with java null
+     * @param node {@link ObjectNode}
+     */
+    private static void replaceNullStrings(ObjectNode node) {
+        Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
+        while (fields.hasNext()) {
+            Map.Entry<String, JsonNode> entry = fields.next();
+            if (entry.getValue().isTextual() && "null".equals(entry.getValue().asText())) {
+                node.set(entry.getKey(), null);
+            }
+        }
     }
 
 
@@ -306,6 +363,21 @@ public class IdaAuthenticatorImpl implements Authenticator {
 
     @Override
     public KycExchangeResult doVerifiedKycExchange(String relyingPartyId, String clientId, VerifiedKycExchangeDto kycExchangeDto) throws KycExchangeException {
-        return doKycExchange(relyingPartyId, clientId, kycExchangeDto); //TODO
+        return doKycExchange(relyingPartyId, clientId, kycExchangeDto);
+    }
+
+    @NotNull
+    private static Map<String, JsonNode> getUnVerifiedConsentedClaims(Map<String, JsonNode> acceptedClaimDetails) {
+        Map<String, JsonNode> unVerifiedConsentedClaims = new HashMap<>();
+        if(!CollectionUtils.isEmpty(acceptedClaimDetails)) {
+            for(Map.Entry<String, JsonNode> entry : acceptedClaimDetails.entrySet()) {
+                String key = entry.getKey();
+                JsonNode value = entry.getValue();
+                if(!key.equals(VERIFIED_CLAIMS)){
+                    unVerifiedConsentedClaims.put(key,value);
+                }
+            }
+        }
+        return unVerifiedConsentedClaims;
     }
 }
