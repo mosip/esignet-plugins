@@ -132,7 +132,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
         }
 
         JsonNode inputJson = profileDto.getIdentity();
-        double version = inputJson.has(ID_SCHEMA_VERSION_FIELD_ID) ? inputJson.get(ID_SCHEMA_VERSION_FIELD_ID).asDouble() : 0.4;
+        double version = inputJson.has(ID_SCHEMA_VERSION_FIELD_ID) ? inputJson.get(ID_SCHEMA_VERSION_FIELD_ID).asDouble() : 0;
         SchemaResponse schemaResponse = getSchemaJson(version);
         ((ObjectNode) inputJson).set(ID_SCHEMA_VERSION_FIELD_ID, objectMapper.valueToTree(schemaResponse.getIdVersion()));
 
@@ -354,8 +354,8 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
         restRequest.setRequesttime(getUTCDateTime());
         restRequest.setRequest(identityRequest);
 
-        log.info("UPDATE REQUEST **********************"+ updateIdentityRequestID);
-        log.info("UPDATE REQUEST **********************"+ restRequest);
+        log.info("update request {} with request ID {}", restRequest, updateIdentityRequestID);
+
         ResponseWrapper<IdentityResponse> responseWrapper = request(identityEndpoint, HttpMethod.PATCH, restRequest,
                 new ParameterizedTypeReference<ResponseWrapper<IdentityResponse>>() {});
         return responseWrapper.getResponse();
@@ -389,7 +389,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
             if(request != null) {
                 httpEntity = new HttpEntity<>(request);
             }
-            log.info("UPDATE REQUEST ********************** http"+ httpEntity);
+            log.info("update request httpEntity {}", httpEntity);
             ResponseWrapper<T> responseWrapper = restTemplate.exchange(
                     url,
                     method,
@@ -420,7 +420,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     }
 
     private IdentityRequest buildIdentityRequest(JsonNode inputJson, boolean isUpdate) {
-        double version = inputJson.has(ID_SCHEMA_VERSION_FIELD_ID) ? inputJson.get(ID_SCHEMA_VERSION_FIELD_ID).asDouble() : 0.4;
+        double version = inputJson.has(ID_SCHEMA_VERSION_FIELD_ID) ? inputJson.get(ID_SCHEMA_VERSION_FIELD_ID).asDouble() : 0;
         SchemaResponse schemaResponse = getSchemaJson(version);
         ((ObjectNode) inputJson).set(ID_SCHEMA_VERSION_FIELD_ID, objectMapper.valueToTree(schemaResponse.getIdVersion()));
 

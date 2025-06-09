@@ -74,7 +74,7 @@ public class IdaAuthenticatorImpl implements Authenticator {
     private String kycExchangeUrl;
 
     @Value("${mosip.esignet.authenticator.ida.kyc-exchange-url-v2}")
-    private String kycExchangeUrlV2; // to be defined in properties for ex: https://api-internal.dev1.mosip.net/idauthentication/v1/kyc-exchange/v2/delegated/IdP_LK/Auth-Partner_ID/OIDC-client-id
+    private String kycExchangeUrlV2;
 
     @Value("${mosip.esignet.authenticator.ida.otp-channels}")
     private List<String> otpChannels;
@@ -366,7 +366,12 @@ public class IdaAuthenticatorImpl implements Authenticator {
         return doKycExchange(relyingPartyId, clientId, kycExchangeDto);
     }
 
-    @NotNull
+    /**
+     * Method to return un verified consented claims
+     * @param acceptedClaimDetails Accepted claims Map
+     * @return un verified consented claims
+     */
+    @NotNull // This is added to not return null either return un verified claims map or empty map
     private static Map<String, JsonNode> getUnVerifiedConsentedClaims(Map<String, JsonNode> acceptedClaimDetails) {
         Map<String, JsonNode> unVerifiedConsentedClaims = new HashMap<>();
         if(!CollectionUtils.isEmpty(acceptedClaimDetails)) {

@@ -25,9 +25,12 @@ public class IdaKycExchangeRequest {
     private String respType;
     private String individualId;
 
+    /**
+     * claims metadata - Not set/un used for now from IDA
+     */
     private Map<String, Object> metadata;
     /**
-     * verified claims
+     * User consented verified claims list.
      */
     List<Map<String, Object>> verifiedConsentedClaims;
     /**
