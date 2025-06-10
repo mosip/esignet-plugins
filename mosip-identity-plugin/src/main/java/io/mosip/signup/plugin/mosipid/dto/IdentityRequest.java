@@ -6,7 +6,6 @@
 package io.mosip.signup.plugin.mosipid.dto;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import io.mosip.esignet.plugin.mosipid.dto.VerificationMetadata;
 import lombok.Data;
 
 import java.util.List;

@@ -326,7 +326,7 @@ public class IdaAuthenticatorImpl implements Authenticator {
      * Replace null strings with java null
      * @param node {@link ObjectNode}
      */
-    private static void replaceNullStrings(ObjectNode node) {
+    private void replaceNullStrings(ObjectNode node) {
         Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
         while (fields.hasNext()) {
             Map.Entry<String, JsonNode> entry = fields.next();

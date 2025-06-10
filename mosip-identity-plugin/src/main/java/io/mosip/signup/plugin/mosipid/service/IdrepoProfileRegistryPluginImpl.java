@@ -12,7 +12,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import io.micrometer.core.annotation.Timed;
 import io.mosip.esignet.core.util.IdentityProviderUtil;
-import io.mosip.esignet.plugin.mosipid.dto.VerificationMetadata;
+import io.mosip.signup.plugin.mosipid.dto.VerificationMetadata;
 import io.mosip.signup.plugin.mosipid.dto.*;
 import io.mosip.signup.plugin.mosipid.util.ErrorConstants;
 import io.mosip.signup.plugin.mosipid.util.ProfileCacheService;
@@ -461,27 +461,11 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
             metadata.setClaims(Collections.singletonList(claim));
 
             Map<String, Object> metaMap = new HashMap<>();
-            if (value.has("trust_framework")) {
-                String tf = value.get("trust_framework").asText();
-                metadata.setTrustFramework(tf);
-                metaMap.put("trust_framework", tf);
-            }
-            if (value.has("verification_process")) {
-                String vp = value.get("verification_process").asText();
-                metadata.setVerificationProcess(vp);
-                metaMap.put("verification_process", vp);
-            }
-
             // Add timestamp
             metaMap.put("time", IdentityProviderUtil.getUTCDateTime());
 
-            // Add any other fields to metadata
-            value.fields().forEachRemaining(field -> {
-                String key = field.getKey();
-                if (!key.equals("trust_framework") && !key.equals("verification_process")) {
-                    metaMap.put(key, field.getValue().asText());
-                }
-            });
+            // Add fields to metadata
+            value.fields().forEachRemaining(field -> metaMap.put(field.getKey(), field.getValue().asText()));
             metadata.setMetadata(metaMap);
 
             verifiedAttributes.add(metadata);
