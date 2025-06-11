@@ -73,9 +73,6 @@ public class IdaAuthenticatorImpl implements Authenticator {
     @Value("${mosip.esignet.authenticator.ida.kyc-exchange-url}")
     private String kycExchangeUrl;
 
-    @Value("${mosip.esignet.authenticator.ida.kyc-exchange-url-v2}")
-    private String kycExchangeUrlV2;
-
     @Value("${mosip.esignet.authenticator.ida.otp-channels}")
     private List<String> otpChannels;
 
@@ -138,8 +135,7 @@ public class IdaAuthenticatorImpl implements Authenticator {
             //set signature header, body and invoke kyc exchange endpoint
             String requestBody = objectMapper.writeValueAsString(idaKycExchangeRequest);
             RequestEntity requestEntity = RequestEntity
-                    .post(UriComponentsBuilder.fromUriString((kycExchangeDto instanceof VerifiedKycExchangeDto) ?
-                            kycExchangeUrlV2 : kycExchangeUrl).pathSegment(relyingPartyId,
+                    .post(UriComponentsBuilder.fromUriString(kycExchangeUrl).pathSegment(relyingPartyId,
                             clientId).build().toUri())
                     .contentType(MediaType.APPLICATION_JSON_UTF8)
                     .header(SIGNATURE_HEADER_NAME, helperService.getRequestSignature(requestBody))
@@ -372,7 +368,7 @@ public class IdaAuthenticatorImpl implements Authenticator {
      * @return un verified consented claims
      */
     @NotNull // This is added to not return null either return un verified claims map or empty map
-    private static Map<String, JsonNode> getUnVerifiedConsentedClaims(Map<String, JsonNode> acceptedClaimDetails) {
+    private Map<String, JsonNode> getUnVerifiedConsentedClaims(Map<String, JsonNode> acceptedClaimDetails) {
         Map<String, JsonNode> unVerifiedConsentedClaims = new HashMap<>();
         if(!CollectionUtils.isEmpty(acceptedClaimDetails)) {
             for(Map.Entry<String, JsonNode> entry : acceptedClaimDetails.entrySet()) {

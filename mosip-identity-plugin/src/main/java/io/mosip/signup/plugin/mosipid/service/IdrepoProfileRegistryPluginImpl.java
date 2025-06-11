@@ -461,11 +461,11 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
             metadata.setClaims(Collections.singletonList(claim));
 
             Map<String, Object> metaMap = new HashMap<>();
-            // Add timestamp
-            metaMap.put("time", IdentityProviderUtil.getUTCDateTime());
 
             // Add fields to metadata
-            value.fields().forEachRemaining(field -> metaMap.put(field.getKey(), field.getValue().asText()));
+            value.fields().forEachRemaining(field -> metaMap.put(field.getKey(), field.getValue()));
+
+            metaMap.put("time", IdentityProviderUtil.getUTCDateTime());
             metadata.setMetadata(metaMap);
 
             verifiedAttributes.add(metadata);
