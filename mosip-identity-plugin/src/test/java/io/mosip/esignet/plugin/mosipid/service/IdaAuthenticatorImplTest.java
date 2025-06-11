@@ -75,6 +75,7 @@ public class IdaAuthenticatorImplTest {
 		ReflectionTestUtils.setField(idaAuthenticatorImpl, "otpChannels", Arrays.asList("otp", "pin", "bio"));
 		ReflectionTestUtils.setField(idaAuthenticatorImpl, "objectMapper", mapper);
 		ReflectionTestUtils.setField(idaAuthenticatorImpl, "kycAuthUrlV2", "https://testkycAuthUrl");
+		ReflectionTestUtils.setField(idaAuthenticatorImpl, "kycExchangeUrlV2", "https://testkycAuthUrl");
 	}
 
 	@Test
@@ -391,6 +392,81 @@ public class IdaAuthenticatorImplTest {
 				kycExchangeDto);
 
 		Assert.assertEquals(idaKycExchangeResponse.getEncryptedKyc(), kycExchangeResult.getEncryptedKyc());
+	}
+
+	@Test
+	public void doKycExchange_withVerifiedClaims_thenPass() throws Exception {
+		VerifiedKycExchangeDto verifiedDto = new VerifiedKycExchangeDto();
+		verifiedDto.setIndividualId("IND1234");
+		verifiedDto.setKycToken("KYCT123");
+		verifiedDto.setTransactionId("TRAN123");
+		verifiedDto.setAcceptedClaims(List.of("verified_claims", "name", "dob"));
+		verifiedDto.setClaimsLocales(new String[]{"en"});
+
+		ObjectMapper mapper = new ObjectMapper();
+		JsonNode verifiedClaimsNode = mapper.readTree("[{\"claim1\":\"value1\"}]");
+
+		JsonNode nameNode = mapper.readTree("\"John Doe\"");
+		JsonNode dobNode = mapper.readTree("\"1990-01-01\"");
+
+		Map<String, JsonNode> claimDetails = new HashMap<>();
+		claimDetails.put("verified_claims", verifiedClaimsNode);
+		claimDetails.put("name", nameNode);
+		claimDetails.put("dob", dobNode);
+
+		verifiedDto.setAcceptedClaimDetails(claimDetails);
+
+		IdaKycExchangeResponse idaKycExchangeResponse = new IdaKycExchangeResponse();
+		idaKycExchangeResponse.setEncryptedKyc("ENCRKYC456");
+
+		IdaResponseWrapper<IdaKycExchangeResponse> idaResponseWrapper = new IdaResponseWrapper<>();
+		idaResponseWrapper.setResponse(idaKycExchangeResponse);
+		idaResponseWrapper.setTransactionID("TRAN123");
+		idaResponseWrapper.setVersion("VER2");
+
+		ResponseEntity<IdaResponseWrapper<IdaKycExchangeResponse>> responseEntity =
+				new ResponseEntity<>(idaResponseWrapper, HttpStatus.OK);
+
+		Mockito.when(restTemplate.exchange(Mockito.<RequestEntity<String>>any(),
+						Mockito.<ParameterizedTypeReference<IdaResponseWrapper<IdaKycExchangeResponse>>>any()))
+				.thenReturn(responseEntity);
+
+		KycExchangeResult result = idaAuthenticatorImpl.doKycExchange("relyingPartyId", "clientId", verifiedDto);
+
+		Assert.assertEquals("ENCRKYC456", result.getEncryptedKyc());
+	}
+
+	@Test
+	public void doKycExchange_withVerifiedClaims_withError_thenFail() throws Exception {
+		VerifiedKycExchangeDto verifiedDto = new VerifiedKycExchangeDto();
+		verifiedDto.setIndividualId("IND1234");
+		verifiedDto.setKycToken("KYCT123");
+		verifiedDto.setTransactionId("TRAN123");
+
+		ObjectMapper mapper = new ObjectMapper();
+		JsonNode verifiedClaimsNode = mapper.readTree("[{\"claim1\":\"value1\"}]");
+		Map<String, JsonNode> claimDetails = new HashMap<>();
+		claimDetails.put("verified_claims", verifiedClaimsNode);
+		verifiedDto.setAcceptedClaimDetails(claimDetails);
+
+		IdaError error = new IdaError();
+		error.setErrorCode(ErrorConstants.DATA_EXCHANGE_FAILED);
+		IdaResponseWrapper<IdaKycExchangeResponse> wrapper = new IdaResponseWrapper<>();
+		wrapper.setErrors(List.of(error));
+
+		ResponseEntity<IdaResponseWrapper<IdaKycExchangeResponse>> responseEntity =
+				new ResponseEntity<>(wrapper, HttpStatus.OK);
+
+		Mockito.when(restTemplate.exchange(Mockito.<RequestEntity<String>>any(),
+						Mockito.<ParameterizedTypeReference<IdaResponseWrapper<IdaKycExchangeResponse>>>any()))
+				.thenReturn(responseEntity);
+
+		try {
+			idaAuthenticatorImpl.doKycExchange("relyingPartyId", "clientId", verifiedDto);
+			Assert.fail("Expected KycExchangeException was not thrown");
+		} catch (KycExchangeException ex) {
+			Assert.assertEquals(ErrorConstants.DATA_EXCHANGE_FAILED, ex.getMessage());
+		}
 	}
 
 	@Test
