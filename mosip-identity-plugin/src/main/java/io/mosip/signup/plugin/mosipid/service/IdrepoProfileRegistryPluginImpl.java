@@ -11,6 +11,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import io.micrometer.core.annotation.Timed;
+import io.mosip.esignet.core.util.IdentityProviderUtil;
+import io.mosip.signup.plugin.mosipid.dto.VerificationMetadata;
 import io.mosip.signup.plugin.mosipid.dto.*;
 import io.mosip.signup.plugin.mosipid.util.ErrorConstants;
 import io.mosip.signup.plugin.mosipid.util.ProfileCacheService;
@@ -196,10 +198,6 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
         //((ObjectNode) inputJson).set("UIN", objectMapper.valueToTree(profileDto.getUniqueUserId()));
         ((ObjectNode) inputJson).set(UIN, objectMapper.valueToTree(profileDto.getIndividualId()));
 
-        if(!inputJson.has(SELECTED_HANDLES_FIELD_ID) && !CollectionUtils.isEmpty(defaultSelectedHandles)){
-            ((ObjectNode) inputJson).set(SELECTED_HANDLES_FIELD_ID, objectMapper.valueToTree(defaultSelectedHandles));
-        }
-
         //Build identity request
         IdentityRequest identityRequest = buildIdentityRequest(inputJson, true);
         identityRequest.setRegistrationId(requestId);
@@ -355,6 +353,9 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
         restRequest.setVersion(identityRequestVersion);
         restRequest.setRequesttime(getUTCDateTime());
         restRequest.setRequest(identityRequest);
+
+        log.debug("update request {} with request ID {}", restRequest, updateIdentityRequestID);
+
         ResponseWrapper<IdentityResponse> responseWrapper = request(identityEndpoint, HttpMethod.PATCH, restRequest,
                 new ParameterizedTypeReference<ResponseWrapper<IdentityResponse>>() {});
         return responseWrapper.getResponse();
@@ -432,12 +433,44 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
 
         //if verified claims exists then pass it in the request as "verifiedAttributes"
         if(inputJson.has("verified_claims")) {
-            identityRequest.setVerifiedAttributes(inputJson.get("verified_claims"));
+            identityRequest.setVerifiedAttributes(buildVerifiedClaims(inputJson.get("verified_claims")));
             ((ObjectNode) inputJson).remove("verified_claims");
         }
 
         identityRequest.setIdentity(inputJson);
         return identityRequest;
+    }
+
+    /**
+     * Method to build List<VerificationMetadata> from the verified claims
+     * @param verifiedClaims {@link JsonNode}
+     * @return List<VerificationMetadata> verifiedAttributes
+     */
+    private List<VerificationMetadata> buildVerifiedClaims(JsonNode verifiedClaims) {
+        List<VerificationMetadata> verifiedAttributes = new ArrayList<>();
+
+        for (Iterator<Map.Entry<String, JsonNode>> it = verifiedClaims.fields(); it.hasNext(); ) {
+            Map.Entry<String, JsonNode> entry = it.next();
+            String claim = entry.getKey();
+            JsonNode value = entry.getValue();
+
+            VerificationMetadata metadata = new VerificationMetadata();
+            metadata.setTrustFramework(value.get("trust_framework").asText());
+            metadata.setVerificationProcess(value.get("verification_process").asText());
+            metadata.setClaims(Collections.singletonList(claim));
+
+            Map<String, Object> metaMap = new HashMap<>();
+
+            // Add fields to metadata
+            value.fields().forEachRemaining(field -> metaMap.put(field.getKey(), field.getValue()));
+
+            metaMap.put("time", IdentityProviderUtil.getUTCDateTime());
+            metadata.setMetadata(metaMap);
+
+            verifiedAttributes.add(metadata);
+        }
+
+        return verifiedAttributes;
     }
 
     private String getUTCDateTime() {

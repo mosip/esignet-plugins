@@ -7,7 +7,6 @@ package io.mosip.esignet.plugin.mosipid.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.mosip.esignet.api.dto.*;
 import io.mosip.esignet.api.exception.KycAuthException;
 import io.mosip.esignet.api.exception.KycExchangeException;
@@ -391,6 +390,90 @@ public class IdaAuthenticatorImplTest {
 				kycExchangeDto);
 
 		Assert.assertEquals(idaKycExchangeResponse.getEncryptedKyc(), kycExchangeResult.getEncryptedKyc());
+	}
+
+	@Test
+	public void doKycExchange_withConsentedVerifiedClaims_thenPass() throws Exception {
+		VerifiedKycExchangeDto verifiedDto = new VerifiedKycExchangeDto();
+		verifiedDto.setIndividualId("IND1234");
+		verifiedDto.setKycToken("KYCT123");
+		verifiedDto.setTransactionId("TRAN123");
+		verifiedDto.setAcceptedClaims(List.of( "name", "dob","email"));
+		verifiedDto.setClaimsLocales(new String[]{"en"});
+
+		ObjectMapper mapper = new ObjectMapper();
+		JsonNode verifiedClaimsNode = mapper.readTree("[{\"email\":\"test@gmail.com\"}]");
+
+		JsonNode nameNode = mapper.readTree("\"John Doe\"");
+		JsonNode dobNode = mapper.readTree("\"1990-01-01\"");
+
+		Map<String, JsonNode> claimDetails = new HashMap<>();
+		claimDetails.put("verified_claims", verifiedClaimsNode);
+		claimDetails.put("name", nameNode);
+		claimDetails.put("dob", dobNode);
+
+		verifiedDto.setAcceptedClaimDetails(claimDetails);
+
+		IdaKycExchangeResponse idaKycExchangeResponse = new IdaKycExchangeResponse();
+		idaKycExchangeResponse.setEncryptedKyc("encryptedKyc");
+
+		IdaResponseWrapper<IdaKycExchangeResponse> idaResponseWrapper = new IdaResponseWrapper<>();
+		idaResponseWrapper.setResponse(idaKycExchangeResponse);
+		idaResponseWrapper.setTransactionID("TRAN123");
+		idaResponseWrapper.setVersion("VER2");
+
+		ResponseEntity<IdaResponseWrapper<IdaKycExchangeResponse>> responseEntity =
+				new ResponseEntity<>(idaResponseWrapper, HttpStatus.OK);
+
+		Mockito.when(restTemplate.exchange(Mockito.<RequestEntity<String>>any(),
+						Mockito.<ParameterizedTypeReference<IdaResponseWrapper<IdaKycExchangeResponse>>>any()))
+				.thenReturn(responseEntity);
+
+		KycExchangeResult result = idaAuthenticatorImpl.doKycExchange("relyingPartyId", "clientId", verifiedDto);
+
+		Assert.assertEquals("encryptedKyc", result.getEncryptedKyc());
+	}
+
+	@Test
+	public void doKycExchange_withConsentedUnVerifiedClaims_thenPass() throws Exception {
+		VerifiedKycExchangeDto verifiedDto = new VerifiedKycExchangeDto();
+		verifiedDto.setIndividualId("IND1234");
+		verifiedDto.setKycToken("KYCT123");
+		verifiedDto.setTransactionId("TRAN123");
+		verifiedDto.setAcceptedClaims(List.of( "gender"));
+		verifiedDto.setClaimsLocales(new String[]{"en"});
+
+		ObjectMapper mapper = new ObjectMapper();
+		JsonNode verifiedClaimsNode = mapper.readTree("[{\"email\":\"test@gmail.com\"}]");
+
+		JsonNode nameNode = mapper.readTree("\"John Doe\"");
+		JsonNode genderNode = mapper.readTree("\"Male\"");
+
+		Map<String, JsonNode> claimDetails = new HashMap<>();
+		claimDetails.put("verified_claims", verifiedClaimsNode);
+		claimDetails.put("name", nameNode);
+		claimDetails.put("dob", genderNode);
+
+		verifiedDto.setAcceptedClaimDetails(claimDetails);
+
+		IdaKycExchangeResponse idaKycExchangeResponse = new IdaKycExchangeResponse();
+		idaKycExchangeResponse.setEncryptedKyc("encryptedKyc");
+
+		IdaResponseWrapper<IdaKycExchangeResponse> idaResponseWrapper = new IdaResponseWrapper<>();
+		idaResponseWrapper.setResponse(idaKycExchangeResponse);
+		idaResponseWrapper.setTransactionID("TRAN123");
+		idaResponseWrapper.setVersion("VER2");
+
+		ResponseEntity<IdaResponseWrapper<IdaKycExchangeResponse>> responseEntity =
+				new ResponseEntity<>(idaResponseWrapper, HttpStatus.OK);
+
+		Mockito.when(restTemplate.exchange(Mockito.<RequestEntity<String>>any(),
+						Mockito.<ParameterizedTypeReference<IdaResponseWrapper<IdaKycExchangeResponse>>>any()))
+				.thenReturn(responseEntity);
+
+		KycExchangeResult result = idaAuthenticatorImpl.doKycExchange("relyingPartyId", "clientId", verifiedDto);
+
+		Assert.assertEquals("encryptedKyc", result.getEncryptedKyc());
 	}
 
 	@Test
