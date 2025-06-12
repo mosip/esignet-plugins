@@ -6,10 +6,13 @@
 package io.mosip.esignet.plugin.mosipid.dto;
 
 import java.util.List;
+import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 
 @Data
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class IdaKycExchangeRequest {
 
     private String id;
@@ -21,4 +24,18 @@ public class IdaKycExchangeRequest {
     private List<String> locales;
     private String respType;
     private String individualId;
+
+    /**
+     * claims metadata - Not set/un used for now from IDA
+     */
+    private Map<String, Object> metadata;
+    /**
+     * User consented verified claims list.
+     */
+    List<Map<String, Object>> verifiedConsentedClaims;
+    /**
+     * User consented unverified claims list.
+     */
+    Map<String, Object> unVerifiedConsentedClaims;
+
 }
