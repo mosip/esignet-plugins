@@ -354,7 +354,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
         restRequest.setRequesttime(getUTCDateTime());
         restRequest.setRequest(identityRequest);
 
-        log.info("update request {} with request ID {}", restRequest, updateIdentityRequestID);
+        log.debug("update request {} with request ID {}", restRequest, updateIdentityRequestID);
 
         ResponseWrapper<IdentityResponse> responseWrapper = request(identityEndpoint, HttpMethod.PATCH, restRequest,
                 new ParameterizedTypeReference<ResponseWrapper<IdentityResponse>>() {});
@@ -389,7 +389,6 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
             if(request != null) {
                 httpEntity = new HttpEntity<>(request);
             }
-            log.info("update request httpEntity {}", httpEntity);
             ResponseWrapper<T> responseWrapper = restTemplate.exchange(
                     url,
                     method,
