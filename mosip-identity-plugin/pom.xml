@@ -85,7 +85,7 @@
 		<spring-cloud.version>Hoxton.SR8</spring-cloud.version>
 		<spring.boot.version>2.3.6.RELEASE</spring.boot.version>
 
-		<kernel-keymanager-service.version>1.2.1.0</kernel-keymanager-service.version>
+		<kernel-keymanager-service.version>1.2.2.0-SNAPSHOT</kernel-keymanager-service.version>
 		<esignet.version>1.6.1-SNAPSHOT</esignet.version>
 		<esignet-signup.version>1.2.1-SNAPSHOT</esignet-signup.version>
 
