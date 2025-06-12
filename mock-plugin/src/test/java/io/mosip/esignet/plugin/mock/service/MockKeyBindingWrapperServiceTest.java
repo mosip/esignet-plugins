@@ -103,7 +103,7 @@ public class MockKeyBindingWrapperServiceTest {
     public void doKeyBinding_withValidDetails_thenPass() throws Exception {
         ReflectionTestUtils.setField(mockKeyBindingWrapperService, "supportedBindAuthFactorTypes", List.of("WLA")) ;
         ReflectionTestUtils.setField(mockKeyBindingWrapperService, "expireInDays", 10) ;
-        ReflectionTestUtils.setField(mockKeyBindingWrapperService,"getIdentityEndpoint","http://localhost:8080"); ;
+        ReflectionTestUtils.setField(mockKeyBindingWrapperService,"getIdentityEndpoint","http://localhost:8080/"); ;
 
         KycAuthResult kycAuthResult = new KycAuthResult();
         kycAuthResult.setKycToken("testKycToken");
@@ -167,7 +167,7 @@ public class MockKeyBindingWrapperServiceTest {
     public void doKeyBinding_withInValidKycAuthResult_thenFail() throws Exception {
         ReflectionTestUtils.setField(mockKeyBindingWrapperService, "supportedBindAuthFactorTypes", List.of("WLA")) ;
         ReflectionTestUtils.setField(mockKeyBindingWrapperService, "expireInDays", 10) ;
-        ReflectionTestUtils.setField(mockKeyBindingWrapperService,"getIdentityEndpoint","http://localhost:8080"); ;
+        ReflectionTestUtils.setField(mockKeyBindingWrapperService,"getIdentityEndpoint","http://localhost:8080/"); ;
 
         Mockito.when(mockHelperService.doKycAuthMock(Mockito.anyString(),Mockito.anyString(),Mockito.any(),Mockito.anyBoolean()))
                 .thenReturn(null);
@@ -183,7 +183,7 @@ public class MockKeyBindingWrapperServiceTest {
     public void doKeyBinding_withInValidDetails_thenFail() throws Exception {
         ReflectionTestUtils.setField(mockKeyBindingWrapperService, "supportedBindAuthFactorTypes", List.of("WLA")) ;
         ReflectionTestUtils.setField(mockKeyBindingWrapperService, "expireInDays", 10) ;
-        ReflectionTestUtils.setField(mockKeyBindingWrapperService,"getIdentityEndpoint","http://localhost:8080"); ;
+        ReflectionTestUtils.setField(mockKeyBindingWrapperService,"getIdentityEndpoint","http://localhost:8080/"); ;
 
         KycAuthResult kycAuthResult = new KycAuthResult();
         kycAuthResult.setKycToken("testKycToken");
