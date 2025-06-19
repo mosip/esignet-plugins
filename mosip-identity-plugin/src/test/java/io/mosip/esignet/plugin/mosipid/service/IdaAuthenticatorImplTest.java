@@ -74,6 +74,7 @@ public class IdaAuthenticatorImplTest {
 		ReflectionTestUtils.setField(idaAuthenticatorImpl, "otpChannels", Arrays.asList("otp", "pin", "bio"));
 		ReflectionTestUtils.setField(idaAuthenticatorImpl, "objectMapper", mapper);
 		ReflectionTestUtils.setField(idaAuthenticatorImpl, "kycAuthUrlV2", "https://testkycAuthUrl");
+		ReflectionTestUtils.setField(idaAuthenticatorImpl, "kycExchangeUrlV2", "https://testkycExchangeUrl");
 	}
 
 	@Test
@@ -394,6 +395,7 @@ public class IdaAuthenticatorImplTest {
 
 	@Test
 	public void doKycExchange_withConsentedVerifiedClaims_thenPass() throws Exception {
+
 		VerifiedKycExchangeDto verifiedDto = new VerifiedKycExchangeDto();
 		verifiedDto.setIndividualId("IND1234");
 		verifiedDto.setKycToken("KYCT123");
