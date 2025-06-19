@@ -131,6 +131,7 @@ public class IdaAuthenticatorImpl implements Authenticator {
                 setClaims((VerifiedKycExchangeDto) kycExchangeDto, idaKycExchangeRequest);
             }
 
+            log.info("Sending the kyc exchange request : {}", idaKycExchangeRequest);
 
             //set signature header, body and invoke kyc exchange endpoint
             String requestBody = objectMapper.writeValueAsString(idaKycExchangeRequest);
@@ -278,11 +279,15 @@ public class IdaAuthenticatorImpl implements Authenticator {
                 IdaResponseWrapper<IdaKycAuthResponse> responseWrapper = responseEntity.getBody();
                 if(responseWrapper!=null && responseWrapper.getResponse() != null && responseWrapper.getResponse().isKycStatus() &&
                         responseWrapper.getResponse().getKycToken() != null) {
-                    return claimsMetadataRequired ? (new KycAuthResult(responseWrapper.getResponse().getKycToken(),
+                    if (claimsMetadataRequired && responseWrapper.getResponse().getVerifiedClaimsMetadata() != null) {
+                        return new KycAuthResult(responseWrapper.getResponse().getKycToken(),
+                                responseWrapper.getResponse().getAuthToken(),
+                                buildVerifiedClaimsMetadata(responseWrapper.getResponse().getVerifiedClaimsMetadata())
+                        );
+                    }
+                    return new KycAuthResult(responseWrapper.getResponse().getKycToken(),
                             responseWrapper.getResponse().getAuthToken(),
-                            buildVerifiedClaimsMetadata(responseWrapper.getResponse().getVerifiedClaimsMetadata())))
-                            : (new KycAuthResult(responseWrapper.getResponse().getKycToken(),
-                            responseWrapper.getResponse().getAuthToken()));
+                            buildVerifiedClaimsMetadata(null) );
                 }
                 assert Objects.requireNonNull(responseWrapper).getResponse() != null;
                 log.error("Error response received from IDA KycStatus : {} && Errors: {}",
