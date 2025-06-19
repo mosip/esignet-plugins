@@ -73,6 +73,9 @@ public class IdaAuthenticatorImpl implements Authenticator {
     @Value("${mosip.esignet.authenticator.ida.kyc-exchange-url}")
     private String kycExchangeUrl;
 
+    @Value("${mosip.esignet.authenticator.ida.kyc-exchange-url-v2}")
+    private String kycExchangeUrlV2;
+
     @Value("${mosip.esignet.authenticator.ida.otp-channels}")
     private List<String> otpChannels;
 
@@ -118,7 +121,7 @@ public class IdaAuthenticatorImpl implements Authenticator {
             idaKycExchangeRequest.setRequestTime(HelperService.getUTCDateTime());
             idaKycExchangeRequest.setTransactionID(kycExchangeDto.getTransactionId());
             idaKycExchangeRequest.setKycToken(kycExchangeDto.getKycToken());
-	    if (!CollectionUtils.isEmpty(kycExchangeDto.getAcceptedClaims())) {
+	        if (!CollectionUtils.isEmpty(kycExchangeDto.getAcceptedClaims())) {
                 idaKycExchangeRequest.setConsentObtained(kycExchangeDto.getAcceptedClaims());
             } else {
                 idaKycExchangeRequest.setConsentObtained(List.of("sub"));
@@ -136,7 +139,8 @@ public class IdaAuthenticatorImpl implements Authenticator {
             //set signature header, body and invoke kyc exchange endpoint
             String requestBody = objectMapper.writeValueAsString(idaKycExchangeRequest);
             RequestEntity requestEntity = RequestEntity
-                    .post(UriComponentsBuilder.fromUriString(kycExchangeUrl).pathSegment(relyingPartyId,
+                    .post(UriComponentsBuilder.fromUriString((kycExchangeDto instanceof VerifiedKycExchangeDto) ?
+                            kycExchangeUrlV2 : kycExchangeUrl).pathSegment(relyingPartyId,
                             clientId).build().toUri())
                     .contentType(MediaType.APPLICATION_JSON_UTF8)
                     .header(SIGNATURE_HEADER_NAME, helperService.getRequestSignature(requestBody))
@@ -279,14 +283,11 @@ public class IdaAuthenticatorImpl implements Authenticator {
                 IdaResponseWrapper<IdaKycAuthResponse> responseWrapper = responseEntity.getBody();
                 if(responseWrapper!=null && responseWrapper.getResponse() != null && responseWrapper.getResponse().isKycStatus() &&
                         responseWrapper.getResponse().getKycToken() != null) {
-                    if (claimsMetadataRequired && responseWrapper.getResponse().getVerifiedClaimsMetadata() != null) {
-                        return new KycAuthResult(responseWrapper.getResponse().getKycToken(),
-                                responseWrapper.getResponse().getAuthToken(),
-                                buildVerifiedClaimsMetadata(responseWrapper.getResponse().getVerifiedClaimsMetadata())
-                        );
-                    }
-                    return new KycAuthResult(responseWrapper.getResponse().getKycToken(),
-                            responseWrapper.getResponse().getAuthToken());
+                    return claimsMetadataRequired ? (new KycAuthResult(responseWrapper.getResponse().getKycToken(),
+                            responseWrapper.getResponse().getAuthToken(),
+                            buildVerifiedClaimsMetadata(responseWrapper.getResponse().getVerifiedClaimsMetadata())))
+                            : (new KycAuthResult(responseWrapper.getResponse().getKycToken(),
+                            responseWrapper.getResponse().getAuthToken()));
                 }
                 assert Objects.requireNonNull(responseWrapper).getResponse() != null;
                 log.error("Error response received from IDA KycStatus : {} && Errors: {}",
@@ -311,6 +312,11 @@ public class IdaAuthenticatorImpl implements Authenticator {
      */
     private Map<String, List<JsonNode>> buildVerifiedClaimsMetadata(String verifiedClaimsMetadata) {
         Map<String, List<JsonNode>> claimsMetadata = new LinkedHashMap<>();
+        if(verifiedClaimsMetadata==null || verifiedClaimsMetadata.isEmpty())
+        {
+            log.info("Null or Empty claimsMetadata is found");
+            return claimsMetadata;
+        }
         try {
             JsonNode jsonNode =  objectMapper.readTree(verifiedClaimsMetadata);
             replaceNullStrings((ObjectNode) jsonNode);
