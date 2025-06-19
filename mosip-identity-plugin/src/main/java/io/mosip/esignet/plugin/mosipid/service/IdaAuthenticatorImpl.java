@@ -286,8 +286,7 @@ public class IdaAuthenticatorImpl implements Authenticator {
                         );
                     }
                     return new KycAuthResult(responseWrapper.getResponse().getKycToken(),
-                            responseWrapper.getResponse().getAuthToken(),
-                            buildVerifiedClaimsMetadata(null) );
+                            responseWrapper.getResponse().getAuthToken());
                 }
                 assert Objects.requireNonNull(responseWrapper).getResponse() != null;
                 log.error("Error response received from IDA KycStatus : {} && Errors: {}",
