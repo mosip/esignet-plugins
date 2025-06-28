@@ -260,8 +260,8 @@ public class IdaAuthenticatorImpl implements Authenticator {
      */
     private KycAuthResult doKycAuthentication(String relyingPartyId, String clientId, KycAuthDto kycAuthDto,
                                               boolean claimsMetadataRequired) throws KycAuthException {
-        log.info("Started to build kyc-auth request with transactionId : {} && clientId : {}",
-                kycAuthDto.getTransactionId(), clientId);
+        log.info("Started to build kyc-auth request with transactionId : {} && clientId : {} with claimsMetadataRequired: {}",
+                kycAuthDto.getTransactionId(), clientId, claimsMetadataRequired);
         try {
             IdaKycAuthRequest idaKycAuthRequest = getIdaKycAuthRequest(kycAuthDto, claimsMetadataRequired);
             helperService.setAuthRequest(kycAuthDto.getChallengeList(), idaKycAuthRequest);
@@ -283,11 +283,10 @@ public class IdaAuthenticatorImpl implements Authenticator {
                 IdaResponseWrapper<IdaKycAuthResponse> responseWrapper = responseEntity.getBody();
                 if(responseWrapper!=null && responseWrapper.getResponse() != null && responseWrapper.getResponse().isKycStatus() &&
                         responseWrapper.getResponse().getKycToken() != null) {
-                    return claimsMetadataRequired ? (new KycAuthResult(responseWrapper.getResponse().getKycToken(),
+                    log.debug("Claims metadata in the response : {}", responseWrapper.getResponse().getVerifiedClaimsMetadata());
+                    return new KycAuthResult(responseWrapper.getResponse().getKycToken(),
                             responseWrapper.getResponse().getAuthToken(),
-                            buildVerifiedClaimsMetadata(responseWrapper.getResponse().getVerifiedClaimsMetadata())))
-                            : (new KycAuthResult(responseWrapper.getResponse().getKycToken(),
-                            responseWrapper.getResponse().getAuthToken()));
+                            buildVerifiedClaimsMetadata(responseWrapper.getResponse().getVerifiedClaimsMetadata()));
                 }
                 assert Objects.requireNonNull(responseWrapper).getResponse() != null;
                 log.error("Error response received from IDA KycStatus : {} && Errors: {}",
@@ -360,7 +359,7 @@ public class IdaAuthenticatorImpl implements Authenticator {
         idaKycAuthRequest.setConsentObtained(true);
         idaKycAuthRequest.setIndividualId(kycAuthDto.getIndividualId());
         idaKycAuthRequest.setTransactionID(kycAuthDto.getTransactionId());
-        if(claimsMetadataRequired){
+        if(claimsMetadataRequired){ //if false, will be set to NULL, making it compatible with v1 kyc-auth
             idaKycAuthRequest.setClaimMetadataRequired(true);
         }
         return idaKycAuthRequest;
