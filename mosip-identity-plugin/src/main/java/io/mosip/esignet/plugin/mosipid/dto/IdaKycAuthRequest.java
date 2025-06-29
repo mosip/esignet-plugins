@@ -31,7 +31,7 @@ public class IdaKycAuthRequest {
     private String requestSessionKey;
     private Map<String, Object> metadata;
     private List<String> allowedKycAttributes;
-    private Boolean claimMetadataRequired;
+    private Boolean claimsMetadataRequired;
 
     @Data
     public static class AuthRequest {
