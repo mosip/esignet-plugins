@@ -26,7 +26,6 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.io.IOException;
 import java.util.*;
 
 import static io.mosip.esignet.core.constants.Constants.VERIFIED_CLAIMS;
@@ -390,7 +389,7 @@ public class IdaAuthenticatorImpl implements Authenticator {
         idaKycAuthRequest.setIndividualId(kycAuthDto.getIndividualId());
         idaKycAuthRequest.setTransactionID(kycAuthDto.getTransactionId());
         if(claimsMetadataRequired){ //if false, will be set to NULL, making it compatible with v1 kyc-auth
-            idaKycAuthRequest.setClaimMetadataRequired(true);
+            idaKycAuthRequest.setClaimsMetadataRequired(true);
         }
         return idaKycAuthRequest;
     }
