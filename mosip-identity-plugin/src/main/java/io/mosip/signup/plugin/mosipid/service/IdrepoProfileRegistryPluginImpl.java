@@ -14,14 +14,8 @@ import com.fasterxml.jackson.databind.node.TextNode;
 import io.micrometer.core.annotation.Timed;
 import io.mosip.esignet.core.util.IdentityProviderUtil;
 import io.mosip.signup.plugin.mosipid.dto.VerificationMetadata;
-import io.mosip.biometrics.util.ConvertRequestDto;
-import io.mosip.biometrics.util.face.FaceEncoder;
-import io.mosip.kernel.biometrics.constant.BiometricType;
-import io.mosip.kernel.biometrics.constant.ProcessedLevelType;
-import io.mosip.kernel.biometrics.constant.PurposeType;
-import io.mosip.kernel.biometrics.constant.QualityType;
-import io.mosip.kernel.biometrics.entities.*;
 import io.mosip.signup.plugin.mosipid.dto.*;
+import io.mosip.signup.plugin.mosipid.util.BiometricUtil;
 import io.mosip.signup.plugin.mosipid.util.ErrorConstants;
 import io.mosip.signup.plugin.mosipid.util.ProfileCacheService;
 import io.mosip.kernel.core.util.HMACUtils2;
@@ -39,26 +33,20 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
-import org.springframework.oxm.jaxb.Jaxb2Marshaller;
 import org.springframework.stereotype.Component;
-import org.springframework.util.Base64Utils;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import javax.validation.constraints.NotNull;
-import javax.xml.transform.stream.StreamResult;
-import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
-import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-import static io.mosip.biometrics.util.CommonUtil.convertJPEGToJP2UsingOpenCV;
 import static io.mosip.signup.api.util.ErrorConstants.SERVER_UNREACHABLE;
 import static io.mosip.signup.plugin.mosipid.util.ErrorConstants.REQUEST_FAILED;
 
@@ -458,24 +446,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
         }
 
         if (!inputJson.path(biometricDataFieldName).path("value").isMissingNode()) {
-            String base64FaceImage = inputJson.path(biometricDataFieldName).path("value").textValue();
-            String base64BirXmlEncoded = null;
-            try {
-                base64BirXmlEncoded = convertBase64JpegToBase64BirXML(base64FaceImage);
-            } catch (Exception e) {
-                throw new ProfileException();
-            }
-            ArrayNode documents = objectMapper.createArrayNode()
-                    .add(objectMapper.createObjectNode()
-                            .put("category", biometricDataFieldName)
-                            .put("value", base64BirXmlEncoded)
-                    );
-            identityRequest.setDocuments(documents);
-            ((ObjectNode) inputJson).set(biometricDataFieldName, objectMapper.valueToTree(Map.ofEntries(
-                    Map.entry("format", "cbeff"),
-                    Map.entry("version", 1),
-                    Map.entry("value", "fileReferenceID")
-            )));
+            identityRequest.setDocuments(buildDocuments(inputJson));
         }
 
         identityRequest.setIdentity(inputJson);
@@ -580,56 +551,28 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
             throw new InvalidProfileException(ErrorConstants.INVALID_LANGUAGE);
     }
 
-    private String convertBase64JpegToBase64BirXML(String base64Jpeg) throws Exception {
-        byte[] jpegImage = Base64Utils.decodeFromString(base64Jpeg);
-        byte[] jp2Image = convertJPEGToJP2UsingOpenCV(jpegImage, faceImageCompressionRatio);
-
-        ConvertRequestDto convertRequest = new ConvertRequestDto();
-        convertRequest.setVersion("ISO19794_5_2011");
-        convertRequest.setPurpose("Registration");
-        convertRequest.setImageType(0);
-        convertRequest.setInputBytes(jp2Image);
-        convertRequest.setModality("Face");
-        convertRequest.setCompressionRatio(faceImageCompressionRatio);
-
-        byte[] isoImage = FaceEncoder.convertFaceImageToISO(convertRequest);
-
-        BIR bir = createBIRFromISO(isoImage);
-
-        Jaxb2Marshaller marshaller = new Jaxb2Marshaller();
-        marshaller.setClassesToBeBound(BIR.class);
-        StringWriter sw = new StringWriter();
-        StreamResult result = new StreamResult(sw);
-        marshaller.marshal(bir, result);
-        String birXml = sw.toString();
-
-        return Base64Utils.encodeToUrlSafeString(birXml.getBytes(StandardCharsets.UTF_8));
+    private ArrayNode buildDocuments(JsonNode inputJson) {
+        ArrayNode documents = objectMapper.createArrayNode();
+        if (!inputJson.path(biometricDataFieldName).path("value").isMissingNode()) {
+            String base64FaceImage = inputJson.path(biometricDataFieldName).path("value").textValue();
+            String base64BirXmlEncoded = null;
+            try {
+                base64BirXmlEncoded = BiometricUtil.convertBase64JpegToBase64BirXML(base64FaceImage, faceImageCompressionRatio);
+            } catch (Exception e) {
+                throw new ProfileException();
+            }
+            ((ObjectNode) inputJson).set(biometricDataFieldName, objectMapper.valueToTree(Map.ofEntries(
+                    Map.entry("format", "cbeff"),
+                    Map.entry("version", 1),
+                    Map.entry("value", "fileReferenceID")
+            )));
+            documents.add(objectMapper.createObjectNode()
+                    .put("category", biometricDataFieldName)
+                    .put("value", base64BirXmlEncoded)
+            );
+        }
+        if(documents.isEmpty()) return null;
+        return documents;
     }
 
-    private BIR createBIRFromISO(byte[] isoImage) {
-        BIRInfo birInfo = new BIRInfo.BIRInfoBuilder().withIntegrity(false).build();
-        BDBInfo bdbInfo = new BDBInfo.BDBInfoBuilder()
-                .withCreationDate(LocalDateTime.now())
-                .withType(List.of(BiometricType.FACE))
-                .withSubtype(List.of(""))
-                .withPurpose(PurposeType.ENROLL)
-                .withLevel(ProcessedLevelType.RAW)
-                .withFormat(new RegistryIDType("Mosip", "8"))
-                .withQuality(new QualityType(new RegistryIDType("HMAC", "SHA-256"), 0L, null))
-                .build();
-        BIR faceBir = new BIR.BIRBuilder()
-                .withVersion(new VersionType(1, 1))
-                .withCbeffversion(new VersionType(1, 1))
-                .withBirInfo(birInfo)
-                .withBdb(isoImage)
-                .withBdbInfo(bdbInfo)
-                .withOthers(null)
-                .build();
-
-        BIR bir = new BIR.BIRBuilder()
-                .withBirInfo(birInfo)
-                .build();
-        bir.setBirs(List.of(faceBir));
-        return bir;
-    }
 }
