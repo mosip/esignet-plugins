@@ -7,18 +7,19 @@ import io.mosip.signup.api.dto.*;
 import io.mosip.signup.api.exception.IdentityVerifierException;
 import io.mosip.signup.api.util.VerificationStatus;
 import io.mosip.signup.plugin.mock.verifier.MockIdentityVerifierPluginImpl;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.SendResult;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.ByteArrayInputStream;
@@ -27,9 +28,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class MockIdentityVerifierPluginImplTest {
 
     @InjectMocks
@@ -41,7 +43,7 @@ public class MockIdentityVerifierPluginImplTest {
 
     ObjectMapper objectMapper;
 
-    @Before
+    @BeforeEach
     public void before(){
         objectMapper = new ObjectMapper();
         ReflectionTestUtils.setField(mockIdentityVerifierPlugin, "objectMapper",objectMapper);
@@ -67,6 +69,10 @@ public class MockIdentityVerifierPluginImplTest {
         Mockito.when(resource.getInputStream()).thenReturn(new ByteArrayInputStream(jsonContent.getBytes()));
 
         KafkaTemplate<String, IdentityVerificationResult> kafkaTemplate = Mockito.mock(KafkaTemplate.class);
+        CompletableFuture<SendResult<String, IdentityVerificationResult>> future = new CompletableFuture<>();
+        SendResult<String, IdentityVerificationResult> sendResult = Mockito.mock(SendResult.class);
+        future.complete(sendResult);
+        Mockito.when(kafkaTemplate.send(Mockito.any(), Mockito.any())).thenReturn(future);
         ReflectionTestUtils.setField(mockIdentityVerifierPlugin, "kafkaTemplate", kafkaTemplate);
 
 
@@ -104,8 +110,8 @@ public class MockIdentityVerifierPluginImplTest {
         Mockito.when(resource.getInputStream()).thenReturn(new ByteArrayInputStream(jsonContent.getBytes()));
         VerificationResult actualVerifiedResult = mockIdentityVerifierPlugin.getVerificationResult(transactionId);
 
-        Assert.assertEquals(verifiedResult.getStatus(), actualVerifiedResult.getStatus());
-        Assert.assertEquals(verifiedResult.getVerifiedClaims(), actualVerifiedResult.getVerifiedClaims());
+        Assertions.assertEquals(verifiedResult.getStatus(), actualVerifiedResult.getStatus());
+        Assertions.assertEquals(verifiedResult.getVerifiedClaims(), actualVerifiedResult.getVerifiedClaims());
     }
 
 
@@ -118,8 +124,8 @@ public class MockIdentityVerifierPluginImplTest {
         Mockito.when(resourceLoader.getResource(Mockito.anyString())).thenReturn(resource);
         Mockito.when(resource.getInputStream()).thenReturn(new ByteArrayInputStream(jsonContent.getBytes()));
         VerificationResult verificationResult = mockIdentityVerifierPlugin.getVerificationResult(transactionId);
-        Assert.assertEquals(verificationResult.getErrorCode(),"mock_verification_failed");
-        Assert.assertEquals(verificationResult.getStatus(),VerificationStatus.FAILED);
+        Assertions.assertEquals(verificationResult.getErrorCode(),"mock_verification_failed");
+        Assertions.assertEquals(verificationResult.getStatus(),VerificationStatus.FAILED);
     }
     @Test
     public void initializeWithValidDetails_thenPass(){

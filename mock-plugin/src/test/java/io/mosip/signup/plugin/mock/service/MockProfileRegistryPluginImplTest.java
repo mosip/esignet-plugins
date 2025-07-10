@@ -14,14 +14,14 @@ import io.mosip.signup.api.exception.ProfileException;
 import io.mosip.signup.api.util.ProfileCreateUpdateStatus;
 import io.mosip.signup.plugin.mock.dto.MockIdentityResponse;
 import io.mosip.signup.plugin.mock.util.ErrorConstants;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -34,7 +34,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class MockProfileRegistryPluginImplTest {
 
 
@@ -46,7 +46,7 @@ public class MockProfileRegistryPluginImplTest {
 
     ObjectMapper objectMapper=new ObjectMapper();
 
-    @Before
+    @BeforeEach
     public void init(){
         objectMapper.registerModule(new JavaTimeModule());
         ReflectionTestUtils.setField(mockProfileRegistryPlugin, "objectMapper",objectMapper);
@@ -103,9 +103,9 @@ public class MockProfileRegistryPluginImplTest {
 
         try{
             mockProfileRegistryPlugin.validate(action, profileDto);
-            Assert.fail();
+            Assertions.fail();
         }catch (InvalidProfileException e){
-            Assert.assertEquals(e.getMessage(),"invalid_email");
+            Assertions.assertEquals(e.getMessage(),"invalid_email");
         }
 
     }
@@ -136,8 +136,8 @@ public class MockProfileRegistryPluginImplTest {
                 }))).thenReturn(responseEntity);
 
         ProfileResult result = mockProfileRegistryPlugin.createProfile("requestId", profileDto);
-        Assert.assertNotNull(result);
-        Assert.assertEquals(result.getStatus(), "CREATED");
+        Assertions.assertNotNull(result);
+        Assertions.assertEquals(result.getStatus(), "CREATED");
     }
 
 
@@ -154,7 +154,7 @@ public class MockProfileRegistryPluginImplTest {
         try{
             mockProfileRegistryPlugin.createProfile("requestId", profileDto);
         }catch (ProfileException e){
-            Assert.assertEquals(ErrorConstants.IDENTIFIER_MISMATCH,e.getMessage());
+            Assertions.assertEquals(ErrorConstants.IDENTIFIER_MISMATCH,e.getMessage());
         }
     }
 
@@ -165,7 +165,7 @@ public class MockProfileRegistryPluginImplTest {
 
         ProfileCreateUpdateStatus status = mockProfileRegistryPlugin.getProfileCreateUpdateStatus(requestId);
 
-        Assert.assertEquals(status,ProfileCreateUpdateStatus.COMPLETED);
+        Assertions.assertEquals(status,ProfileCreateUpdateStatus.COMPLETED);
     }
 
     @Test
@@ -191,8 +191,8 @@ public class MockProfileRegistryPluginImplTest {
                 new ParameterizedTypeReference<ResponseWrapper<JsonNode>>() {
                 })).thenReturn(responseEntity);
         ProfileDto profileDto= mockProfileRegistryPlugin.getProfile(individualId);
-        Assert.assertNotNull(profileDto);
-        Assert.assertTrue(profileDto.isActive());
+        Assertions.assertNotNull(profileDto);
+        Assertions.assertTrue(profileDto.isActive());
     }
 
     @Test
@@ -222,9 +222,9 @@ public class MockProfileRegistryPluginImplTest {
                 })).thenReturn(responseEntity);
 
         ProfileDto profileDto= mockProfileRegistryPlugin.getProfile(individualId);
-        Assert.assertNotNull(profileDto);
-        Assert.assertFalse(profileDto.isActive());
-        Assert.assertEquals(profileDto.getIndividualId(),individualId);
+        Assertions.assertNotNull(profileDto);
+        Assertions.assertFalse(profileDto.isActive());
+        Assertions.assertEquals(profileDto.getIndividualId(),individualId);
     }
 
 
@@ -262,8 +262,8 @@ public class MockProfileRegistryPluginImplTest {
 
 
         ProfileResult profileResult = mockProfileRegistryPlugin.updateProfile(requestId, profileDto);
-        Assert.assertNotNull(profileResult);
-        Assert.assertEquals(profileResult.getStatus(),"UPDATED");
+        Assertions.assertNotNull(profileResult);
+        Assertions.assertEquals(profileResult.getStatus(),"UPDATED");
     }
 
     @Test
@@ -298,8 +298,8 @@ public class MockProfileRegistryPluginImplTest {
 
 
         ProfileResult profileResult = mockProfileRegistryPlugin.updateProfile(requestId, profileDto);
-        Assert.assertNotNull(profileResult);
-        Assert.assertEquals(profileResult.getStatus(),"UPDATED");
+        Assertions.assertNotNull(profileResult);
+        Assertions.assertEquals(profileResult.getStatus(),"UPDATED");
     }
 
     @Test
@@ -313,7 +313,7 @@ public class MockProfileRegistryPluginImplTest {
         JsonNode challengeIdentity=objectMapper.valueToTree(identityData);
 
         boolean isMatch = mockProfileRegistryPlugin.isMatch(mockIdentity, challengeIdentity);
-        Assert.assertTrue(isMatch);
+        Assertions.assertTrue(isMatch);
     }
 
     @Test
@@ -332,6 +332,6 @@ public class MockProfileRegistryPluginImplTest {
         JsonNode challengeIdentity=objectMapper.valueToTree(challengeIdentityMap);
 
         boolean isMatch = mockProfileRegistryPlugin.isMatch(mockIdentity, challengeIdentity);
-        Assert.assertFalse(isMatch);
+        Assertions.assertFalse(isMatch);
     }
 }

@@ -1,6 +1,6 @@
 package io.mosip.signup.plugin.mock.dto;
 
-import javax.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotBlank;
 
 import io.mosip.signup.plugin.mock.util.ErrorConstants;
 
