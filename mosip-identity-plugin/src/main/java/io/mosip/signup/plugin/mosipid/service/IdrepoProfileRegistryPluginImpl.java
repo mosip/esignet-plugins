@@ -37,6 +37,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
+import javax.annotation.PostConstruct;
 import javax.validation.constraints.NotNull;
 import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
@@ -123,6 +124,17 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
 
     @Autowired
     private ProfileCacheService profileCacheService;
+
+    @Value("${mosip.signup.mosipid.get-ui-spec.endpoint}")
+    private String uiSpecUrl;
+
+    private JsonNode uiSpec;
+
+    @PostConstruct
+    public void init() {
+        this.uiSpec = request(uiSpecUrl, HttpMethod.GET, null, new ParameterizedTypeReference<ResponseWrapper<JsonNode>>() {})
+                .getResponse();
+    }
 
 
     @Override
@@ -284,6 +296,11 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
             }
         }
         return !inputChallenge.isEmpty() && matchCount >= inputChallenge.size();
+    }
+
+    @Override
+    public JsonNode getUISpecification() {
+        return this.uiSpec;
     }
 
     private SchemaResponse getSchemaJson(double version) throws ProfileException {
