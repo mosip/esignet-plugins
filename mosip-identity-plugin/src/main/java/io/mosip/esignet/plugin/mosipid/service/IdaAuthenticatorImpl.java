@@ -387,6 +387,6 @@ public class IdaAuthenticatorImpl implements Authenticator {
                 }
             }
         }
-        return unVerifiedConsentedClaims;
+        return null;
     }
 }

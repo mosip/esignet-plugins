@@ -5,11 +5,7 @@
  */
 package io.mosip.esignet.plugin.mosipid.dto;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Data;
-
-import java.util.List;
-import java.util.Map;
 
 @Data
 public class IdaKycAuthResponse {

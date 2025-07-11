@@ -14,13 +14,13 @@ import io.mosip.kernel.signature.dto.JWTSignatureRequestDto;
 import io.mosip.kernel.signature.dto.JWTSignatureResponseDto;
 import io.mosip.kernel.signature.service.SignatureService;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -29,8 +29,7 @@ import org.springframework.web.client.RestTemplate;
 import java.io.IOException;
 import java.util.*;
 
-@RunWith(MockitoJUnitRunner.class)
-@Slf4j
+@ExtendWith(MockitoExtension.class)
 public class SunbirdRCAuthenticaionServiceTest {
 
     @Mock
@@ -64,7 +63,7 @@ public class SunbirdRCAuthenticaionServiceTest {
         try {
             sunbirdRCAuthenticationService.initialize();
         }catch (KycAuthException e){
-            Assert.assertEquals("sunbird-rc authenticator field is not configured properly", e.getMessage());
+            Assertions.assertEquals("sunbird-rc authenticator field is not configured properly", e.getMessage());
         }
     }
 
@@ -76,7 +75,7 @@ public class SunbirdRCAuthenticaionServiceTest {
         try {
             sunbirdRCAuthenticationService.initialize();
         }catch (KycAuthException e){
-            Assert.assertEquals("Invalid configuration: individual-id-field is not available in field-details.", e.getMessage());
+            Assertions.assertEquals("Invalid configuration: individual-id-field is not available in field-details.", e.getMessage());
         }
     }
 
@@ -115,7 +114,7 @@ public class SunbirdRCAuthenticaionServiceTest {
         mockChallengMap.put("dob","2000-07-26");
 
         KycAuthResult result = sunbirdRCAuthenticationService.doKycAuth(relyingPartyId, clientId, kycAuthDto);
-        Assert.assertNotNull(result);
+        Assertions.assertNotNull(result);
     }
 
     @Test
@@ -145,9 +144,9 @@ public class SunbirdRCAuthenticaionServiceTest {
 
         try{
             sunbirdRCAuthenticationService.doKycAuth(relyingPartyId, clientId, kycAuthDto);
-            Assert.fail();
+            Assertions.fail();
         }catch (KycAuthException e){
-            Assert.assertEquals(e.getErrorCode(), ErrorConstants.AUTH_FAILED);
+            Assertions.assertEquals(e.getErrorCode(), ErrorConstants.AUTH_FAILED);
         }
 
     }
@@ -182,9 +181,9 @@ public class SunbirdRCAuthenticaionServiceTest {
 
         try{
             sunbirdRCAuthenticationService.doKycAuth(relyingPartyId, clientId, kycAuthDto);
-            Assert.fail();
+            Assertions.fail();
         }catch (KycAuthException e){
-            Assert.assertEquals(e.getErrorCode(), ErrorConstants.AUTH_FAILED);
+            Assertions.assertEquals(e.getErrorCode(), ErrorConstants.AUTH_FAILED);
         }
     }
 
@@ -225,9 +224,9 @@ public class SunbirdRCAuthenticaionServiceTest {
 
         try{
             sunbirdRCAuthenticationService.doKycAuth(relyingPartyId, clientId, kycAuthDto);
-            Assert.fail();
+            Assertions.fail();
         }catch (KycAuthException e){
-            Assert.assertEquals(e.getErrorCode(), ErrorConstants.AUTH_FAILED);
+            Assertions.assertEquals(e.getErrorCode(), ErrorConstants.AUTH_FAILED);
         }
     }
 
@@ -246,9 +245,9 @@ public class SunbirdRCAuthenticaionServiceTest {
 
         try{
             sunbirdRCAuthenticationService.doKycAuth(relyingPartyId, clientId, kycAuthDto);
-            Assert.fail();
+            Assertions.fail();
         }catch (KycAuthException e){
-            Assert.assertEquals(e.getErrorCode(),"invalid_challenge_type");
+            Assertions.assertEquals(e.getErrorCode(),"invalid_challenge_type");
         }
     }
 
@@ -261,9 +260,9 @@ public class SunbirdRCAuthenticaionServiceTest {
 
         try{
             sunbirdRCAuthenticationService.doKycAuth(relyingPartyId, clientId, kycAuthDto);
-            Assert.fail();
+            Assertions.fail();
         }catch (KycAuthException e){
-            Assert.assertEquals(e.getMessage(),ErrorConstants.AUTH_FAILED);
+            Assertions.assertEquals(e.getMessage(),ErrorConstants.AUTH_FAILED);
         }
     }
 
@@ -299,8 +298,8 @@ public class SunbirdRCAuthenticaionServiceTest {
 
         KycExchangeResult result = sunbirdRCAuthenticationService.doKycExchange(relyingPartyId, clientId, kycExchangeDto);
 
-        Assert.assertNotNull(result);
-        Assert.assertEquals("signed-jwt", result.getEncryptedKyc());
+        Assertions.assertNotNull(result);
+        Assertions.assertEquals("signed-jwt", result.getEncryptedKyc());
     }
 
     @Test
@@ -313,9 +312,9 @@ public class SunbirdRCAuthenticaionServiceTest {
         Mockito.when(restTemplate.exchange(Mockito.any(RequestEntity.class), Mockito.any(ParameterizedTypeReference.class)))
                 .thenReturn(new ResponseEntity<>(null, HttpStatus.OK));
 
-        KycExchangeException exception = Assert.assertThrows(KycExchangeException.class, () ->
+        KycExchangeException exception = Assertions.assertThrows(KycExchangeException.class, () ->
                 sunbirdRCAuthenticationService.doKycExchange(relyingPartyId, clientId, kycExchangeDto));
-        Assert.assertEquals(ErrorConstants.DATA_EXCHANGE_FAILED, exception.getMessage());
+        Assertions.assertEquals(ErrorConstants.DATA_EXCHANGE_FAILED, exception.getMessage());
     }
 
     @Test
@@ -348,25 +347,25 @@ public class SunbirdRCAuthenticaionServiceTest {
         signatureResponse.setJwtSignedData("signed-jwt");
         Mockito.when(signatureService.jwtSign(Mockito.any(JWTSignatureRequestDto.class))).thenReturn(signatureResponse);
 
-        KycExchangeException exception = Assert.assertThrows(KycExchangeException.class, () ->
+        KycExchangeException exception = Assertions.assertThrows(KycExchangeException.class, () ->
                 sunbirdRCAuthenticationService.doKycExchange(relyingPartyId, clientId, kycExchangeDto));
-        Assert.assertEquals(ErrorConstants.DATA_EXCHANGE_FAILED, exception.getMessage());
+        Assertions.assertEquals(ErrorConstants.DATA_EXCHANGE_FAILED, exception.getMessage());
     }
 
     @Test
     public void sendOtpNotImplemented_thenFail() {
         try{
             sunbirdRCAuthenticationService.sendOtp("relayingPartyId","clientId",new SendOtpDto());
-            Assert.fail();
+            Assertions.fail();
         } catch (SendOtpException e) {
-            Assert.assertEquals(e.getErrorCode(), ErrorConstants.NOT_IMPLEMENTED);
+            Assertions.assertEquals(e.getErrorCode(), ErrorConstants.NOT_IMPLEMENTED);
         }
     }
 
     @Test
     public void isSupportedOtpChannel_thenFail() {
         boolean result = sunbirdRCAuthenticationService.isSupportedOtpChannel("sms");
-        Assert.assertFalse(result);
+        Assertions.assertFalse(result);
     }
 
     @Test
@@ -379,7 +378,7 @@ public class SunbirdRCAuthenticaionServiceTest {
         Mockito.when(keymanagerService.getAllCertificates(Mockito.any(), Mockito.any(Optional.class)))
                 .thenReturn(allCertificatesDataResponseDto);
         List<KycSigningCertificateData> result = sunbirdRCAuthenticationService.getAllKycSigningCertificates();
-        Assert.assertNotNull(result);
+        Assertions.assertNotNull(result);
     }
 
 }

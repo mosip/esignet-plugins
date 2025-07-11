@@ -17,16 +17,14 @@ import io.mosip.esignet.plugin.mosipid.dto.*;
 import io.mosip.esignet.plugin.mosipid.helper.AuthTransactionHelper;
 import io.mosip.kernel.core.exception.ServiceError;
 import io.mosip.kernel.core.http.ResponseWrapper;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
-import org.mockito.junit.MockitoJUnitRunner;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.RequestEntity;
@@ -38,8 +36,7 @@ import java.util.*;
 
 import static org.mockito.ArgumentMatchers.any;
 
-@SpringBootTest
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class IdaAuthenticatorImplTest {
 
 	@InjectMocks
@@ -58,10 +55,8 @@ public class IdaAuthenticatorImplTest {
     AuthTransactionHelper authTransactionHelper;
 
 
-	@Before
+	@BeforeEach
 	public void setUp() {
-		MockitoAnnotations.initMocks(this);
-
 		ReflectionTestUtils.setField(helperService, "sendOtpUrl", "https:/");
 		ReflectionTestUtils.setField(helperService, "idaPartnerCertificateUrl", "https://test");
 		ReflectionTestUtils.setField(helperService, "symmetricAlgorithm", "AES");
@@ -92,7 +87,7 @@ public class IdaAuthenticatorImplTest {
 		Mockito.when(restTemplate.exchange(Mockito.<RequestEntity<Void>>any(),
 				Mockito.<ParameterizedTypeReference<IdaResponseWrapper<IdaKycAuthResponse>>>any())).thenReturn(null);
 
-		Assert.assertThrows(KycAuthException.class,
+		Assertions.assertThrows(KycAuthException.class,
 				() -> idaAuthenticatorImpl.doKycAuth("relyingId", "clientId", kycAuthDto));
 	}
 
@@ -111,7 +106,7 @@ public class IdaAuthenticatorImplTest {
 		Mockito.when(restTemplate.exchange(Mockito.<RequestEntity<Void>>any(),
 				Mockito.<ParameterizedTypeReference<IdaResponseWrapper<IdaKycAuthResponse>>>any())).thenReturn(null);
 
-		Assert.assertThrows(KycAuthException.class,
+		Assertions.assertThrows(KycAuthException.class,
 				() -> idaAuthenticatorImpl.doKycAuth("relyingId", "clientId", true, kycAuthDto));
 	}
 
@@ -148,7 +143,7 @@ public class IdaAuthenticatorImplTest {
 
 		KycAuthResult kycAuthResult = idaAuthenticatorImpl.doKycAuth("relyingId", "clientId", kycAuthDto);
 
-		Assert.assertEquals(kycAuthResult.getKycToken(), kycAuthResult.getKycToken());
+		Assertions.assertEquals(kycAuthResult.getKycToken(), kycAuthResult.getKycToken());
 	}
 
 
@@ -195,7 +190,7 @@ public class IdaAuthenticatorImplTest {
 
 		KycAuthResult kycAuthResult = idaAuthenticatorImpl.doKycAuth("relyingId", "clientId",true, kycAuthDto);
 
-		Assert.assertEquals(kycAuthResult.getKycToken(), kycAuthResult.getKycToken());
+		Assertions.assertEquals(kycAuthResult.getKycToken(), kycAuthResult.getKycToken());
 	}
 
 	@Test
@@ -221,7 +216,7 @@ public class IdaAuthenticatorImplTest {
 		try{
 			idaAuthenticatorImpl.doKycAuth("relyingId", "clientId", kycAuthDto);
 		}catch (KycAuthException e){
-			Assert.assertEquals(e.getErrorCode(), ErrorConstants.AUTH_FAILED);
+			Assertions.assertEquals(e.getErrorCode(), ErrorConstants.AUTH_FAILED);
 		}
 	}
 
@@ -251,7 +246,7 @@ public class IdaAuthenticatorImplTest {
 		try{
 			idaAuthenticatorImpl.doKycAuth("relyingId", "clientId", kycAuthDto);
 		}catch (KycAuthException e){
-			Assert.assertEquals(e.getErrorCode(), ErrorConstants.AUTH_FAILED);
+			Assertions.assertEquals(e.getErrorCode(), ErrorConstants.AUTH_FAILED);
 		}
 	}
 
@@ -262,7 +257,7 @@ public class IdaAuthenticatorImplTest {
 		kycAuthDto.setTransactionId("TRAN1234");
 		kycAuthDto.setChallengeList(null);
 
-		Assert.assertThrows(KycAuthException.class,
+		Assertions.assertThrows(KycAuthException.class,
 				() -> idaAuthenticatorImpl.doKycAuth("relyingId", "clientId", kycAuthDto));
 	}
 
@@ -278,7 +273,7 @@ public class IdaAuthenticatorImplTest {
 		authChallengeList.add(authChallenge);
 		kycAuthDto.setChallengeList(authChallengeList);
 
-		Assert.assertThrows(KycAuthException.class,
+		Assertions.assertThrows(KycAuthException.class,
 				() -> idaAuthenticatorImpl.doKycAuth("relyingId", "clientId", kycAuthDto));
 	}
 
@@ -322,7 +317,7 @@ public class IdaAuthenticatorImplTest {
 
 		KycAuthResult kycAuthResult = idaAuthenticatorImpl.doKycAuth("relyingId", "clientId", kycAuthDto);
 
-		Assert.assertEquals(kycAuthResult.getKycToken(), kycAuthResult.getKycToken());
+		Assertions.assertEquals(kycAuthResult.getKycToken(), kycAuthResult.getKycToken());
 	}
 
 	@Test
@@ -356,7 +351,7 @@ public class IdaAuthenticatorImplTest {
 		KycExchangeResult kycExchangeResult = idaAuthenticatorImpl.doKycExchange("relyingPartyId", "clientId",
 				kycExchangeDto);
 
-		Assert.assertEquals(idaKycExchangeResponse.getEncryptedKyc(), kycExchangeResult.getEncryptedKyc());
+		Assertions.assertEquals(idaKycExchangeResponse.getEncryptedKyc(), kycExchangeResult.getEncryptedKyc());
 	}
 
 
@@ -390,7 +385,7 @@ public class IdaAuthenticatorImplTest {
 		KycExchangeResult kycExchangeResult = idaAuthenticatorImpl.doKycExchange("relyingPartyId", "clientId",
 				kycExchangeDto);
 
-		Assert.assertEquals(idaKycExchangeResponse.getEncryptedKyc(), kycExchangeResult.getEncryptedKyc());
+		Assertions.assertEquals(idaKycExchangeResponse.getEncryptedKyc(), kycExchangeResult.getEncryptedKyc());
 	}
 
 	@Test
@@ -433,7 +428,7 @@ public class IdaAuthenticatorImplTest {
 
 		KycExchangeResult result = idaAuthenticatorImpl.doKycExchange("relyingPartyId", "clientId", verifiedDto);
 
-		Assert.assertEquals("encryptedKyc", result.getEncryptedKyc());
+		Assertions.assertEquals("encryptedKyc", result.getEncryptedKyc());
 	}
 
 	@Test
@@ -475,7 +470,7 @@ public class IdaAuthenticatorImplTest {
 
 		KycExchangeResult result = idaAuthenticatorImpl.doKycExchange("relyingPartyId", "clientId", verifiedDto);
 
-		Assert.assertEquals("encryptedKyc", result.getEncryptedKyc());
+		Assertions.assertEquals("encryptedKyc", result.getEncryptedKyc());
 	}
 
 	@Test
@@ -506,7 +501,7 @@ public class IdaAuthenticatorImplTest {
 				Mockito.<ParameterizedTypeReference<IdaResponseWrapper<IdaKycExchangeResponse>>>any()))
 				.thenReturn(responseEntity);
 
-		Assert.assertThrows(KycExchangeException.class,
+		Assertions.assertThrows(KycExchangeException.class,
 				() -> idaAuthenticatorImpl.doKycExchange("test-relyingPartyId", "test-clientId", kycExchangeDto));
 	}
 
@@ -526,7 +521,7 @@ public class IdaAuthenticatorImplTest {
 				Mockito.<ParameterizedTypeReference<IdaResponseWrapper<IdaKycExchangeResponse>>>any()))
 				.thenReturn(null);
 
-		Assert.assertThrows(KycExchangeException.class,
+		Assertions.assertThrows(KycExchangeException.class,
 				() -> idaAuthenticatorImpl.doKycExchange("relyingId", "clientId", kycExchangeDto));
 	}
 
@@ -543,7 +538,7 @@ public class IdaAuthenticatorImplTest {
 
 		SendOtpResult sendOtpResult = idaAuthenticatorImpl.sendOtp("rly123", "cli123", sendOtpDto);
 
-		Assert.assertEquals(sendOtpDto.getTransactionId(), sendOtpResult.getTransactionId());
+		Assertions.assertEquals(sendOtpDto.getTransactionId(), sendOtpResult.getTransactionId());
 	}
 
 	@Test
@@ -559,20 +554,20 @@ public class IdaAuthenticatorImplTest {
 
 		try {
 			idaAuthenticatorImpl.sendOtp("rly123", "cli123", sendOtpDto);
-			Assert.fail();
+			Assertions.fail();
 		} catch (SendOtpException e) {
-			Assert.assertEquals("error-100", e.getErrorCode());
+			Assertions.assertEquals("error-100", e.getErrorCode());
 		}
 	}
 
 	@Test
 	public void isSupportedOtpChannel_withInvalidChannel_thenFail() {
-		Assert.assertFalse(idaAuthenticatorImpl.isSupportedOtpChannel("test"));
+		Assertions.assertFalse(idaAuthenticatorImpl.isSupportedOtpChannel("test"));
 	}
 	
 	@Test
 	public void isSupportedOtpChannel_withValidChannel_thenPass() {
-		Assert.assertTrue(idaAuthenticatorImpl.isSupportedOtpChannel("OTP"));
+		Assertions.assertTrue(idaAuthenticatorImpl.isSupportedOtpChannel("OTP"));
 	}
 	
 	@Test
@@ -597,7 +592,7 @@ public class IdaAuthenticatorImplTest {
 
 		signingCertificates = idaAuthenticatorImpl.getAllKycSigningCertificates();
 
-		Assert.assertSame(signingCertificates, getAllCertificatesResponse.getAllCertificates());
+		Assertions.assertSame(signingCertificates, getAllCertificatesResponse.getAllCertificates());
 	}
 
 	@Test
@@ -618,7 +613,7 @@ public class IdaAuthenticatorImplTest {
 				Mockito.<ParameterizedTypeReference<ResponseWrapper<GetAllCertificatesResponse>>>any()))
 				.thenReturn(certsResponseEntity);
 
-		Assert.assertThrows(KycSigningCertificateException.class,
+		Assertions.assertThrows(KycSigningCertificateException.class,
 				() -> idaAuthenticatorImpl.getAllKycSigningCertificates());
 	}
 	
@@ -640,7 +635,7 @@ public class IdaAuthenticatorImplTest {
 				Mockito.<ParameterizedTypeReference<ResponseWrapper<GetAllCertificatesResponse>>>any()))
 				.thenReturn(certsResponseEntity);
 
-		Assert.assertThrows(KycSigningCertificateException.class,
+		Assertions.assertThrows(KycSigningCertificateException.class,
 				() -> idaAuthenticatorImpl.getAllKycSigningCertificates());
 	}
 
@@ -652,7 +647,7 @@ public class IdaAuthenticatorImplTest {
 		Mockito.when(restTemplate.exchange(Mockito.<RequestEntity<Void>>any(),
 				Mockito.<ParameterizedTypeReference<ResponseWrapper>>any())).thenThrow(RuntimeException.class);
 
-		Assert.assertThrows(KycSigningCertificateException.class,
+		Assertions.assertThrows(KycSigningCertificateException.class,
 				() -> idaAuthenticatorImpl.getAllKycSigningCertificates());
 	}
 
