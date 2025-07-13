@@ -7,8 +7,8 @@
   ],
   "verificationResult": {
     "status": "COMPLETED",
-    "verifiedClaims" : { "fullName" : { "trust_framework":"XYZ TF", "verification_process":"EKYC", "assurance_level": "Gold" },
-      "phone" : { "trust_framework":"ABC TF", "verification_process":"EKYC", "assurance_level": "Silver" }},
+    "verifiedClaims" : { "fullName" : { "trust_framework":"eidas", "verification_process":"manual_verification", "assurance_level": "Gold" },
+      "phone" : { "trust_framework":"eidas", "verification_process":"manual_verification", "assurance_level": "Silver" }},
     "errorCode": null
   }
 }
