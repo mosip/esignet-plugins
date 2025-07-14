@@ -382,6 +382,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     private ProfileCreateUpdateStatus getRequestStatusFromServer(String applicationId) {
         ResponseWrapper<IdentityStatusResponse> responseWrapper = request(getStatusEndpoint+applicationId,
                 HttpMethod.GET, null, new ParameterizedTypeReference<ResponseWrapper<IdentityStatusResponse>>() {});
+        log.info("Received registration status response for applicationId {}: {}", applicationId, responseWrapper);
         if (responseWrapper != null && responseWrapper.getResponse() != null &&
                 !StringUtils.isEmpty(responseWrapper.getResponse().getStatusCode())) {
             switch (responseWrapper.getResponse().getStatusCode()) {
