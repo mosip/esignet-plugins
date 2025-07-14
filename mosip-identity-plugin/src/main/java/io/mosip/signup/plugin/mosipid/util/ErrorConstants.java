@@ -18,5 +18,6 @@ public class ErrorConstants {
     public static final String MANDATORY_LANGUAGE_MISSING = "mandatory_language_missing";
     public static final String IDENTIFIER_MISMATCH = "identifier_mismatch";
     public static final String INVALID_PREFERRED_LANGUAGE = "invalid_preferred_language";
+    public static final String INVALID_INDIVIDUAL_BIOMETRICS = "invalid_individual_biometrics";
 
 }

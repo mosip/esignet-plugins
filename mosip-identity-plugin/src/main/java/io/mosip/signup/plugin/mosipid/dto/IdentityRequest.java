@@ -16,4 +16,5 @@ public class IdentityRequest {
     private String registrationId;
     private JsonNode identity;
     private List<VerificationMetadata> verifiedAttributes;
+    private JsonNode documents;
 }
