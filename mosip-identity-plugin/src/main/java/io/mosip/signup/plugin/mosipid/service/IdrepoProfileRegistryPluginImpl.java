@@ -60,6 +60,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     private static final String UTC_DATETIME_PATTERN = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
     private final Map<Double, SchemaResponse> schemaMap = new HashMap<>();
     private static final List<String> ACTIONS = Arrays.asList("CREATE", "UPDATE");
+    private final String HANDLE_SEPARATOR = "@";
 
     @Value("#{'${mosip.signup.idrepo.default.selected-handles:phone}'.split(',')}")
     private List<String> defaultSelectedHandles;
@@ -105,9 +106,6 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
 
     @Value("#{'${mosip.signup.idrepo.optional-language:}'.split(',')}")
     private List<String> optionalLanguages;
-
-    @Value("${mosip.signup.idrepo.idvid-postfix}")
-    private String postfix;
 
     @Value("${mosip.signup.idrepo.get-identity-method:POST}")
     private String getIdentityEndpointMethod;
@@ -206,9 +204,12 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     @Override
     public ProfileResult updateProfile(String requestId, ProfileDto profileDto) throws ProfileException {
         JsonNode inputJson = profileDto.getIdentity();
-        //set UIN
-        //((ObjectNode) inputJson).set("UIN", objectMapper.valueToTree(profileDto.getUniqueUserId()));
-        ((ObjectNode) inputJson).set(UIN, objectMapper.valueToTree(profileDto.getIndividualId()));
+
+        if(profileDto.getIndividualId().contains(HANDLE_SEPARATOR)) {
+            ((ObjectNode) inputJson).set(UIN, objectMapper.valueToTree(getProfile(profileDto.getIndividualId()).getIndividualId()));
+        } else {
+            ((ObjectNode) inputJson).set(UIN, objectMapper.valueToTree(profileDto.getIndividualId()));
+        }
 
         //Build identity request
         IdentityRequest identityRequest = buildIdentityRequest(inputJson, true);
@@ -237,8 +238,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     @Override
     public ProfileDto getProfile(String individualId) throws ProfileException {
         try {
-            individualId = StringUtils.isEmpty(postfix) ? individualId : individualId.concat(postfix);
-
+            boolean isHandle = individualId.contains(HANDLE_SEPARATOR);
             ResponseWrapper<IdentityResponse> responseWrapper = null;
             switch (getIdentityEndpointMethod.toLowerCase()) {
                 case "post" :
@@ -246,7 +246,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
                     RequestWrapper<IdRequestByIdDTO> idDTORequestWrapper=new RequestWrapper<>();
                     requestByIdDTO.setId(individualId);
                     requestByIdDTO.setType("demo");
-                    requestByIdDTO.setIdType("HANDLE");
+                    if(isHandle) requestByIdDTO.setIdType("HANDLE");
                     idDTORequestWrapper.setRequest(requestByIdDTO);
                     idDTORequestWrapper.setRequesttime(getUTCDateTime());
                     responseWrapper = request(getIdentityEndpoint, HttpMethod.POST, idDTORequestWrapper,
@@ -254,6 +254,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
                     break;
                 case "get":
                     String path = String.format(getIdentityEndpointFallbackPath, individualId);
+                    if(isHandle) path += "&idType=HANDLE";
                     responseWrapper = request(getIdentityEndpoint+path, HttpMethod.GET, null,
                             new ParameterizedTypeReference<ResponseWrapper<IdentityResponse>>() {});
                     break;
