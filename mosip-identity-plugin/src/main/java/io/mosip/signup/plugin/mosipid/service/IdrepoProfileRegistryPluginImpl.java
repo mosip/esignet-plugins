@@ -192,7 +192,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
         JsonNode inputJson = profileDto.getIdentity();
 
         if(profileDto.getIndividualId().contains(HANDLE_SEPARATOR)) {
-            ((ObjectNode) inputJson).set(UIN, getProfile(profileDto.getIndividualId()).getIdentity().get(UIN));
+            ((ObjectNode) inputJson).set(UIN, objectMapper.valueToTree(getProfile(profileDto.getIndividualId()).getIndividualId()));
         } else {
             ((ObjectNode) inputJson).set(UIN, objectMapper.valueToTree(profileDto.getIndividualId()));
         }
