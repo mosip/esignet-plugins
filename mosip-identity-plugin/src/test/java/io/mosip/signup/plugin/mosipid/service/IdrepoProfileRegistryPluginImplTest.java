@@ -338,7 +338,7 @@ public class IdrepoProfileRegistryPluginImplTest {
         Map<String, Object> identityData = new HashMap<>();
         identityData.put("email","123@email.com");
         identityData.put("password","123456");
-        identityData.put("UIN","1234567890");
+        identityData.put("UIN",individualId);
 
         JsonNode mockIdentity = objectMapper.valueToTree(identityData);
 
@@ -359,20 +359,19 @@ public class IdrepoProfileRegistryPluginImplTest {
                 }))).thenReturn(responseEntity);
         ProfileDto profileDto= idrepoProfileRegistryPlugin.getProfile(individualId);
         Assert.assertNotNull(profileDto);
-        Assert.assertEquals(profileDto.getIndividualId(),"1234567890");
+        Assert.assertEquals(profileDto.getIndividualId(),individualId);
 
         ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "getIdentityEndpointMethod", "GET");
-        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "getIdentityEndpointFallbackPath", "%s?type=demo&idType=HANDLE");
-        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "postfix", "@someid");
+        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "getIdentityEndpointFallbackPath", "%s?type=demo");
 
         Mockito.when(restTemplate.exchange(
-                "http://localhost:8080/identity/v1/identity/1234567890@someid?type=demo&idType=HANDLE",
+                "http://localhost:8080/identity/v1/identity/" + individualId + "@phone?type=demo&idType=HANDLE",
                 HttpMethod.GET,
                 null,
                 new ParameterizedTypeReference<ResponseWrapper<IdentityResponse>>() {})).thenReturn(responseEntity);
-        profileDto= idrepoProfileRegistryPlugin.getProfile(individualId);
+        profileDto= idrepoProfileRegistryPlugin.getProfile(individualId+"@phone");
         Assert.assertNotNull(profileDto);
-        Assert.assertEquals(profileDto.getIndividualId(),"1234567890");
+        Assert.assertEquals(profileDto.getIndividualId(),individualId);
     }
 
     @Test
