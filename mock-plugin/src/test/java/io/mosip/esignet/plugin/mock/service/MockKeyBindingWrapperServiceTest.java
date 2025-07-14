@@ -16,14 +16,14 @@ import io.mosip.kernel.keymanagerservice.dto.SignatureCertificate;
 
 import io.mosip.kernel.keymanagerservice.service.KeymanagerService;
 import org.bouncycastle.x509.X509V3CertificateGenerator;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
@@ -41,7 +41,7 @@ import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.*;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class MockKeyBindingWrapperServiceTest {
 
 
@@ -51,7 +51,7 @@ public class MockKeyBindingWrapperServiceTest {
     @Mock
     private RestTemplate restTemplate;
 
-     private ObjectMapper objectMapper = new ObjectMapper();
+    private ObjectMapper objectMapper = new ObjectMapper();
 
     @Mock
     private KeymanagerService keymanagerService;
@@ -60,7 +60,7 @@ public class MockKeyBindingWrapperServiceTest {
     @InjectMocks
     private MockKeyBindingWrapperService mockKeyBindingWrapperService;
 
-    @Before
+    @BeforeEach
     public void setup() {
         ReflectionTestUtils.setField(mockKeyBindingWrapperService, "objectMapper", objectMapper);
     }
@@ -76,8 +76,8 @@ public class MockKeyBindingWrapperServiceTest {
 
        SendOtpResult result = mockKeyBindingWrapperService.sendBindingOtp("testIndividualId", List.of("mobile"), null);
 
-       Assert.assertNotNull(result);
-       Assert.assertEquals(result,sendOtpResult);
+       Assertions.assertNotNull(result);
+       Assertions.assertEquals(result,sendOtpResult);
     }
 
 
@@ -92,9 +92,9 @@ public class MockKeyBindingWrapperServiceTest {
                 .thenThrow(new SendOtpException("Error while sending otp"));
         try{
             mockKeyBindingWrapperService.sendBindingOtp("testIndividualId", List.of("mobile"), null);
-            Assert.fail();
+            Assertions.fail();
         }catch (SendOtpException e){
-            Assert.assertEquals("Error while sending otp",e.getMessage());
+            Assertions.assertEquals("Error while sending otp",e.getMessage());
         }
     }
 
@@ -146,7 +146,7 @@ public class MockKeyBindingWrapperServiceTest {
         authChallenge.setFormat("alpha-numeric");
 
         KeyBindingResult keyBindingResult = mockKeyBindingWrapperService.doKeyBinding("testIndividualId", challengeList, publicKeyMap, "WLA", null);
-        Assert.assertNotNull(keyBindingResult);
+        Assertions.assertNotNull(keyBindingResult);
     }
 
 
@@ -156,9 +156,9 @@ public class MockKeyBindingWrapperServiceTest {
 
         try{
             mockKeyBindingWrapperService.doKeyBinding("testIndividualId", new ArrayList<>(), new HashMap<>(), "OTP", null);
-            Assert.fail();
+            Assertions.fail();
         }catch (Exception e){
-            Assert.assertEquals("invalid_bind_auth_factor_type",e.getMessage());
+            Assertions.assertEquals("invalid_bind_auth_factor_type",e.getMessage());
         }
     }
 
@@ -173,9 +173,9 @@ public class MockKeyBindingWrapperServiceTest {
                 .thenReturn(null);
         try{
             mockKeyBindingWrapperService.doKeyBinding("testIndividualId", new ArrayList<>(), new HashMap<>(), "WLA", null);
-            Assert.fail();
+            Assertions.fail();
         }catch (KeyBindingException e){
-            Assert.assertEquals(ErrorConstants.KEY_BINDING_FAILED,e.getMessage());
+            Assertions.assertEquals(ErrorConstants.KEY_BINDING_FAILED,e.getMessage());
         }
     }
 
@@ -198,9 +198,9 @@ public class MockKeyBindingWrapperServiceTest {
 
         try{
             mockKeyBindingWrapperService.doKeyBinding("testIndividualId", new ArrayList<>(), new HashMap<>(), "WLA", null);
-            Assert.fail();
+            Assertions.fail();
         }catch (Exception e){
-            Assert.assertEquals("auth_failed -> Error while fetching identity data",e.getMessage());
+            Assertions.assertEquals("auth_failed -> Error while fetching identity data",e.getMessage());
         }
     }
 

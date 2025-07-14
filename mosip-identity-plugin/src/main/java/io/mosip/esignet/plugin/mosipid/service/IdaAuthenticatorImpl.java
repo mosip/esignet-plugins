@@ -20,7 +20,6 @@ import io.mosip.esignet.plugin.mosipid.dto.*;
 import io.mosip.esignet.plugin.mosipid.helper.AuthTransactionHelper;
 import io.mosip.kernel.core.http.ResponseWrapper;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -347,7 +346,6 @@ public class IdaAuthenticatorImpl implements Authenticator {
      * @param claimsMetadataRequired boolean flag to recognize v2 or existing flow
      * @return {@link IdaKycAuthRequest}
      */
-    @NotNull
     private IdaKycAuthRequest getIdaKycAuthRequest(KycAuthDto kycAuthDto, boolean claimsMetadataRequired) {
         IdaKycAuthRequest idaKycAuthRequest = new IdaKycAuthRequest();
         idaKycAuthRequest.setId(kycAuthId);
@@ -375,7 +373,6 @@ public class IdaAuthenticatorImpl implements Authenticator {
      * @param acceptedClaimDetails Accepted claims Map
      * @return un verified consented claims
      */
-    @NotNull // This is added to not return null either return un verified claims map or empty map
     private Map<String, JsonNode> getUnVerifiedConsentedClaims(Map<String, JsonNode> acceptedClaimDetails) {
         Map<String, JsonNode> unVerifiedConsentedClaims = new HashMap<>();
         if(!CollectionUtils.isEmpty(acceptedClaimDetails)) {

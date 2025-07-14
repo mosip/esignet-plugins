@@ -11,15 +11,15 @@ import io.mosip.signup.api.util.ProfileCreateUpdateStatus;
 import io.mosip.signup.plugin.mosipid.dto.*;
 import io.mosip.signup.plugin.mosipid.dto.Error;
 import io.mosip.signup.plugin.mosipid.util.ProfileCacheService;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -27,7 +27,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class IdrepoProfileRegistryPluginImplTest {
 
     @InjectMocks
@@ -44,7 +44,7 @@ public class IdrepoProfileRegistryPluginImplTest {
     private static final String schemaSchemaJson="{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"description\":\"Identity schema for sign up\",\"additionalProperties\":false,\"title\":\"signup identity\",\"type\":\"object\",\"definitions\":{\"simpleType\":{\"uniqueItems\":true,\"additionalItems\":false,\"type\":\"array\",\"items\":{\"additionalProperties\":false,\"type\":\"object\",\"required\":[\"language\",\"value\"],\"properties\":{\"language\":{\"type\":\"string\"},\"value\":{\"type\":\"string\"}}}},\"documentType\":{\"additionalProperties\":false,\"type\":\"object\",\"properties\":{\"format\":{\"type\":\"string\"},\"type\":{\"type\":\"string\"},\"value\":{\"type\":\"string\"}}},\"biometricsType\":{\"additionalProperties\":false,\"type\":\"object\",\"properties\":{\"format\":{\"type\":\"string\"},\"version\":{\"type\":\"number\",\"minimum\":0},\"value\":{\"type\":\"string\"}}},\"hashType\":{\"additionalProperties\":false,\"type\":\"object\",\"properties\":{\"hash\":{\"type\":\"string\"},\"salt\":{\"type\":\"string\"}}}},\"properties\":{\"identity\":{\"additionalProperties\":false,\"type\":\"object\",\"required\":[\"IDSchemaVersion\",\"phone\"],\"properties\":{\"UIN\":{\"bioAttributes\":[],\"fieldCategory\":\"none\",\"format\":\"none\",\"type\":\"string\",\"fieldType\":\"default\"},\"IDSchemaVersion\":{\"bioAttributes\":[],\"fieldCategory\":\"none\",\"format\":\"none\",\"type\":\"number\",\"fieldType\":\"default\",\"minimum\":0},\"selectedHandles\":{\"fieldCategory\":\"none\",\"format\":\"none\",\"type\":\"array\",\"items\":{\"type\":\"string\"},\"fieldType\":\"default\"},\"fullName\":{\"bioAttributes\":[],\"validators\":[{\"validator\":\"^(.{3,50})$\",\"arguments\":[],\"type\":\"regex\"}],\"fieldCategory\":\"pvt\",\"format\":\"none\",\"fieldType\":\"default\",\"$ref\":\"#/definitions/simpleType\"},\"phone\":{\"bioAttributes\":[],\"validators\":[{\"validator\":\"^[+]91([0-9]{8,9})$\",\"arguments\":[],\"type\":\"regex\"}],\"fieldCategory\":\"pvt\",\"format\":\"none\",\"type\":\"string\",\"fieldType\":\"default\",\"requiredOn\":\"\",\"handle\":true},\"password\":{\"bioAttributes\":[],\"validators\":[],\"fieldCategory\":\"pvt\",\"format\":\"none\",\"fieldType\":\"default\",\"$ref\":\"#/definitions/hashType\"},\"preferredLang\":{\"bioAttributes\":[],\"validators\":[{\"validator\":\"(^eng$)\",\"arguments\":[],\"type\":\"regex\"}],\"fieldCategory\":\"pvt\",\"format\":\"none\",\"fieldType\":\"default\",\"type\":\"string\"},\"registrationType\":{\"bioAttributes\":[],\"validators\":[{\"validator\":\"^L[1-2]{1}$\",\"arguments\":[],\"type\":\"regex\"}],\"fieldCategory\":\"pvt\",\"format\":\"none\",\"fieldType\":\"default\",\"type\":\"string\"},\"phoneVerified\":{\"bioAttributes\":[],\"validators\":[],\"fieldCategory\":\"pvt\",\"format\":\"none\",\"fieldType\":\"default\",\"type\":\"boolean\"},\"updatedAt\":{\"bioAttributes\":[],\"validators\":[],\"fieldCategory\":\"pvt\",\"format\":\"none\",\"fieldType\":\"default\",\"type\":\"number\"}}}}}";
 
 
-    @Before
+    @BeforeEach
     public void beforeEach(){
 
         objectMapper=new ObjectMapper();
@@ -151,7 +151,7 @@ public class IdrepoProfileRegistryPluginImplTest {
         try{
             idrepoProfileRegistryPlugin.validate("CREATE", profileDto);
         }catch (InvalidProfileException e){
-            Assert.assertEquals(e.getErrorCode(),"invalid_phone");
+            Assertions.assertEquals(e.getErrorCode(),"invalid_phone");
         }
     }
 
@@ -207,8 +207,8 @@ public class IdrepoProfileRegistryPluginImplTest {
                 }))).thenReturn(responseEntity3);
 
         ProfileResult profileResult = idrepoProfileRegistryPlugin.createProfile(requestId, profileDto);
-        Assert.assertNotNull(profileResult);
-        Assert.assertEquals(profileResult.getStatus(),"SUCCESS");
+        Assertions.assertNotNull(profileResult);
+        Assertions.assertEquals(profileResult.getStatus(),"SUCCESS");
     }
 
     @Test
@@ -264,9 +264,9 @@ public class IdrepoProfileRegistryPluginImplTest {
 
         try{
             idrepoProfileRegistryPlugin.createProfile(requestId, profileDto);
-            Assert.fail();
+            Assertions.fail();
         }catch (ProfileException e){
-            Assert.assertEquals(e.getErrorCode(),"request_failed");
+            Assertions.assertEquals(e.getErrorCode(),"request_failed");
         }
     }
 
@@ -328,8 +328,8 @@ public class IdrepoProfileRegistryPluginImplTest {
                     }))).thenReturn(responseEntity3);
 
             ProfileResult profileResult = idrepoProfileRegistryPlugin.updateProfile(requestId, profileDto);
-            Assert.assertNotNull(profileResult);
-            Assert.assertEquals(profileResult.getStatus(),"SUCCESS");
+            Assertions.assertNotNull(profileResult);
+            Assertions.assertEquals(profileResult.getStatus(),"SUCCESS");
     }
 
     @Test
@@ -358,8 +358,8 @@ public class IdrepoProfileRegistryPluginImplTest {
                 Mockito.eq(new ParameterizedTypeReference<ResponseWrapper<IdentityResponse>>() {
                 }))).thenReturn(responseEntity);
         ProfileDto profileDto= idrepoProfileRegistryPlugin.getProfile(individualId);
-        Assert.assertNotNull(profileDto);
-        Assert.assertEquals(profileDto.getIndividualId(),"1234567890");
+        Assertions.assertNotNull(profileDto);
+        Assertions.assertEquals(profileDto.getIndividualId(),"1234567890");
 
         ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "getIdentityEndpointMethod", "GET");
         ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "getIdentityEndpointFallbackPath", "%s?type=demo&idType=HANDLE");
@@ -371,8 +371,8 @@ public class IdrepoProfileRegistryPluginImplTest {
                 null,
                 new ParameterizedTypeReference<ResponseWrapper<IdentityResponse>>() {})).thenReturn(responseEntity);
         profileDto= idrepoProfileRegistryPlugin.getProfile(individualId);
-        Assert.assertNotNull(profileDto);
-        Assert.assertEquals(profileDto.getIndividualId(),"1234567890");
+        Assertions.assertNotNull(profileDto);
+        Assertions.assertEquals(profileDto.getIndividualId(),"1234567890");
     }
 
     @Test
@@ -399,8 +399,8 @@ public class IdrepoProfileRegistryPluginImplTest {
                 Mockito.eq(new ParameterizedTypeReference<ResponseWrapper<IdentityResponse>>() {
                 }))).thenReturn(responseEntity);
         ProfileDto profileDto= idrepoProfileRegistryPlugin.getProfile(individualId);
-        Assert.assertNotNull(profileDto);
-        Assert.assertEquals(profileDto.getIndividualId(),"1234567890");
+        Assertions.assertNotNull(profileDto);
+        Assertions.assertEquals(profileDto.getIndividualId(),"1234567890");
     }
 
     @Test
@@ -423,8 +423,8 @@ public class IdrepoProfileRegistryPluginImplTest {
                 new ParameterizedTypeReference<ResponseWrapper<IdentityStatusResponse>>() {}
         )).thenReturn(responseEntity);
         ProfileCreateUpdateStatus profileCreateUpdateStatus = idrepoProfileRegistryPlugin.getProfileCreateUpdateStatus("requestId");
-        Assert.assertNotNull(profileCreateUpdateStatus);
-        Assert.assertEquals(profileCreateUpdateStatus,ProfileCreateUpdateStatus.PENDING);
+        Assertions.assertNotNull(profileCreateUpdateStatus);
+        Assertions.assertEquals(profileCreateUpdateStatus,ProfileCreateUpdateStatus.PENDING);
     }
 
     @Test
@@ -448,8 +448,8 @@ public class IdrepoProfileRegistryPluginImplTest {
                 new ParameterizedTypeReference<ResponseWrapper<IdentityStatusResponse>>() {}
         )).thenReturn(responseEntity);
         ProfileCreateUpdateStatus profileCreateUpdateStatus = idrepoProfileRegistryPlugin.getProfileCreateUpdateStatus("requestId");
-        Assert.assertNotNull(profileCreateUpdateStatus);
-        Assert.assertEquals(profileCreateUpdateStatus,ProfileCreateUpdateStatus.FAILED);
+        Assertions.assertNotNull(profileCreateUpdateStatus);
+        Assertions.assertEquals(profileCreateUpdateStatus,ProfileCreateUpdateStatus.FAILED);
     }
 
     @Test
@@ -472,8 +472,8 @@ public class IdrepoProfileRegistryPluginImplTest {
                 new ParameterizedTypeReference<ResponseWrapper<IdentityStatusResponse>>() {}
         )).thenReturn(responseEntity);
         ProfileCreateUpdateStatus profileCreateUpdateStatus = idrepoProfileRegistryPlugin.getProfileCreateUpdateStatus("requestId");
-        Assert.assertNotNull(profileCreateUpdateStatus);
-        Assert.assertEquals(profileCreateUpdateStatus,ProfileCreateUpdateStatus.COMPLETED);
+        Assertions.assertNotNull(profileCreateUpdateStatus);
+        Assertions.assertEquals(profileCreateUpdateStatus,ProfileCreateUpdateStatus.COMPLETED);
     }
 
     @Test
@@ -493,9 +493,9 @@ public class IdrepoProfileRegistryPluginImplTest {
         )).thenReturn(responseEntity);
         try{
             idrepoProfileRegistryPlugin.getProfileCreateUpdateStatus("requestId");
-            Assert.fail();
+            Assertions.fail();
         }catch (ProfileException e){
-            Assert.assertEquals(e.getErrorCode(),"request_failed");
+            Assertions.assertEquals(e.getErrorCode(),"request_failed");
         }
     }
 
@@ -508,7 +508,7 @@ public class IdrepoProfileRegistryPluginImplTest {
         identityData.put("UIN","1234567890");
         JsonNode mockIdentity = objectMapper.valueToTree(identityData);
         boolean matched=idrepoProfileRegistryPlugin.isMatch(mockIdentity, mockIdentity);
-        Assert.assertTrue(matched);
+        Assertions.assertTrue(matched);
     }
 
     @Test
@@ -530,7 +530,7 @@ public class IdrepoProfileRegistryPluginImplTest {
         JsonNode inputChallenge = objectMapper.valueToTree(inputChallengeMap);
 
         boolean matched=idrepoProfileRegistryPlugin.isMatch(mockIdentity, inputChallenge);
-        Assert.assertFalse(matched);
+        Assertions.assertFalse(matched);
     }
 
     private JsonNode createIdentity() {

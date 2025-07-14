@@ -10,15 +10,14 @@ import io.mosip.esignet.api.util.ErrorConstants;
 import io.mosip.esignet.plugin.mosipid.dto.IdaError;
 import io.mosip.esignet.plugin.mosipid.dto.IdaResponseWrapper;
 import io.mosip.esignet.plugin.mosipid.dto.KeyBindingResponse;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.RequestEntity;
@@ -30,7 +29,7 @@ import java.util.*;
 
 import static org.mockito.ArgumentMatchers.any;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class IdaKeyBinderImplTest {
 
     @InjectMocks
@@ -46,9 +45,8 @@ public class IdaKeyBinderImplTest {
     private static final String PARTNER_ID_HEADER = "partner-id";
     private static final String PARTNER_API_KEY_HEADER = "partner-api-key";
 
-    @Before
+    @BeforeEach
     public void setUp() {
-        MockitoAnnotations.initMocks(this);
         ReflectionTestUtils.setField(idaKeyBinderImpl, "keyBinderUrl", "https://localhost/identity-key-binding/mispLK/");
         ReflectionTestUtils.setField(idaKeyBinderImpl, "objectMapper", objectMapper);
     }
@@ -66,7 +64,7 @@ public class IdaKeyBinderImplTest {
         headers.put(PARTNER_API_KEY_HEADER, PARTNER_API_KEY_HEADER);
         Mockito.when(helperService.sendOTP(any(),any(),any())).thenReturn(new SendOtpResult(sendOtpDto.getTransactionId(), "", ""));
         SendOtpResult sendOtpResult = idaKeyBinderImpl.sendBindingOtp("individualId", Arrays.asList("email"), headers);
-        Assert.assertEquals(sendOtpDto.getTransactionId(), sendOtpResult.getTransactionId());
+        Assertions.assertEquals(sendOtpDto.getTransactionId(), sendOtpResult.getTransactionId());
     }
 
     @Test
@@ -83,9 +81,9 @@ public class IdaKeyBinderImplTest {
         headers.put(PARTNER_API_KEY_HEADER, PARTNER_API_KEY_HEADER);
         try {
             idaKeyBinderImpl.sendBindingOtp("individualId", Arrays.asList("email"), headers);
-            Assert.fail();
+            Assertions.fail();
         } catch (SendOtpException e) {
-            Assert.assertEquals("error-100", e.getErrorCode());
+            Assertions.assertEquals("error-100", e.getErrorCode());
         }
     }
 
@@ -93,9 +91,9 @@ public class IdaKeyBinderImplTest {
     public void sendBindingOtp_withEmptyHeaders_throwsException() throws Exception {
         try {
             idaKeyBinderImpl.sendBindingOtp("individualId", Arrays.asList("email"), new HashMap<>());
-            Assert.fail();
+            Assertions.fail();
         } catch (SendOtpException e) {
-            Assert.assertEquals(IdaKeyBinderImpl.REQUIRED_HEADERS_MISSING, e.getErrorCode());
+            Assertions.assertEquals(IdaKeyBinderImpl.REQUIRED_HEADERS_MISSING, e.getErrorCode());
         }
     }
 
@@ -119,9 +117,9 @@ public class IdaKeyBinderImplTest {
         headers.put(PARTNER_API_KEY_HEADER, PARTNER_API_KEY_HEADER);
         KeyBindingResult keyBindingResult = idaKeyBinderImpl.doKeyBinding("individualId", new ArrayList<>(), new HashMap<>(),
                 "WLA", headers);
-        Assert.assertNotNull(keyBindingResult);
-        Assert.assertEquals(keyBindingResponse.getAuthToken(), keyBindingResult.getPartnerSpecificUserToken());
-        Assert.assertEquals(keyBindingResponse.getIdentityCertificate(), keyBindingResult.getCertificate());
+        Assertions.assertNotNull(keyBindingResult);
+        Assertions.assertEquals(keyBindingResponse.getAuthToken(), keyBindingResult.getPartnerSpecificUserToken());
+        Assertions.assertEquals(keyBindingResponse.getIdentityCertificate(), keyBindingResult.getCertificate());
     }
 
     @Test
@@ -145,9 +143,9 @@ public class IdaKeyBinderImplTest {
         try {
             idaKeyBinderImpl.doKeyBinding("individualId", new ArrayList<>(), new HashMap<>(),
                     "WLA", headers);
-            Assert.fail();
+            Assertions.fail();
         } catch (KeyBindingException e) {
-            Assert.assertEquals(ErrorConstants.BINDING_AUTH_FAILED, e.getErrorCode());
+            Assertions.assertEquals(ErrorConstants.BINDING_AUTH_FAILED, e.getErrorCode());
         }
     }
 
@@ -170,9 +168,9 @@ public class IdaKeyBinderImplTest {
         try {
             idaKeyBinderImpl.doKeyBinding("individualId", new ArrayList<>(), new HashMap<>(),
                     "WLA", headers);
-            Assert.fail();
+            Assertions.fail();
         } catch (KeyBindingException e) {
-            Assert.assertEquals("test-err-code", e.getErrorCode());
+            Assertions.assertEquals("test-err-code", e.getErrorCode());
         }
     }
 
@@ -181,9 +179,9 @@ public class IdaKeyBinderImplTest {
         try {
             idaKeyBinderImpl.doKeyBinding("individualId", new ArrayList<>(), new HashMap<>(),
                     "WLA", new HashMap<>());
-            Assert.fail();
+            Assertions.fail();
         } catch (KeyBindingException e) {
-            Assert.assertEquals(IdaKeyBinderImpl.REQUIRED_HEADERS_MISSING, e.getErrorCode());
+            Assertions.assertEquals(IdaKeyBinderImpl.REQUIRED_HEADERS_MISSING, e.getErrorCode());
         }
     }
 }

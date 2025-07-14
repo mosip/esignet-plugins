@@ -12,15 +12,14 @@ import io.mosip.kernel.keymanagerservice.util.KeymanagerUtil;
 import io.mosip.kernel.signature.dto.JWTSignatureResponseDto;
 import io.mosip.kernel.signature.service.SignatureService;
 import org.apache.commons.lang3.NotImplementedException;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
@@ -33,7 +32,7 @@ import java.util.Arrays;
 import java.util.List;
 
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class HelperServiceTest {
 
     @InjectMocks
@@ -57,9 +56,8 @@ public class HelperServiceTest {
     ObjectMapper objectMapper = new ObjectMapper();
 
 
-    @Before
+    @BeforeEach
     public void setUp() {
-        MockitoAnnotations.initMocks(this);
         ReflectionTestUtils.setField(helperService, "sendOtpUrl", "https://test/test");
         ReflectionTestUtils.setField(helperService, "idaPartnerCertificateUrl", "https://test/test");
         ReflectionTestUtils.setField(helperService, "symmetricAlgorithm", "AES");
@@ -73,7 +71,7 @@ public class HelperServiceTest {
         jwtSignatureResponseDto.setJwtSignedData("test-jwt");
         Mockito.when(signatureService.jwtSign(Mockito.any())).thenThrow(RuntimeException.class);
         IdaSendOtpRequest sendOtpRequest = new IdaSendOtpRequest();
-        Assert.assertThrows(Exception.class, () -> helperService.sendOTP(partnerId, partnerAPIKey, sendOtpRequest));
+        Assertions.assertThrows(Exception.class, () -> helperService.sendOTP(partnerId, partnerAPIKey, sendOtpRequest));
     }
 
     @Test
@@ -86,7 +84,7 @@ public class HelperServiceTest {
         Mockito.when(restTemplate.exchange(Mockito.<RequestEntity<Void>>any(),
                 Mockito.<Class>any())).thenReturn(responseEntity);
         IdaSendOtpRequest sendOtpRequest = new IdaSendOtpRequest();
-        Assert.assertThrows(SendOtpException.class, () -> helperService.sendOTP(partnerId, partnerAPIKey, sendOtpRequest));
+        Assertions.assertThrows(SendOtpException.class, () -> helperService.sendOTP(partnerId, partnerAPIKey, sendOtpRequest));
     }
 
     @Test
@@ -108,9 +106,9 @@ public class HelperServiceTest {
         IdaSendOtpRequest sendOtpRequest = new IdaSendOtpRequest();
         sendOtpRequest.setTransactionID("123456788");
         SendOtpResult sendOtpResult = helperService.sendOTP(partnerId, partnerAPIKey, sendOtpRequest);
-        Assert.assertEquals(idaSendOtpResponse.getTransactionID(), sendOtpResult.getTransactionId());
-        Assert.assertEquals(idaOtpResponse.getMaskedEmail(), sendOtpResult.getMaskedEmail());
-        Assert.assertEquals(idaOtpResponse.getMaskedMobile(), sendOtpResult.getMaskedMobile());
+        Assertions.assertEquals(idaSendOtpResponse.getTransactionID(), sendOtpResult.getTransactionId());
+        Assertions.assertEquals(idaOtpResponse.getMaskedEmail(), sendOtpResult.getMaskedEmail());
+        Assertions.assertEquals(idaOtpResponse.getMaskedMobile(), sendOtpResult.getMaskedMobile());
     }
 
     @Test
@@ -132,9 +130,9 @@ public class HelperServiceTest {
         try {
             helperService.sendOTP(partnerId, partnerAPIKey, sendOtpRequest);
         } catch (SendOtpException e) {
-            Assert.assertEquals("otp-error", e.getErrorCode());
+            Assertions.assertEquals("otp-error", e.getErrorCode());
         } catch (JsonProcessingException e) {
-            Assert.fail();
+            Assertions.fail();
         }
     }
 
@@ -145,7 +143,7 @@ public class HelperServiceTest {
         authChallenge.setChallenge("test");
         authChallenge.setAuthFactorType("Test");
         challengeList.add(authChallenge);
-        Assert.assertThrows(NotImplementedException.class,
+        Assertions.assertThrows(NotImplementedException.class,
                 () -> helperService.setAuthRequest(challengeList, new IdaKycAuthRequest()));
     }
 
@@ -164,10 +162,10 @@ public class HelperServiceTest {
 
         IdaKycAuthRequest idaKycAuthRequest = new IdaKycAuthRequest();
         helperService.setAuthRequest(challengeList, idaKycAuthRequest);
-        Assert.assertNotNull(idaKycAuthRequest.getRequest());
-        Assert.assertNotNull(idaKycAuthRequest.getRequestSessionKey());
-        Assert.assertNotNull(idaKycAuthRequest.getRequestHMAC());
-        Assert.assertNotNull(idaKycAuthRequest.getThumbprint());
+        Assertions.assertNotNull(idaKycAuthRequest.getRequest());
+        Assertions.assertNotNull(idaKycAuthRequest.getRequestSessionKey());
+        Assertions.assertNotNull(idaKycAuthRequest.getRequestHMAC());
+        Assertions.assertNotNull(idaKycAuthRequest.getThumbprint());
     }
 
     @Test
@@ -185,10 +183,10 @@ public class HelperServiceTest {
 
         IdaKycAuthRequest idaKycAuthRequest = new IdaKycAuthRequest();
         helperService.setAuthRequest(challengeList, idaKycAuthRequest);
-        Assert.assertNotNull(idaKycAuthRequest.getRequest());
-        Assert.assertNotNull(idaKycAuthRequest.getRequestSessionKey());
-        Assert.assertNotNull(idaKycAuthRequest.getRequestHMAC());
-        Assert.assertNotNull(idaKycAuthRequest.getThumbprint());
+        Assertions.assertNotNull(idaKycAuthRequest.getRequest());
+        Assertions.assertNotNull(idaKycAuthRequest.getRequestSessionKey());
+        Assertions.assertNotNull(idaKycAuthRequest.getRequestHMAC());
+        Assertions.assertNotNull(idaKycAuthRequest.getThumbprint());
     }
 
     @Test
@@ -206,10 +204,10 @@ public class HelperServiceTest {
 
         IdaKycAuthRequest idaKycAuthRequest = new IdaKycAuthRequest();
         helperService.setAuthRequest(challengeList, idaKycAuthRequest);
-        Assert.assertNotNull(idaKycAuthRequest.getRequest());
-        Assert.assertNotNull(idaKycAuthRequest.getRequestSessionKey());
-        Assert.assertNotNull(idaKycAuthRequest.getRequestHMAC());
-        Assert.assertNotNull(idaKycAuthRequest.getThumbprint());
+        Assertions.assertNotNull(idaKycAuthRequest.getRequest());
+        Assertions.assertNotNull(idaKycAuthRequest.getRequestSessionKey());
+        Assertions.assertNotNull(idaKycAuthRequest.getRequestHMAC());
+        Assertions.assertNotNull(idaKycAuthRequest.getThumbprint());
     }
 
     @Test
@@ -233,10 +231,10 @@ public class HelperServiceTest {
 
         IdaKycAuthRequest idaKycAuthRequest = new IdaKycAuthRequest();
         helperService.setAuthRequest(challengeList, idaKycAuthRequest);
-        Assert.assertNotNull(idaKycAuthRequest.getRequest());
-        Assert.assertNotNull(idaKycAuthRequest.getRequestSessionKey());
-        Assert.assertNotNull(idaKycAuthRequest.getRequestHMAC());
-        Assert.assertNotNull(idaKycAuthRequest.getThumbprint());
+        Assertions.assertNotNull(idaKycAuthRequest.getRequest());
+        Assertions.assertNotNull(idaKycAuthRequest.getRequestSessionKey());
+        Assertions.assertNotNull(idaKycAuthRequest.getRequestHMAC());
+        Assertions.assertNotNull(idaKycAuthRequest.getThumbprint());
     }
 
     @Test
@@ -254,10 +252,10 @@ public class HelperServiceTest {
 
         IdaKycAuthRequest idaKycAuthRequest = new IdaKycAuthRequest();
         helperService.setAuthRequest(challengeList, idaKycAuthRequest);
-        Assert.assertNotNull(idaKycAuthRequest.getRequest());
-        Assert.assertNotNull(idaKycAuthRequest.getRequestSessionKey());
-        Assert.assertNotNull(idaKycAuthRequest.getRequestHMAC());
-        Assert.assertNotNull(idaKycAuthRequest.getThumbprint());
+        Assertions.assertNotNull(idaKycAuthRequest.getRequest());
+        Assertions.assertNotNull(idaKycAuthRequest.getRequestSessionKey());
+        Assertions.assertNotNull(idaKycAuthRequest.getRequestHMAC());
+        Assertions.assertNotNull(idaKycAuthRequest.getThumbprint());
     }
 
     @Test
@@ -265,7 +263,7 @@ public class HelperServiceTest {
         Mockito.when(restTemplate.getForObject("https://test/test", String.class)).thenReturn("test-certificate");
         Certificate certificate = TestUtil.getCertificate();
         Mockito.when(keymanagerUtil.convertToCertificate(Mockito.any(String.class))).thenReturn(certificate);
-        Assert.assertEquals(certificate, helperService.getIdaPartnerCertificate());
+        Assertions.assertEquals(certificate, helperService.getIdaPartnerCertificate());
     }
 
     @Test
@@ -273,7 +271,7 @@ public class HelperServiceTest {
         Mockito.when(restTemplate.getForObject("https://test/test", String.class)).thenReturn("test-certificate", "test-certificate");
         Certificate certificate = TestUtil.getCertificate();
         Mockito.when(keymanagerUtil.convertToCertificate(Mockito.any(String.class))).thenReturn(TestUtil.getExpiredCertificate(), certificate);
-        Assert.assertEquals(certificate, helperService.getIdaPartnerCertificate());
+        Assertions.assertEquals(certificate, helperService.getIdaPartnerCertificate());
     }
 
     @Test
@@ -281,27 +279,27 @@ public class HelperServiceTest {
         JWTSignatureResponseDto jwtSignatureResponseDto = new JWTSignatureResponseDto();
         jwtSignatureResponseDto.setJwtSignedData("test-jwt");
         Mockito.when(signatureService.jwtSign(Mockito.any())).thenReturn(jwtSignatureResponseDto);
-        Assert.assertEquals("test-jwt", helperService.getRequestSignature("test-request-value"));
+        Assertions.assertEquals("test-jwt", helperService.getRequestSignature("test-request-value"));
     }
 
     @Test
     public void getTransactionId_test() {
-        Assert.assertNotNull(helperService.getTransactionId("idhash"));
+        Assertions.assertNotNull(helperService.getTransactionId("idhash"));
     }
 
     @Test
     public void convertLangCodesToISO3LanguageCodes_withInvalidInput_thenReturnEmpty() {
-        Assert.assertTrue(helperService.convertLangCodesToISO3LanguageCodes(null).isEmpty());
-        Assert.assertTrue(helperService.convertLangCodesToISO3LanguageCodes(new String[]{}).isEmpty());
-        Assert.assertTrue(helperService.convertLangCodesToISO3LanguageCodes(new String[]{"", ""}).isEmpty());
-        Assert.assertTrue(helperService.convertLangCodesToISO3LanguageCodes(new String[]{"e1"}).isEmpty());
+        Assertions.assertTrue(helperService.convertLangCodesToISO3LanguageCodes(null).isEmpty());
+        Assertions.assertTrue(helperService.convertLangCodesToISO3LanguageCodes(new String[]{}).isEmpty());
+        Assertions.assertTrue(helperService.convertLangCodesToISO3LanguageCodes(new String[]{"", ""}).isEmpty());
+        Assertions.assertTrue(helperService.convertLangCodesToISO3LanguageCodes(new String[]{"e1"}).isEmpty());
     }
 
     @Test
     public void convertLangCodesToISO3LanguageCodes_withValidInput_thenPass() {
         List<String> langCodes = helperService.convertLangCodesToISO3LanguageCodes(new String[]{"en", "km"});
-        Assert.assertFalse(langCodes.isEmpty());
-        Assert.assertEquals(langCodes.get(0), "eng");
-        Assert.assertEquals(langCodes.get(1), "khm");
+        Assertions.assertFalse(langCodes.isEmpty());
+        Assertions.assertEquals(langCodes.get(0), "eng");
+        Assertions.assertEquals(langCodes.get(1), "khm");
     }
 }

@@ -122,7 +122,8 @@ public class HelperService {
                 .filter( auth -> auth != null &&  auth.getAuthFactorType() != null)
                 .forEach( auth -> { buildAuthRequest(auth, authRequest); });
 
-        KeyGenerator keyGenerator = KeyGeneratorUtils.getKeyGenerator(symmetricAlgorithm, symmetricKeyLength);
+        SecureRandom secureRandom = new SecureRandom();
+        KeyGenerator keyGenerator = KeyGeneratorUtils.getKeyGenerator(symmetricAlgorithm, symmetricKeyLength, secureRandom);
         final SecretKey symmetricKey = keyGenerator.generateKey();
         String request = objectMapper.writeValueAsString(authRequest);
         String hexEncodedHash = HMACUtils2.digestAsPlainText(request.getBytes(StandardCharsets.UTF_8));

@@ -2,13 +2,13 @@ package io.mosip.esignet.plugin.mosipid.helper;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.mosip.esignet.core.dto.ResponseWrapper;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
@@ -16,7 +16,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class AuthTransactionHelperTest {
 
     @Mock
@@ -41,6 +41,6 @@ public class AuthTransactionHelperTest {
         when(restTemplate.exchange(Mockito.any(RequestEntity.class), Mockito.any(ParameterizedTypeReference.class)))
                 .thenReturn(responseEntity);
         String authToken = authTransactionHelper.getAuthToken();
-        Assert.assertEquals(expectedAuthToken, authToken);
+        Assertions.assertEquals(expectedAuthToken, authToken);
     }
 }

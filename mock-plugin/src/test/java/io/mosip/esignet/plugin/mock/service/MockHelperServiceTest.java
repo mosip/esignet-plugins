@@ -13,14 +13,13 @@ import io.mosip.kernel.core.exception.ServiceError;
 import io.mosip.kernel.core.http.ResponseWrapper;
 import io.mosip.kernel.signature.dto.JWTSignatureResponseDto;
 import io.mosip.kernel.signature.service.SignatureService;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.RequestEntity;
@@ -28,14 +27,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class MockHelperServiceTest {
 
 
@@ -50,35 +47,6 @@ public class MockHelperServiceTest {
     SignatureService signatureService;
 
     private ObjectMapper objectMapper = new ObjectMapper();
-
-
-    @Before
-    public void setUp() throws Exception {
-        // Create the map you want to set
-        Map<String, List<String>> supportedKycAuthFormats = new HashMap<>();
-        supportedKycAuthFormats.put("OTP", List.of("alpha-numeric"));
-        supportedKycAuthFormats.put("PIN", List.of("number"));
-        supportedKycAuthFormats.put("BIO", List.of("encoded-json"));
-        supportedKycAuthFormats.put("WLA", List.of("jwt"));
-        supportedKycAuthFormats.put("KBI", List.of("base64url-encoded-json"));
-        supportedKycAuthFormats.put("PWD", List.of("alpha-numeric"));
-
-        // Get the field
-        Field field = MockHelperService.class.getDeclaredField("supportedKycAuthFormats");
-
-        // Make the field accessible
-        field.setAccessible(true);
-
-        // Remove the final modifier
-        Field modifiersField = Field.class.getDeclaredField("modifiers");
-        modifiersField.setAccessible(true);
-        int modifiers = field.getModifiers();
-        modifiers &= ~Modifier.FINAL; // Clear the FINAL bit
-        modifiersField.setInt(field, modifiers);
-
-        // Now you can set the field value
-        field.set(null, supportedKycAuthFormats); // Setting static field
-    }
 
     @Test
     public void doKycAuthMock_withAuthFactorAsOTP_thenPass() throws KycAuthException {
@@ -119,9 +87,9 @@ public class MockHelperServiceTest {
         // Execute the method
         KycAuthResult result = mockHelperService.doKycAuthMock("relyingPartyId", "clientId", kycAuthDto, true);
 
-        Assert.assertNotNull(result);
-        Assert.assertEquals("test_token", result.getKycToken());
-        Assert.assertEquals("partner_token", result.getPartnerSpecificUserToken());
+        Assertions.assertNotNull(result);
+        Assertions.assertEquals("test_token", result.getKycToken());
+        Assertions.assertEquals("partner_token", result.getPartnerSpecificUserToken());
     }
 
     @Test
@@ -157,9 +125,9 @@ public class MockHelperServiceTest {
         kycAuthDto.setChallengeList(List.of(authChallenge));
         KycAuthResult result = mockHelperService.doKycAuthMock("relyingPartyId", "clientId", kycAuthDto, true);
 
-        Assert.assertNotNull(result);
-        Assert.assertEquals("test_token", result.getKycToken());
-        Assert.assertEquals("partner_token", result.getPartnerSpecificUserToken());
+        Assertions.assertNotNull(result);
+        Assertions.assertEquals("test_token", result.getKycToken());
+        Assertions.assertEquals("partner_token", result.getPartnerSpecificUserToken());
     }
 
     @Test
@@ -195,9 +163,9 @@ public class MockHelperServiceTest {
         kycAuthDto.setChallengeList(List.of(authChallenge));
         KycAuthResult result = mockHelperService.doKycAuthMock("relyingPartyId", "clientId", kycAuthDto, true);
 
-        Assert.assertNotNull(result);
-        Assert.assertEquals("test_token", result.getKycToken());
-        Assert.assertEquals("partner_token", result.getPartnerSpecificUserToken());
+        Assertions.assertNotNull(result);
+        Assertions.assertEquals("test_token", result.getKycToken());
+        Assertions.assertEquals("partner_token", result.getPartnerSpecificUserToken());
     }
 
     @Test
@@ -233,9 +201,9 @@ public class MockHelperServiceTest {
         kycAuthDto.setChallengeList(List.of(authChallenge));
         KycAuthResult result = mockHelperService.doKycAuthMock("relyingPartyId", "clientId", kycAuthDto, true);
 
-        Assert.assertNotNull(result);
-        Assert.assertEquals("test_token", result.getKycToken());
-        Assert.assertEquals("partner_token", result.getPartnerSpecificUserToken());
+        Assertions.assertNotNull(result);
+        Assertions.assertEquals("test_token", result.getKycToken());
+        Assertions.assertEquals("partner_token", result.getPartnerSpecificUserToken());
     }
 
     @Test
@@ -276,9 +244,9 @@ public class MockHelperServiceTest {
         // Execute the method
         KycAuthResult result = mockHelperService.doKycAuthMock("relyingPartyId", "clientId", kycAuthDto, true);
 
-        Assert.assertNotNull(result);
-        Assert.assertEquals("test_token", result.getKycToken());
-        Assert.assertEquals("partner_token", result.getPartnerSpecificUserToken());
+        Assertions.assertNotNull(result);
+        Assertions.assertEquals("test_token", result.getKycToken());
+        Assertions.assertEquals("partner_token", result.getPartnerSpecificUserToken());
     }
 
     @Test
@@ -297,7 +265,7 @@ public class MockHelperServiceTest {
         try{
             mockHelperService.doKycAuthMock("relyingPartyId", "clientId", kycAuthDto, true);
         }catch (KycAuthException e){
-            Assert.assertEquals(e.getErrorCode(),"invalid_auth_challenge");
+            Assertions.assertEquals(e.getErrorCode(),"invalid_auth_challenge");
         }
     }
 
@@ -317,20 +285,20 @@ public class MockHelperServiceTest {
         try{
             mockHelperService.doKycAuthMock("relyingPartyId", "clientId", kycAuthDto, true);
         }catch (KycAuthException e){
-            Assert.assertEquals(e.getErrorCode(),"invalid_challenge_format");
+            Assertions.assertEquals(e.getErrorCode(),"invalid_challenge_format");
         }
     }
 
     @Test
     public void getUTCDateTime_withValidDetails_thenPass() {
         LocalDateTime utcDateTime = mockHelperService.getUTCDateTime();
-        Assert.assertNotNull(utcDateTime);
+        Assertions.assertNotNull(utcDateTime);
     }
 
     @Test
     public void getEpochSeconds_withValidDetails_thenPass() {
         long epochSeconds = mockHelperService.getEpochSeconds();
-        Assert.assertTrue(epochSeconds > 0);
+        Assertions.assertTrue(epochSeconds > 0);
     }
 
     @Test
@@ -359,7 +327,7 @@ public class MockHelperServiceTest {
         try{
             mockHelperService.doKycAuthMock("relyingPartyId", "clientId", kycAuthDto, true);
         }catch (KycAuthException e){
-            Assert.assertEquals(ErrorConstants.AUTH_FAILED,e.getErrorCode());
+            Assertions.assertEquals(ErrorConstants.AUTH_FAILED,e.getErrorCode());
         }
     }
 
@@ -387,8 +355,8 @@ public class MockHelperServiceTest {
         )).thenReturn(responseEntity);
 
         SendOtpResult result = mockHelperService.sendOtpMock("test_transaction_id", "individualId", List.of("mobile"), "relyingPartyId", "clientId");
-        Assert.assertNotNull(result);
-        Assert.assertEquals(result, sendOtpResult);
+        Assertions.assertNotNull(result);
+        Assertions.assertEquals(result, sendOtpResult);
 
     }
 
@@ -412,9 +380,9 @@ public class MockHelperServiceTest {
 
         try{
             mockHelperService.sendOtpMock("test_transaction_id", "individualId", List.of("mobile"),"relyingPartyId", "clientId");
-            Assert.fail();
+            Assertions.fail();
         }catch (SendOtpException e){
-            Assert.assertEquals(ErrorConstants.SEND_OTP_FAILED,e.getErrorCode());
+            Assertions.assertEquals(ErrorConstants.SEND_OTP_FAILED,e.getErrorCode());
         }
     }
 
@@ -439,9 +407,9 @@ public class MockHelperServiceTest {
 
         try{
             mockHelperService.sendOtpMock("test_transaction_id", "individualId", List.of("mobile"),"relyingPartyId", "clientId");
-            Assert.fail();
+            Assertions.fail();
         }catch (SendOtpException e){
-            Assert.assertEquals("test_error_code",e.getErrorCode());
+            Assertions.assertEquals("test_error_code",e.getErrorCode());
         }
     }
 
@@ -468,9 +436,9 @@ public class MockHelperServiceTest {
 
         try{
             mockHelperService.sendOtpMock("test_transaction_id", "individualId", List.of("mobile"),"relyingPartyId", "clientId");
-            Assert.fail();
+            Assertions.fail();
         }catch (SendOtpException e){
-            Assert.assertEquals(ErrorConstants.SEND_OTP_FAILED,e.getErrorCode());
+            Assertions.assertEquals(ErrorConstants.SEND_OTP_FAILED,e.getErrorCode());
         }
     }
 
@@ -482,8 +450,8 @@ public class MockHelperServiceTest {
         jwtSignatureResponseDto.setTimestamp(LocalDateTime.now());
         Mockito.when(signatureService.jwtSign(Mockito.any())).thenReturn(jwtSignatureResponseDto);
         String requestSignature = mockHelperService.getRequestSignature(request);
-        Assert.assertNotNull(requestSignature);
-        Assert.assertEquals("jwtSignedData", requestSignature);
+        Assertions.assertNotNull(requestSignature);
+        Assertions.assertEquals("jwtSignedData", requestSignature);
 
     }
 
@@ -492,7 +460,7 @@ public class MockHelperServiceTest {
 
         ReflectionTestUtils.setField(mockHelperService,"otpChannels",List.of("email","phone"));
         boolean isSupported= mockHelperService.isSupportedOtpChannel("email");
-        Assert.assertTrue(isSupported);
+        Assertions.assertTrue(isSupported);
     }
 
     @Test
@@ -500,6 +468,6 @@ public class MockHelperServiceTest {
 
         ReflectionTestUtils.setField(mockHelperService,"otpChannels",List.of("email"));
         boolean isSupported= mockHelperService.isSupportedOtpChannel("phone");
-        Assert.assertFalse(isSupported);
+        Assertions.assertFalse(isSupported);
     }
 }

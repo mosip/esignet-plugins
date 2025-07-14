@@ -5,21 +5,21 @@ import io.mosip.esignet.api.util.Action;
 import io.mosip.esignet.api.util.ActionStatus;
 import io.mosip.esignet.plugin.mosipid.dto.AuditResponse;
 import io.mosip.esignet.plugin.mosipid.helper.AuthTransactionHelper;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
-import org.mockito.junit.MockitoJUnitRunner;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.mosip.kernel.core.http.ResponseWrapper;
 import org.mockito.*;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
 import static org.mockito.ArgumentMatchers.*;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class IdaAuditPluginImplTest {
     @InjectMocks
     private IdaAuditPluginImpl idaAuditPlugin;
@@ -36,9 +36,9 @@ public class IdaAuditPluginImplTest {
         AuditDTO auditDTO = new AuditDTO();
         try {
             idaAuditPlugin.logAudit(action, status, auditDTO, null);
-            Assert.assertTrue(true);
+            Assertions.assertTrue(true);
         } catch (Exception e) {
-            Assert.fail();
+            Assertions.fail();
         }
     }
     @Test
@@ -49,9 +49,9 @@ public class IdaAuditPluginImplTest {
         Throwable throwable = new RuntimeException("Test Exception");
         try {
             idaAuditPlugin.logAudit(action, status, auditDTO, throwable);
-            Assert.assertTrue(true);
+            Assertions.assertTrue(true);
         } catch (Exception e) {
-            Assert.fail();
+            Assertions.fail();
         }
     }
     @Test
@@ -62,9 +62,9 @@ public class IdaAuditPluginImplTest {
         AuditDTO auditDTO = new AuditDTO();
         try {
             idaAuditPlugin.logAudit(username, action, status, auditDTO, null);
-            Assert.assertTrue(true);
+            Assertions.assertTrue(true);
         } catch (Exception e) {
-            Assert.fail();
+            Assertions.fail();
         }
     }
 
@@ -77,9 +77,9 @@ public class IdaAuditPluginImplTest {
         Throwable throwable = new RuntimeException("Test Exception");
         try {
             idaAuditPlugin.logAudit(username,action, status, auditDTO, throwable);
-            Assert.assertTrue(true);
+            Assertions.assertTrue(true);
         } catch (Exception e) {
-            Assert.fail();
+            Assertions.fail();
         }
     }
     @Test
@@ -102,9 +102,9 @@ public class IdaAuditPluginImplTest {
         )).thenReturn(responseEntity);
         try {
             idaAuditPlugin.logAudit(username,action, status, auditDTO, null);
-            Assert.assertTrue(true);
+            Assertions.assertTrue(true);
         } catch (Exception e) {
-            Assert.fail();
+            Assertions.fail();
         }
     }
     @Test
@@ -127,9 +127,9 @@ public class IdaAuditPluginImplTest {
         )).thenReturn(responseEntity);
         try {
             idaAuditPlugin.logAudit(username,action, status, auditDTO, null);
-            Assert.assertTrue(true);
+            Assertions.assertTrue(true);
         } catch (Exception e) {
-            Assert.fail();
+            Assertions.fail();
         }
     }
     @Test
@@ -152,9 +152,9 @@ public class IdaAuditPluginImplTest {
         )).thenReturn(responseEntity);
         try {
             idaAuditPlugin.logAudit(username,action, status, auditDTO, null);
-            Assert.assertTrue(true);
+            Assertions.assertTrue(true);
         } catch (Exception e) {
-            Assert.fail();
+            Assertions.fail();
         }
     }
 }
