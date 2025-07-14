@@ -48,6 +48,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 import static io.mosip.signup.api.util.ErrorConstants.SERVER_UNREACHABLE;
+import static io.mosip.signup.plugin.mosipid.util.ErrorConstants.INVALID_INDIVIDUAL_BIOMETRICS;
 import static io.mosip.signup.plugin.mosipid.util.ErrorConstants.REQUEST_FAILED;
 
 @Slf4j
@@ -559,7 +560,8 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
             try {
                 base64BirXmlEncoded = BiometricUtil.convertBase64JpegToBase64BirXML(base64FaceImage, faceImageCompressionRatio);
             } catch (Exception e) {
-                throw new ProfileException();
+                log.error("Failed to create cbeff from face image: ", e);
+                throw new ProfileException(INVALID_INDIVIDUAL_BIOMETRICS);
             }
             ((ObjectNode) inputJson).set(biometricDataFieldName, objectMapper.valueToTree(Map.ofEntries(
                     Map.entry("format", "cbeff"),
