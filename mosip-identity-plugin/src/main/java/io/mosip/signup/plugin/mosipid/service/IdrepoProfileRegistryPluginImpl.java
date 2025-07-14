@@ -215,6 +215,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
         identityRequest.setRegistrationId(requestId);
 
         IdentityResponse identityResponse = updateIdentity(identityRequest);
+        log.info("Received IdentityResponse for requestId {}: {}", requestId, identityResponse);
         profileCacheService.setHandleRequestIds(requestId, Arrays.asList(requestId));
 
         ProfileResult profileResult = new ProfileResult();
