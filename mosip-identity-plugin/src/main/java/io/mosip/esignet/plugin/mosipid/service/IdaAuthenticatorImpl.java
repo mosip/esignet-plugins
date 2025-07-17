@@ -10,9 +10,17 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.mosip.esignet.api.dto.*;
-import io.mosip.esignet.plugin.mosipid.dto.GetAllCertificatesResponse;
-import io.mosip.esignet.plugin.mosipid.dto.IdaKycAuthResponse;
+import io.mosip.esignet.api.exception.KycAuthException;
+import io.mosip.esignet.api.exception.KycExchangeException;
+import io.mosip.esignet.api.exception.KycSigningCertificateException;
+import io.mosip.esignet.api.exception.SendOtpException;
+import io.mosip.esignet.api.spi.Authenticator;
+import io.mosip.esignet.api.util.ErrorConstants;
+import io.mosip.esignet.plugin.mosipid.dto.*;
 import io.mosip.esignet.plugin.mosipid.helper.AuthTransactionHelper;
+import io.mosip.kernel.core.http.ResponseWrapper;
+import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -57,7 +65,10 @@ public class IdaAuthenticatorImpl implements Authenticator {
 
     @Value("${mosip.esignet.authenticator.ida.kyc-auth-url}")
     private String kycAuthUrl;
-    
+
+    @Value("${mosip.esignet.authenticator.ida.kyc-auth-url-v2}")
+    private String kycAuthUrlV2;
+
     @Value("${mosip.esignet.authenticator.ida.kyc-exchange-url}")
     private String kycExchangeUrl;
 
