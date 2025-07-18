@@ -11,6 +11,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import io.micrometer.core.annotation.Timed;
+import io.mosip.esignet.core.util.IdentityProviderUtil;
+import io.mosip.signup.plugin.mosipid.dto.VerificationMetadata;
 import io.mosip.signup.plugin.mosipid.dto.*;
 import io.mosip.signup.plugin.mosipid.util.ErrorConstants;
 import io.mosip.signup.plugin.mosipid.util.ProfileCacheService;
@@ -57,6 +59,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     private static final String UTC_DATETIME_PATTERN = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
     private final Map<Double, SchemaResponse> schemaMap = new HashMap<>();
     private static final List<String> ACTIONS = Arrays.asList("CREATE", "UPDATE");
+    private final String HANDLE_SEPARATOR = "@";
 
     @Value("#{'${mosip.signup.idrepo.default.selected-handles:phone}'.split(',')}")
     private List<String> defaultSelectedHandles;
@@ -102,9 +105,6 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
 
     @Value("#{'${mosip.signup.idrepo.optional-language:}'.split(',')}")
     private List<String> optionalLanguages;
-
-    @Value("${mosip.signup.idrepo.idvid-postfix}")
-    private String postfix;
 
     @Value("${mosip.signup.idrepo.get-identity-method:POST}")
     private String getIdentityEndpointMethod;
@@ -192,12 +192,11 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     @Override
     public ProfileResult updateProfile(String requestId, ProfileDto profileDto) throws ProfileException {
         JsonNode inputJson = profileDto.getIdentity();
-        //set UIN
-        //((ObjectNode) inputJson).set("UIN", objectMapper.valueToTree(profileDto.getUniqueUserId()));
-        ((ObjectNode) inputJson).set(UIN, objectMapper.valueToTree(profileDto.getIndividualId()));
 
-        if(!inputJson.has(SELECTED_HANDLES_FIELD_ID) && !CollectionUtils.isEmpty(defaultSelectedHandles)){
-            ((ObjectNode) inputJson).set(SELECTED_HANDLES_FIELD_ID, objectMapper.valueToTree(defaultSelectedHandles));
+        if(profileDto.getIndividualId().contains(HANDLE_SEPARATOR)) {
+            ((ObjectNode) inputJson).set(UIN, objectMapper.valueToTree(getProfile(profileDto.getIndividualId()).getIndividualId()));
+        } else {
+            ((ObjectNode) inputJson).set(UIN, objectMapper.valueToTree(profileDto.getIndividualId()));
         }
 
         //Build identity request
@@ -205,6 +204,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
         identityRequest.setRegistrationId(requestId);
 
         IdentityResponse identityResponse = updateIdentity(identityRequest);
+        log.info("Received IdentityResponse for requestId {}: {}", requestId, identityResponse);
         profileCacheService.setHandleRequestIds(requestId, Arrays.asList(requestId));
 
         ProfileResult profileResult = new ProfileResult();
@@ -226,8 +226,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     @Override
     public ProfileDto getProfile(String individualId) throws ProfileException {
         try {
-            individualId = StringUtils.isEmpty(postfix) ? individualId : individualId.concat(postfix);
-
+            boolean isHandle = individualId.contains(HANDLE_SEPARATOR);
             ResponseWrapper<IdentityResponse> responseWrapper = null;
             switch (getIdentityEndpointMethod.toLowerCase()) {
                 case "post" :
@@ -235,7 +234,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
                     RequestWrapper<IdRequestByIdDTO> idDTORequestWrapper=new RequestWrapper<>();
                     requestByIdDTO.setId(individualId);
                     requestByIdDTO.setType("demo");
-                    requestByIdDTO.setIdType("HANDLE");
+                    if(isHandle) requestByIdDTO.setIdType("HANDLE");
                     idDTORequestWrapper.setRequest(requestByIdDTO);
                     idDTORequestWrapper.setRequesttime(getUTCDateTime());
                     responseWrapper = request(getIdentityEndpoint, HttpMethod.POST, idDTORequestWrapper,
@@ -243,6 +242,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
                     break;
                 case "get":
                     String path = String.format(getIdentityEndpointFallbackPath, individualId);
+                    if(isHandle) path += "&idType=HANDLE";
                     responseWrapper = request(getIdentityEndpoint+path, HttpMethod.GET, null,
                             new ParameterizedTypeReference<ResponseWrapper<IdentityResponse>>() {});
                     break;
@@ -357,6 +357,9 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
         restRequest.setVersion(identityRequestVersion);
         restRequest.setRequesttime(getUTCDateTime());
         restRequest.setRequest(identityRequest);
+
+        log.debug("update request {} with request ID {}", restRequest, updateIdentityRequestID);
+
         ResponseWrapper<IdentityResponse> responseWrapper = request(identityEndpoint, HttpMethod.PATCH, restRequest,
                 new ParameterizedTypeReference<ResponseWrapper<IdentityResponse>>() {});
         return responseWrapper.getResponse();
@@ -366,6 +369,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     private ProfileCreateUpdateStatus getRequestStatusFromServer(String applicationId) {
         ResponseWrapper<IdentityStatusResponse> responseWrapper = request(getStatusEndpoint+applicationId,
                 HttpMethod.GET, null, new ParameterizedTypeReference<ResponseWrapper<IdentityStatusResponse>>() {});
+        log.info("Received registration status response for applicationId {}: {}", applicationId, responseWrapper);
         if (responseWrapper != null && responseWrapper.getResponse() != null &&
                 !StringUtils.isEmpty(responseWrapper.getResponse().getStatusCode())) {
             switch (responseWrapper.getResponse().getStatusCode()) {
@@ -434,12 +438,44 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
 
         //if verified claims exists then pass it in the request as "verifiedAttributes"
         if(inputJson.has("verified_claims")) {
-            identityRequest.setVerifiedAttributes(inputJson.get("verified_claims"));
+            identityRequest.setVerifiedAttributes(buildVerifiedClaims(inputJson.get("verified_claims")));
             ((ObjectNode) inputJson).remove("verified_claims");
         }
 
         identityRequest.setIdentity(inputJson);
         return identityRequest;
+    }
+
+    /**
+     * Method to build List<VerificationMetadata> from the verified claims
+     * @param verifiedClaims {@link JsonNode}
+     * @return List<VerificationMetadata> verifiedAttributes
+     */
+    private List<VerificationMetadata> buildVerifiedClaims(JsonNode verifiedClaims) {
+        List<VerificationMetadata> verifiedAttributes = new ArrayList<>();
+
+        for (Iterator<Map.Entry<String, JsonNode>> it = verifiedClaims.fields(); it.hasNext(); ) {
+            Map.Entry<String, JsonNode> entry = it.next();
+            String claim = entry.getKey();
+            JsonNode value = entry.getValue();
+
+            VerificationMetadata metadata = new VerificationMetadata();
+            metadata.setTrustFramework(value.get("trust_framework").asText());
+            metadata.setVerificationProcess(value.get("verification_process").asText());
+            metadata.setClaims(Collections.singletonList(claim));
+
+            Map<String, Object> metaMap = new HashMap<>();
+
+            // Add fields to metadata
+            value.fields().forEachRemaining(field -> metaMap.put(field.getKey(), field.getValue()));
+
+            metaMap.put("time", IdentityProviderUtil.getUTCDateTime());
+            metadata.setMetadata(metaMap);
+
+            verifiedAttributes.add(metadata);
+        }
+
+        return verifiedAttributes;
     }
 
     private String getUTCDateTime() {
