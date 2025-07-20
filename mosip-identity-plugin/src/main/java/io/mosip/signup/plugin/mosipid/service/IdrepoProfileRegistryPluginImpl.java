@@ -140,7 +140,11 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     @PostConstruct
     public void init() {
         this.uiSpec = request(uiSpecUrl, HttpMethod.GET, null, new ParameterizedTypeReference<ResponseWrapper<JsonNode>>() {})
-                .getResponse();
+                .getResponse()
+                .get(0)
+                .get("jsonSpec")
+                .get(0)
+                .get("spec");
     }
 
 
