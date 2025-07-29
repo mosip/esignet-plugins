@@ -14,11 +14,19 @@ import javax.xml.transform.stream.StreamResult;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 
 import static io.mosip.biometrics.util.CommonUtil.convertJPEGToJP2UsingOpenCV;
 
 public class BiometricUtil {
+
+    private static final Jaxb2Marshaller marshaller;
+
+    static {
+        marshaller = new Jaxb2Marshaller();
+        marshaller.setClassesToBeBound(BIR.class);
+    }
 
     public static String convertBase64JpegToBase64BirXML(String base64Jpeg, int imageCompressionRatio) throws Exception {
         byte[] jpegImage = Base64Utils.decodeFromString(base64Jpeg);
@@ -36,8 +44,6 @@ public class BiometricUtil {
 
         BIR bir = createBIRFromISO(isoImage);
 
-        Jaxb2Marshaller marshaller = new Jaxb2Marshaller();
-        marshaller.setClassesToBeBound(BIR.class);
         StringWriter sw = new StringWriter();
         StreamResult result = new StreamResult(sw);
         marshaller.marshal(bir, result);
@@ -49,7 +55,7 @@ public class BiometricUtil {
     public static BIR createBIRFromISO(byte[] isoImage) {
         BIRInfo birInfo = new BIRInfo.BIRInfoBuilder().withIntegrity(false).build();
         BDBInfo bdbInfo = new BDBInfo.BDBInfoBuilder()
-                .withCreationDate(LocalDateTime.now())
+                .withCreationDate(LocalDateTime.now(ZoneOffset.UTC))
                 .withType(List.of(BiometricType.FACE))
                 .withPurpose(PurposeType.ENROLL)
                 .withLevel(ProcessedLevelType.RAW)
