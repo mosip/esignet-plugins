@@ -446,9 +446,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
             ((ObjectNode) inputJson).remove("verified_claims");
         }
 
-        if (!inputJson.path(biometricDataFieldName).path("value").isMissingNode()) {
-            identityRequest.setDocuments(buildDocuments(inputJson));
-        }
+        identityRequest.setDocuments(buildDocuments(inputJson));
 
         identityRequest.setIdentity(inputJson);
         return identityRequest;
