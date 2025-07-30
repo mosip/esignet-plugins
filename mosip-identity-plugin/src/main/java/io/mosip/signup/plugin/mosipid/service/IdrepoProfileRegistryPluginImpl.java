@@ -8,12 +8,14 @@ package io.mosip.signup.plugin.mosipid.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import io.micrometer.core.annotation.Timed;
 import io.mosip.esignet.core.util.IdentityProviderUtil;
 import io.mosip.signup.plugin.mosipid.dto.VerificationMetadata;
 import io.mosip.signup.plugin.mosipid.dto.*;
+import io.mosip.signup.plugin.mosipid.util.BiometricUtil;
 import io.mosip.signup.plugin.mosipid.util.ErrorConstants;
 import io.mosip.signup.plugin.mosipid.util.ProfileCacheService;
 import io.mosip.kernel.core.util.HMACUtils2;
@@ -47,6 +49,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 import static io.mosip.signup.api.util.ErrorConstants.SERVER_UNREACHABLE;
+import static io.mosip.signup.plugin.mosipid.util.ErrorConstants.INVALID_INDIVIDUAL_BIOMETRICS;
 import static io.mosip.signup.plugin.mosipid.util.ErrorConstants.REQUEST_FAILED;
 
 @Slf4j
@@ -112,6 +115,12 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
 
     @Value("${mosip.signup.idrepo.get-identity-fallback-path}")
     private String getIdentityEndpointFallbackPath;
+
+    @Value("${mosip.signup.idrepo.biometric.field-name:individualBiometrics}")
+    private String biometricDataFieldName;
+
+    @Value("${mosip.signup.idrepo.biometric.compression-ratio:1000}")
+    private int faceImageCompressionRatio;
 
     @Autowired
     @Qualifier("selfTokenRestTemplate")
@@ -457,6 +466,8 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
             ((ObjectNode) inputJson).remove("verified_claims");
         }
 
+        identityRequest.setDocuments(buildDocuments(inputJson));
+
         identityRequest.setIdentity(inputJson);
         return identityRequest;
     }
@@ -558,4 +569,30 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
         if(!mandatoryLanguages.contains(language) && (optionalLanguages != null && !optionalLanguages.contains(language)))
             throw new InvalidProfileException(ErrorConstants.INVALID_LANGUAGE);
     }
+
+    private ArrayNode buildDocuments(JsonNode inputJson) {
+        ArrayNode documents = objectMapper.createArrayNode();
+        if (!inputJson.path(biometricDataFieldName).path("value").isMissingNode()) {
+            String base64FaceImage = inputJson.path(biometricDataFieldName).path("value").textValue();
+            String base64BirXmlEncoded = null;
+            try {
+                base64BirXmlEncoded = BiometricUtil.convertBase64JpegToBase64BirXML(base64FaceImage, faceImageCompressionRatio);
+            } catch (Exception e) {
+                log.error("Failed to create cbeff from face image: ", e);
+                throw new ProfileException(INVALID_INDIVIDUAL_BIOMETRICS);
+            }
+            ((ObjectNode) inputJson).set(biometricDataFieldName, objectMapper.valueToTree(Map.ofEntries(
+                    Map.entry("format", "cbeff"),
+                    Map.entry("version", 1),
+                    Map.entry("value", "fileReferenceID")
+            )));
+            documents.add(objectMapper.createObjectNode()
+                    .put("category", biometricDataFieldName)
+                    .put("value", base64BirXmlEncoded)
+            );
+        }
+        if(documents.isEmpty()) return null;
+        return documents;
+    }
+
 }
