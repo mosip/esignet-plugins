@@ -68,7 +68,7 @@ public class MockIdentityVerifierPluginImplTest {
 
         KafkaTemplate<String, IdentityVerificationResult> kafkaTemplate = Mockito.mock(KafkaTemplate.class);
         ReflectionTestUtils.setField(mockIdentityVerifierPlugin, "kafkaTemplate", kafkaTemplate);
-
+        ReflectionTestUtils.setField(mockIdentityVerifierPlugin, "resultTopic", "ANALYZE_FRAMES_RESULT");
 
         mockIdentityVerifierPlugin.verify(transactionId, identityVerificationDto);
 
