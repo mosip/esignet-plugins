@@ -80,7 +80,8 @@
 		<git-commit-id-plugin.version>3.0.1</git-commit-id-plugin.version>
 		<maven.jacoco.version>0.8.5</maven.jacoco.version>
 		<maven-javadoc-plugin.version>3.3.1</maven-javadoc-plugin.version>
-		<esignet.version>1.6.1-SNAPSHOT</esignet.version>
+		<esignet.version>1.6.2-SNAPSHOT</esignet.version>
+		<kernel-keymanager-service.version>1.2.2.0-SNAPSHOT</kernel-keymanager-service.version>
 	</properties>
 	<dependencies>
 	
@@ -108,7 +109,7 @@
 		<dependency>
 			<groupId>io.mosip.kernel</groupId>
 			<artifactId>kernel-keymanager-service</artifactId>
-			<version>1.2.1.0</version>
+			<version>${kernel-keymanager-service.version}</version>
 			<scope>provided</scope>
 			<classifier>lib</classifier>
 			<exclusions>
