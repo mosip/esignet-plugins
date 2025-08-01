@@ -5,16 +5,18 @@
  */
 package io.mosip.signup.plugin.mosipid.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Data;
 
 import java.util.List;
 
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class IdentityResponse {
 
     private String status;
     private JsonNode identity;
-    private List<String> documents;
-    private List<String> verifiedAttributes;
+//    private List<String> documents;
+//    private List<String> verifiedAttributes;
 }
