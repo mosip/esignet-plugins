@@ -34,6 +34,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -42,6 +43,7 @@ import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.PostConstruct;
 import javax.validation.constraints.NotNull;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 import java.time.ZoneOffset;
@@ -142,8 +144,17 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     @Value("${mosip.signup.mosipid.uispec.errors-jsonpath:$[0].jsonSpec[0].spec.errors}")
     private String errorsJsonpath;
 
-    private JsonNode uiSpec;
+    @Value("${mosip.signup.mosipid.get-ui-spec.dynamic-fields.endpoint}")
+    private String dynamicFieldsBaseUrl;
 
+    @Value("${mosip.signup.mosipid.get-ui-spec.doc-types-category.endpoint}")
+    private String docTypesAndCategoryBaseUrl;
+
+
+    private JsonNode uiSpec;
+    private static final int ZERO=0;
+    private static final int ONE=1;
+    private static final int PAGE_SIZE=10;
     @PostConstruct
     public void init() {
         String responseJson = request(uiSpecUrl, HttpMethod.GET, null, new ParameterizedTypeReference<ResponseWrapper<JsonNode>>() {
@@ -152,13 +163,184 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
                 .toString();
         Object schema = JsonPath.read(responseJson, schemaJsonpath);
         Object errors = JsonPath.read(responseJson, errorsJsonpath);
+        JsonNode allowedValues = generateAllowedValues(fetchDynamicFields(), fetchDocTypesAndCategories(getAllConfiguredLanguages()));
+
         this.uiSpec = objectMapper.valueToTree(
                 Map.ofEntries(
                         Map.entry("schema", schema),
                         Map.entry("errors", errors),
-                        Map.entry("language", Map.of("mandatory", mandatoryLanguages, "optional", optionalLanguages))
+                        Map.entry("language", Map.of("mandatory", mandatoryLanguages, "optional", optionalLanguages)),
+                        Map.entry("allowedValues", allowedValues)
                 )
         );
+    }
+
+    /**
+     * Generate combined JsonNode from List<JsonNode> dynamicFields and List<JsonNode> documentCategories
+     * @param dynamicFields List<JsonNode> from master data representing dynamic fields
+     * @param documentCategories List<JsonNode> representing document categories and types from master data
+     * @return JsonNode containing the allowed values.
+     */
+    public JsonNode generateAllowedValues(List<JsonNode> dynamicFields, List<JsonNode> documentCategories) {
+        ObjectNode result = objectMapper.createObjectNode();
+        processDynamicFields(dynamicFields, result); // Process dynamic fields and add them to the result node
+        processDocumentCategoriesAndTypes(documentCategories, result); // Process document categories and merge them into the same result node
+        return result;
+    }
+
+    /**
+     * Processes the dynamic fields JSON list and adds their structured data into the provided ObjectNode.
+     * @param dynamicFields List of JSON nodes representing dynamic fields
+     * @param result The ObjectNode where data is accumulated
+     */
+    private void processDynamicFields(List<JsonNode> dynamicFields, ObjectNode result) {
+        for (JsonNode item : dynamicFields) {
+            String name = item.hasNonNull("name") ? item.get("name").asText() : null;
+            String lang = item.hasNonNull("langCode") ? item.get("langCode").asText() : null;
+            JsonNode fieldValues = item.get("fieldVal");
+            // Skip if required fields are missing or fieldValues is not an array
+            if (name == null || lang == null || fieldValues == null || !fieldValues.isArray())
+                continue;
+
+            // Get or create the node for the dynamic field name
+            ObjectNode nameNode = (ObjectNode) result.get(name);
+            if (nameNode == null) {
+                nameNode = objectMapper.createObjectNode();
+                result.set(name, nameNode);
+            }
+
+            // Iterate through each field value and add to the nested structure
+            for (JsonNode fv : fieldValues) {
+                String code = fv.hasNonNull("code") ? fv.get("code").asText() : null;
+                String value = fv.hasNonNull("value") ? fv.get("value").asText() : null;
+                if (code == null || value == null) continue;
+
+                ObjectNode langMap = (ObjectNode) nameNode.get(code);
+                if (langMap == null) {
+                    langMap = objectMapper.createObjectNode();
+                    nameNode.set(code, langMap);
+                }
+                langMap.put(lang, value);
+            }
+        }
+    }
+
+    /**
+     * Processes the document categories JSON list and adds their structured data into the provided ObjectNode.
+     * @param documentCategories List of JSON nodes representing document categories
+     * @param result The ObjectNode where data is accumulated
+     */
+    private void processDocumentCategoriesAndTypes(List<JsonNode> documentCategories, ObjectNode result) {
+        for (JsonNode item : documentCategories) {
+            String categoryCode = item.hasNonNull("code") ? item.get("code").asText() : null;
+            String langCode = item.hasNonNull("langCode") ? item.get("langCode").asText() : null;
+            JsonNode documentTypes = item.get("documentTypes");
+
+            // Skip if required fields are missing or documentTypes is not an array
+            if (categoryCode == null || langCode == null || documentTypes == null || !documentTypes.isArray())
+                continue;
+
+            // Get or create the node for the document category code
+            ObjectNode docTypeMap = (ObjectNode) result.get(categoryCode);
+            if (docTypeMap == null) {
+                docTypeMap = objectMapper.createObjectNode();
+                result.set(categoryCode, docTypeMap);
+            }
+
+            // Iterate through each document type and add to the nested structure
+            for (JsonNode docType : documentTypes) {
+                String docTypeCode = docType.hasNonNull("code") ? docType.get("code").asText() : null;
+                String docTypeName = docType.hasNonNull("name") ? docType.get("name").asText() : null;
+                if (docTypeCode == null || docTypeName == null) continue;
+
+                ObjectNode langMap = (ObjectNode) docTypeMap.get(docTypeCode);
+                if (langMap == null) {
+                    langMap = objectMapper.createObjectNode();
+                    docTypeMap.set(docTypeCode, langMap);
+                }
+                langMap.put(langCode, docTypeName);
+            }
+        }
+    }
+
+    public String buildDynamicFieldsUrl(int pageNumber, int pageSize) {
+        return String.format("%s?pageNumber=%d&pageSize=%d", dynamicFieldsBaseUrl, pageNumber, pageSize);
+    }
+    public String buildDocumentTypeAndCategoryUrl(List<String> languages) {
+        StringBuilder urlBuilder = new StringBuilder(docTypesAndCategoryBaseUrl);
+        urlBuilder.append("?");
+        for (int i = 0; i < languages.size(); i++) {
+            if (i != 0) urlBuilder.append("&");
+            urlBuilder.append("languages=").append(URLEncoder.encode(languages.get(i), StandardCharsets.UTF_8));
+        }
+        return urlBuilder.toString();
+    }
+
+    public List<String> getAllConfiguredLanguages() {
+        Set<String> allLanguages = new LinkedHashSet<>();
+        if (mandatoryLanguages != null) {
+            allLanguages.addAll(mandatoryLanguages);
+        }
+        if (optionalLanguages != null) {
+            allLanguages.addAll(optionalLanguages);
+        }
+        return new ArrayList<>(allLanguages);
+    }
+
+    /**
+     * fetch Document Types and categories from master data
+     * @param languages List<String> languages
+     * @return List of JSON nodes representing document categories and types
+     */
+    public List<JsonNode> fetchDocTypesAndCategories(List<String> languages) {
+        List<JsonNode> allFields = new ArrayList<>();
+        String url = this.buildDocumentTypeAndCategoryUrl(languages);
+        ResponseEntity<JsonNode> response = this.restTemplate.getForEntity(url, JsonNode.class);
+        JsonNode data = Objects.requireNonNull(response.getBody()).get("response").get("documentCategories");
+        if (data != null && data.isArray()) {
+            for (JsonNode field : data) {
+                if (field.has("isActive") && field.get("isActive").asBoolean()) {
+                    allFields.add(field);
+                }
+            }
+        }
+        return allFields;
+    }
+
+    /**
+     * fetch Dynamic Fields from master data
+     * @return List of JSON nodes representing dynamic fields
+     */
+    public List<JsonNode> fetchDynamicFields() {
+        List<JsonNode> allFields = new ArrayList<>();
+        int pageNumber = ZERO;
+        int pageSize = PAGE_SIZE;
+        int totalPages = ONE;
+        int totalItems = ZERO;
+        while (pageNumber < totalPages) {
+            String url = buildDynamicFieldsUrl(pageNumber, pageSize);
+            ResponseEntity<JsonNode> response = restTemplate.getForEntity(url, JsonNode.class);
+            JsonNode responseNode = Objects.requireNonNull(response.getBody()).get("response");
+            if (pageNumber == 0) {
+                totalPages = objectMapper.convertValue(responseNode.get("totalPages"), Integer.class);
+                totalItems = objectMapper.convertValue(responseNode.get("totalItems"), Integer.class);
+            }
+            JsonNode data = responseNode.get("data");
+            if (data != null && data.isArray()) {
+                for (JsonNode field : data) {
+                    if (field.has("isActive") && field.get("isActive").asBoolean()) {
+                        allFields.add(field);
+                    }
+                }
+            }
+            pageNumber++;
+            // Adjust pageSize for the next iteration if needed
+            int remainingItems = totalItems - allFields.size();
+            if (remainingItems < pageSize) {
+                pageSize = remainingItems;
+            }
+        }
+        return allFields;
     }
 
 

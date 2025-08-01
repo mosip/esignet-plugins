@@ -61,6 +61,10 @@ public class IdrepoProfileRegistryPluginImplTest {
         ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "mandatoryLanguages",List.of("eng"));
         ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "getIdentityEndpointMethod", "POST");
         ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "getStatusEndpoint","http://localhost:8080/identity/v1/identity/");
+        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "dynamicFieldsBaseUrl","http://mock/api/dynamicFields");
+        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "docTypesAndCategoryBaseUrl", "http://mock/api/docTypes");
+        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "mandatoryLanguages", List.of("en"));
+        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "optionalLanguages", List.of("fr","ar"));
     }
 
     @Test
@@ -537,5 +541,103 @@ public class IdrepoProfileRegistryPluginImplTest {
         identityData.put("email","123@email.com");
         identityData.put("phone","+91841987567");
         return objectMapper.valueToTree(identityData);
+    }
+
+    @Test
+    public void fetchDocTypesAndCategories_thenPass() {
+        JsonNode mockNode = objectMapper.createObjectNode()
+                .put("isActive", true)
+                .put("code", "cat1")
+                .put("langCode", "en");
+        JsonNode responseNode = objectMapper.createObjectNode()
+                .set("documentCategories", objectMapper.createArrayNode().add(mockNode));
+        JsonNode root = objectMapper.createObjectNode()
+                .set("response", responseNode);
+        Mockito.when(restTemplate.getForEntity(Mockito.anyString(), Mockito.eq(JsonNode.class)))
+                .thenReturn(new ResponseEntity<>(root, HttpStatus.OK));
+        List<JsonNode> result = idrepoProfileRegistryPlugin.fetchDocTypesAndCategories(List.of("en"));
+        Assert.assertEquals(1, result.size());
+        Assert.assertEquals("cat1", result.get(0).get("code").asText());
+    }
+
+    @Test
+    public void fetchDocTypesAndCategoriesWithInactiveItems_thenReturnEmptyList() {
+        JsonNode inactiveItem = objectMapper.createObjectNode()
+                .put("isActive", false)
+                .put("code", "cat2");
+        JsonNode responseNode = objectMapper.createObjectNode()
+                .set("documentCategories", objectMapper.createArrayNode().add(inactiveItem));
+        JsonNode root = objectMapper.createObjectNode()
+                .set("response", responseNode);
+        Mockito.when(restTemplate.getForEntity(Mockito.anyString(), Mockito.eq(JsonNode.class)))
+                .thenReturn(new ResponseEntity<>(root, HttpStatus.OK));
+        List<JsonNode> result = idrepoProfileRegistryPlugin.fetchDocTypesAndCategories(List.of("en"));
+        Assert.assertTrue(result.isEmpty());
+    }
+
+    @Test
+    public void fetchDynamicFields_thenPass() {
+        JsonNode field = objectMapper.createObjectNode().put("isActive", true).put("name", "field1");
+        JsonNode responseNode = objectMapper.createObjectNode()
+                .put("totalPages", 1)
+                .put("totalItems", 1)
+                .set("data", objectMapper.createArrayNode().add(field));
+        JsonNode root = objectMapper.createObjectNode()
+                .set("response", responseNode);
+        Mockito.when(restTemplate.getForEntity(Mockito.anyString(), Mockito.eq(JsonNode.class)))
+                .thenReturn(new ResponseEntity<>(root, HttpStatus.OK));
+        List<JsonNode> result = idrepoProfileRegistryPlugin.fetchDynamicFields();
+        Assert.assertEquals(1, result.size());
+        Assert.assertEquals("field1", result.get(0).get("name").asText());
+    }
+
+    @Test
+    public void fetchDynamicFields_withInactiveField_thenReturnEmptyList() {
+        JsonNode inactiveField = objectMapper.createObjectNode()
+                .put("isActive", false)
+                .put("name", "field1");
+        JsonNode responseNode = objectMapper.createObjectNode()
+                .put("totalPages", 1)
+                .put("totalItems", 1)
+                .set("data", objectMapper.createArrayNode().add(inactiveField));
+        JsonNode root = objectMapper.createObjectNode()
+                .set("response", responseNode);
+        Mockito.when(restTemplate.getForEntity(Mockito.anyString(), Mockito.eq(JsonNode.class)))
+                .thenReturn(new ResponseEntity<>(root, HttpStatus.OK));
+        List<JsonNode> result = idrepoProfileRegistryPlugin.fetchDynamicFields();
+        Assert.assertTrue(result.isEmpty());
+    }
+
+    @Test
+    public void generateAllowedValues_thenPass() {
+        // Dynamic field
+        JsonNode fieldVal = objectMapper.createObjectNode()
+                .put("code", "code1")
+                .put("value", "value1");
+        JsonNode dynamicField = objectMapper.createObjectNode()
+                .put("name", "fieldName")
+                .put("langCode", "en")
+                .set("fieldVal", objectMapper.createArrayNode().add(fieldVal));
+        // Document category and types
+        JsonNode docType = objectMapper.createObjectNode()
+                .put("code", "docCode")
+                .put("name", "docName");
+        JsonNode category = objectMapper.createObjectNode()
+                .put("code", "cat1")
+                .put("langCode", "en")
+                .set("documentTypes", objectMapper.createArrayNode().add(docType));
+        JsonNode result = idrepoProfileRegistryPlugin.generateAllowedValues(
+                List.of(dynamicField), List.of(category)
+        );
+        Assert.assertTrue(result.has("fieldName"));
+        Assert.assertEquals("value1", result.get("fieldName").get("code1").get("en").asText());
+        Assert.assertEquals("docName", result.get("cat1").get("docCode").get("en").asText());
+    }
+
+    @Test
+    public void generateAllowedValuesWithMissingFields_thenReturnEmptyList() {
+        JsonNode brokenField = objectMapper.createObjectNode();
+        JsonNode result = idrepoProfileRegistryPlugin.generateAllowedValues(List.of(brokenField), List.of());
+        Assert.assertTrue(result.isEmpty());
     }
 }
