@@ -41,7 +41,6 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.PostConstruct;
-import javax.validation.constraints.NotNull;
 import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 import java.time.ZoneOffset;
@@ -306,7 +305,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     }
 
     @Override
-    public boolean isMatch(@NotNull JsonNode identity, @NotNull JsonNode inputChallenge) {
+    public boolean isMatch(JsonNode identity, JsonNode inputChallenge) {
         int matchCount = 0;
         Iterator itr = inputChallenge.fieldNames();
         while(itr.hasNext()) {
