@@ -111,6 +111,11 @@ public class IdaAuthenticatorImpl implements Authenticator {
     @Override
     public KycExchangeResult doKycExchange(String relyingPartyId, String clientId, KycExchangeDto kycExchangeDto)
             throws KycExchangeException {
+        return kycExchange(relyingPartyId,clientId,kycExchangeDto,false);
+    }
+
+    private KycExchangeResult kycExchange(String relyingPartyId, String clientId, KycExchangeDto kycExchangeDto,boolean isV2)
+            throws KycExchangeException {
         log.info("Started to build kyc-exchange request with transactionId : {} && clientId : {}",
                 kycExchangeDto.getTransactionId(), clientId);
         try {
@@ -129,7 +134,7 @@ public class IdaAuthenticatorImpl implements Authenticator {
             idaKycExchangeRequest.setRespType(kycExchangeDto.getUserInfoResponseType()); //may be either JWT or JWE
             idaKycExchangeRequest.setIndividualId(kycExchangeDto.getIndividualId());
 
-            if(kycExchangeDto instanceof VerifiedKycExchangeDto){
+            if(isV2){
                 setClaims((VerifiedKycExchangeDto) kycExchangeDto, idaKycExchangeRequest);
             }
 
@@ -138,7 +143,7 @@ public class IdaAuthenticatorImpl implements Authenticator {
             //set signature header, body and invoke kyc exchange endpoint
             String requestBody = objectMapper.writeValueAsString(idaKycExchangeRequest);
             RequestEntity requestEntity = RequestEntity
-                    .post(UriComponentsBuilder.fromUriString((kycExchangeDto instanceof VerifiedKycExchangeDto) ?
+                    .post(UriComponentsBuilder.fromUriString((isV2) ?
                             kycExchangeUrlV2 : kycExchangeUrl).pathSegment(relyingPartyId,
                             clientId).build().toUri())
                     .contentType(MediaType.APPLICATION_JSON_UTF8)
@@ -367,7 +372,7 @@ public class IdaAuthenticatorImpl implements Authenticator {
 
     @Override
     public KycExchangeResult doVerifiedKycExchange(String relyingPartyId, String clientId, VerifiedKycExchangeDto kycExchangeDto) throws KycExchangeException {
-        return doKycExchange(relyingPartyId, clientId, kycExchangeDto);
+        return kycExchange(relyingPartyId, clientId, kycExchangeDto,true);
     }
 
     /**
