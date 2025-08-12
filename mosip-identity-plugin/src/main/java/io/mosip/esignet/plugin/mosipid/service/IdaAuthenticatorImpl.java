@@ -184,11 +184,7 @@ public class IdaAuthenticatorImpl implements Authenticator {
                 idaKycExchangeRequest.setVerifiedConsentedClaims(verifiedClaimsList);
             }
 
-            Map<String, JsonNode> unVerifiedConsentedClaims = getUnVerifiedConsentedClaims(acceptedClaimDetails);
-            if(!CollectionUtils.isEmpty(unVerifiedConsentedClaims)){
-                Map<String, Object> unVerifiedConsentedClaim = objectMapper.convertValue(unVerifiedConsentedClaims, new TypeReference<>() {});
-                idaKycExchangeRequest.setUnVerifiedConsentedClaims(unVerifiedConsentedClaim);
-            }
+            idaKycExchangeRequest.setUnVerifiedConsentedClaims(getUnVerifiedConsentedClaims(acceptedClaimDetails));
         }
     }
 
@@ -381,7 +377,7 @@ public class IdaAuthenticatorImpl implements Authenticator {
      * @return un verified consented claims
      */
     @NotNull // This is added to not return null either return un verified claims map or empty map
-    private Map<String, JsonNode> getUnVerifiedConsentedClaims(Map<String, JsonNode> acceptedClaimDetails) {
+    private Map<String, Object> getUnVerifiedConsentedClaims(Map<String, JsonNode> acceptedClaimDetails) {
         Map<String, JsonNode> unVerifiedConsentedClaims = new HashMap<>();
         if(!CollectionUtils.isEmpty(acceptedClaimDetails)) {
             for(Map.Entry<String, JsonNode> entry : acceptedClaimDetails.entrySet()) {
@@ -392,6 +388,6 @@ public class IdaAuthenticatorImpl implements Authenticator {
                 }
             }
         }
-        return unVerifiedConsentedClaims;
+        return objectMapper.convertValue(unVerifiedConsentedClaims, new TypeReference<>() {});
     }
 }
