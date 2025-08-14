@@ -486,7 +486,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     }
 
     @Override
-    public boolean isMatch(@NotNull JsonNode identity, @NotNull JsonNode inputChallenge) {
+    public boolean isMatch(JsonNode identity, JsonNode inputChallenge) {
         int matchCount = 0;
         Iterator itr = inputChallenge.fieldNames();
         while(itr.hasNext()) {
