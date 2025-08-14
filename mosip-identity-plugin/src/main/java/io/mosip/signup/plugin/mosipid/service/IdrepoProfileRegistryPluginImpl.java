@@ -152,9 +152,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
 
 
     private JsonNode uiSpec;
-    private static final int ZERO=0;
-    private static final int ONE=1;
-    private static final int PAGE_SIZE=10;
+
     @PostConstruct
     public void init() {
         String responseJson = request(uiSpecUrl, HttpMethod.GET, null, new ParameterizedTypeReference<ResponseWrapper<JsonNode>>() {
@@ -313,10 +311,10 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
      */
     public List<JsonNode> fetchDynamicFields() {
         List<JsonNode> allFields = new ArrayList<>();
-        int pageNumber = ZERO;
-        int pageSize = PAGE_SIZE;
-        int totalPages = ONE;
-        int totalItems = ZERO;
+        int pageNumber = 0;
+        int pageSize = 10;
+        int totalPages = 1;
+        int totalItems = 0;
         while (pageNumber < totalPages) {
             String url = buildDynamicFieldsUrl(pageNumber, pageSize);
             ResponseEntity<JsonNode> response = restTemplate.getForEntity(url, JsonNode.class);
