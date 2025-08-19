@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.PathNotFoundException;
 import io.micrometer.core.annotation.Timed;
 import io.mosip.esignet.core.util.IdentityProviderUtil;
 import io.mosip.signup.plugin.mosipid.dto.VerificationMetadata;
@@ -141,6 +142,9 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     @Value("${mosip.signup.mosipid.uispec.errors-jsonpath:$[0].jsonSpec[0].spec.errors}")
     private String errorsJsonpath;
 
+    @Value("#{${mosip.signup.mosipid.uispec.errors:null}}")
+    private Map<String, Object> errorsFromConfig = new HashMap<>();
+
     private JsonNode uiSpec;
 
     @PostConstruct
@@ -150,7 +154,12 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
                 .getResponse()
                 .toString();
         Object schema = JsonPath.read(responseJson, schemaJsonpath);
-        Object errors = JsonPath.read(responseJson, errorsJsonpath);
+        Object errors;
+        try {
+            errors = JsonPath.read(responseJson, errorsJsonpath);
+        } catch (PathNotFoundException e) {
+            errors = errorsFromConfig;
+        }
         this.uiSpec = objectMapper.valueToTree(
                 Map.ofEntries(
                         Map.entry("schema", schema),
