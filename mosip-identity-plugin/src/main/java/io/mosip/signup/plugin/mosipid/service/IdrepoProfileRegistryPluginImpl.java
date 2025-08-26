@@ -12,13 +12,9 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.PathNotFoundException;
 import io.micrometer.core.annotation.Timed;
 import io.mosip.esignet.core.util.IdentityProviderUtil;
-import io.mosip.signup.plugin.mosipid.dto.VerificationMetadata;
-import io.mosip.signup.plugin.mosipid.dto.*;
-import io.mosip.signup.plugin.mosipid.util.BiometricUtil;
-import io.mosip.signup.plugin.mosipid.util.ErrorConstants;
-import io.mosip.signup.plugin.mosipid.util.ProfileCacheService;
 import io.mosip.kernel.core.util.HMACUtils2;
 import io.mosip.signup.api.dto.ProfileDto;
 import io.mosip.signup.api.dto.ProfileResult;
@@ -26,6 +22,10 @@ import io.mosip.signup.api.exception.InvalidProfileException;
 import io.mosip.signup.api.exception.ProfileException;
 import io.mosip.signup.api.spi.ProfileRegistryPlugin;
 import io.mosip.signup.api.util.ProfileCreateUpdateStatus;
+import io.mosip.signup.plugin.mosipid.dto.*;
+import io.mosip.signup.plugin.mosipid.util.BiometricUtil;
+import io.mosip.signup.plugin.mosipid.util.ErrorConstants;
+import io.mosip.signup.plugin.mosipid.util.ProfileCacheService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -42,7 +42,6 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.PostConstruct;
-import javax.validation.constraints.NotNull;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
@@ -144,6 +143,9 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     @Value("${mosip.signup.mosipid.uispec.errors-jsonpath:$[0].jsonSpec[0].spec.errors}")
     private String errorsJsonpath;
 
+    @Value("#{${mosip.signup.mosipid.uispec.errors:null}}")
+    private Map<String, Object> errorsFromConfig = new HashMap<>();
+
     @Value("${mosip.signup.mosipid.get-ui-spec.dynamic-fields.endpoint}")
     private String dynamicFieldsBaseUrl;
 
@@ -160,7 +162,12 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
                 .getResponse()
                 .toString();
         Object schema = JsonPath.read(responseJson, schemaJsonpath);
-        Object errors = JsonPath.read(responseJson, errorsJsonpath);
+        Object errors;
+        try {
+            errors = JsonPath.read(responseJson, errorsJsonpath);
+        } catch (PathNotFoundException e) {
+            errors = errorsFromConfig;
+        }
         JsonNode allowedValues = generateAllowedValues(fetchDynamicFields(), fetchDocTypesAndCategories(getAllConfiguredLanguages()));
 
         this.uiSpec = objectMapper.valueToTree(
