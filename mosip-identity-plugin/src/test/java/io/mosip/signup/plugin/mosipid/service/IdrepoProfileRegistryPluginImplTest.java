@@ -195,7 +195,6 @@ public class IdrepoProfileRegistryPluginImplTest {
         ResponseWrapper<IdentityResponse> responseWrapper3 = new ResponseWrapper<>();
         IdentityResponse identityResponse = new IdentityResponse();
         identityResponse.setStatus("SUCCESS");
-        identityResponse.setDocuments(List.of("Document1"));
         responseWrapper3.setResponse(identityResponse);
         ResponseEntity<ResponseWrapper<IdentityResponse>> responseEntity3=new ResponseEntity<>(responseWrapper3, HttpStatus.OK);
 
@@ -251,7 +250,6 @@ public class IdrepoProfileRegistryPluginImplTest {
         ResponseWrapper<IdentityResponse> responseWrapper3 = new ResponseWrapper<>();
         IdentityResponse identityResponse = new IdentityResponse();
         identityResponse.setStatus("SUCCESS");
-        identityResponse.setDocuments(List.of("Document1"));
         responseWrapper3.setResponse(identityResponse);
         ResponseEntity<ResponseWrapper<IdentityResponse>> responseEntity3=new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
 
@@ -316,7 +314,6 @@ public class IdrepoProfileRegistryPluginImplTest {
             ResponseWrapper<IdentityResponse> responseWrapper3 = new ResponseWrapper<>();
             IdentityResponse identityResponse = new IdentityResponse();
             identityResponse.setStatus("SUCCESS");
-            identityResponse.setDocuments(List.of("Document1"));
             responseWrapper3.setResponse(identityResponse);
             ResponseEntity<ResponseWrapper<IdentityResponse>> responseEntity3=new ResponseEntity<>(responseWrapper3, HttpStatus.OK);
 
@@ -345,7 +342,6 @@ public class IdrepoProfileRegistryPluginImplTest {
         ResponseWrapper<IdentityResponse> responseWrapper = new ResponseWrapper<>();
         IdentityResponse identityResponse = new IdentityResponse();
         identityResponse.setStatus("SUCCESS");
-        identityResponse.setDocuments(List.of("Document1"));
         identityResponse.setIdentity(mockIdentity);
 
         responseWrapper.setResponse(identityResponse);
@@ -382,7 +378,6 @@ public class IdrepoProfileRegistryPluginImplTest {
         ResponseWrapper<IdentityResponse> responseWrapper = new ResponseWrapper<>();
         IdentityResponse identityResponse = new IdentityResponse();
         identityResponse.setStatus("SUCCESS");
-        identityResponse.setDocuments(List.of("Document1"));
         identityResponse.setIdentity(mockIdentity);
 
         responseWrapper.setResponse(null);
