@@ -283,45 +283,45 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
         while (pageNumber < totalPages) {
             String url = buildDynamicFieldsUrl(pageNumber, pageSize);
             ResponseEntity<JsonNode> response = restTemplate.getForEntity(url, JsonNode.class);
-            JsonNode responseNode = Objects.requireNonNull(response.getBody()).get("response");
+            JsonNode responseBody = response.getBody();
+            if (responseBody != null && responseBody.has("response")) {
+                JsonNode responseNode = responseBody.get("response");
+                if (pageNumber == 0) {
+                    totalPages = objectMapper.convertValue(responseNode.get("totalPages"), Integer.class);
+                    totalItems = objectMapper.convertValue(responseNode.get("totalItems"), Integer.class);
+                }
+                JsonNode data = responseNode.get("data");
+                if (data != null && data.isArray()) {
+                    for (JsonNode item : data) {
+                        if (!item.has("isActive") || !item.get("isActive").asBoolean()) continue;
 
-            if (pageNumber == 0) {
-                totalPages = objectMapper.convertValue(responseNode.get("totalPages"), Integer.class);
-                totalItems = objectMapper.convertValue(responseNode.get("totalItems"), Integer.class);
-            }
+                        String name = item.hasNonNull("name") ? item.get("name").asText() : null;
+                        String lang = item.hasNonNull("langCode") ? item.get("langCode").asText() : null;
+                        JsonNode fieldValues = item.get("fieldVal");
 
-            JsonNode data = responseNode.get("data");
-            if (data != null && data.isArray()) {
-                for (JsonNode item : data) {
-                    if (!item.has("isActive") || !item.get("isActive").asBoolean()) continue;
+                        if (name == null || lang == null || fieldValues == null || !fieldValues.isArray()) continue;
 
-                    String name = item.hasNonNull("name") ? item.get("name").asText() : null;
-                    String lang = item.hasNonNull("langCode") ? item.get("langCode").asText() : null;
-                    JsonNode fieldValues = item.get("fieldVal");
-
-                    if (name == null || lang == null || fieldValues == null || !fieldValues.isArray()) continue;
-
-                    ObjectNode nameNode = (ObjectNode) result.get(name);
-                    if (nameNode == null) {
-                        nameNode = objectMapper.createObjectNode();
-                        result.set(name, nameNode);
-                    }
-
-                    for (JsonNode fv : fieldValues) {
-                        String code = fv.hasNonNull("code") ? fv.get("code").asText() : null;
-                        String value = fv.hasNonNull("value") ? fv.get("value").asText() : null;
-                        if (code == null || value == null) continue;
-
-                        ObjectNode langMap = (ObjectNode) nameNode.get(code);
-                        if (langMap == null) {
-                            langMap = objectMapper.createObjectNode();
-                            nameNode.set(code, langMap);
+                        ObjectNode nameNode = (ObjectNode) result.get(name);
+                        if (nameNode == null) {
+                            nameNode = objectMapper.createObjectNode();
+                            result.set(name, nameNode);
                         }
-                        langMap.put(lang, value);
+
+                        for (JsonNode fv : fieldValues) {
+                            String code = fv.hasNonNull("code") ? fv.get("code").asText() : null;
+                            String value = fv.hasNonNull("value") ? fv.get("value").asText() : null;
+                            if (code == null || value == null) continue;
+
+                            ObjectNode langMap = (ObjectNode) nameNode.get(code);
+                            if (langMap == null) {
+                                langMap = objectMapper.createObjectNode();
+                                nameNode.set(code, langMap);
+                            }
+                            langMap.put(lang, value);
+                        }
                     }
                 }
             }
-
             pageNumber++;
             int remainingItems = totalItems - (pageNumber * pageSize);
             if (remainingItems < pageSize) {
