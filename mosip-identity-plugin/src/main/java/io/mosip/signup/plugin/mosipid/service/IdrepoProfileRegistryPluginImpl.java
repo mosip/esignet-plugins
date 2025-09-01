@@ -146,10 +146,10 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     @Value("#{${mosip.signup.mosipid.uispec.errors:null}}")
     private Map<String, Object> errorsFromConfig = new HashMap<>();
 
-    @Value("${mosip.signup.mosipid.get-ui-spec.dynamic-fields.endpoint}")
+    @Value("${mosip.signup.mosipid.dynamic-fields.endpoint}")
     private String dynamicFieldsBaseUrl;
 
-    @Value("${mosip.signup.mosipid.get-ui-spec.doc-types-category.endpoint}")
+    @Value("${mosip.signup.mosipid.doc-types-category.endpoint}")
     private String docTypesAndCategoryBaseUrl;
 
 
@@ -168,7 +168,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
         } catch (PathNotFoundException e) {
             errors = errorsFromConfig;
         }
-        JsonNode allowedValues = generateAllowedValues(fetchDynamicFields(), fetchDocTypesAndCategories(getAllConfiguredLanguages()));
+        JsonNode allowedValues = generateAllowedValues();
 
         this.uiSpec = objectMapper.valueToTree(
                 Map.ofEntries(
@@ -180,98 +180,31 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
         );
     }
 
+
     /**
      * Generate combined JsonNode from List<JsonNode> dynamicFields and List<JsonNode> documentCategories
-     * @param dynamicFields List<JsonNode> from master data representing dynamic fields
-     * @param documentCategories List<JsonNode> representing document categories and types from master data
      * @return JsonNode containing the allowed values.
      */
-    public JsonNode generateAllowedValues(List<JsonNode> dynamicFields, List<JsonNode> documentCategories) {
+    public JsonNode generateAllowedValues() {
         ObjectNode result = objectMapper.createObjectNode();
-        processDynamicFields(dynamicFields, result); // Process dynamic fields and add them to the result node
-        processDocumentCategoriesAndTypes(documentCategories, result); // Process document categories and merge them into the same result node
+        fetchAndProcessDynamicFields(result);
+        fetchAndProcessDocTypesAndCategories(getAllConfiguredLanguages(), result);
         return result;
     }
 
-    /**
-     * Processes the dynamic fields JSON list and adds their structured data into the provided ObjectNode.
-     * @param dynamicFields List of JSON nodes representing dynamic fields
-     * @param result The ObjectNode where data is accumulated
-     */
-    private void processDynamicFields(List<JsonNode> dynamicFields, ObjectNode result) {
-        for (JsonNode item : dynamicFields) {
-            String name = item.hasNonNull("name") ? item.get("name").asText() : null;
-            String lang = item.hasNonNull("langCode") ? item.get("langCode").asText() : null;
-            JsonNode fieldValues = item.get("fieldVal");
-            // Skip if required fields are missing or fieldValues is not an array
-            if (name == null || lang == null || fieldValues == null || !fieldValues.isArray())
-                continue;
-
-            // Get or create the node for the dynamic field name
-            ObjectNode nameNode = (ObjectNode) result.get(name);
-            if (nameNode == null) {
-                nameNode = objectMapper.createObjectNode();
-                result.set(name, nameNode);
-            }
-
-            // Iterate through each field value and add to the nested structure
-            for (JsonNode fv : fieldValues) {
-                String code = fv.hasNonNull("code") ? fv.get("code").asText() : null;
-                String value = fv.hasNonNull("value") ? fv.get("value").asText() : null;
-                if (code == null || value == null) continue;
-
-                ObjectNode langMap = (ObjectNode) nameNode.get(code);
-                if (langMap == null) {
-                    langMap = objectMapper.createObjectNode();
-                    nameNode.set(code, langMap);
-                }
-                langMap.put(lang, value);
-            }
-        }
+    private String buildDynamicFieldsUrl(int pageNumber, int pageSize) {
+        return String.format(dynamicFieldsBaseUrl, pageNumber, pageSize);
     }
 
     /**
-     * Processes the document categories JSON list and adds their structured data into the provided ObjectNode.
-     * @param documentCategories List of JSON nodes representing document categories
-     * @param result The ObjectNode where data is accumulated
+     * This will build the url based on mandatory and optional languages
+     * <docTypesAndCategoryBaseUrl>?languages=eng&languages=fra....
+     * @param languages mandatory and optional languages from properties
+     *                  ${mosip.signup.idrepo.mandatory-language} and
+     *                  ${mosip.signup.idrepo.optional-language}
+     * @return url string
      */
-    private void processDocumentCategoriesAndTypes(List<JsonNode> documentCategories, ObjectNode result) {
-        for (JsonNode item : documentCategories) {
-            String categoryCode = item.hasNonNull("code") ? item.get("code").asText() : null;
-            String langCode = item.hasNonNull("langCode") ? item.get("langCode").asText() : null;
-            JsonNode documentTypes = item.get("documentTypes");
-
-            // Skip if required fields are missing or documentTypes is not an array
-            if (categoryCode == null || langCode == null || documentTypes == null || !documentTypes.isArray())
-                continue;
-
-            // Get or create the node for the document category code
-            ObjectNode docTypeMap = (ObjectNode) result.get(categoryCode);
-            if (docTypeMap == null) {
-                docTypeMap = objectMapper.createObjectNode();
-                result.set(categoryCode, docTypeMap);
-            }
-
-            // Iterate through each document type and add to the nested structure
-            for (JsonNode docType : documentTypes) {
-                String docTypeCode = docType.hasNonNull("code") ? docType.get("code").asText() : null;
-                String docTypeName = docType.hasNonNull("name") ? docType.get("name").asText() : null;
-                if (docTypeCode == null || docTypeName == null) continue;
-
-                ObjectNode langMap = (ObjectNode) docTypeMap.get(docTypeCode);
-                if (langMap == null) {
-                    langMap = objectMapper.createObjectNode();
-                    docTypeMap.set(docTypeCode, langMap);
-                }
-                langMap.put(langCode, docTypeName);
-            }
-        }
-    }
-
-    public String buildDynamicFieldsUrl(int pageNumber, int pageSize) {
-        return String.format("%s?pageNumber=%d&pageSize=%d", dynamicFieldsBaseUrl, pageNumber, pageSize);
-    }
-    public String buildDocumentTypeAndCategoryUrl(List<String> languages) {
+    private String buildDocumentTypeAndCategoryUrl(List<String> languages) {
         StringBuilder urlBuilder = new StringBuilder(docTypesAndCategoryBaseUrl);
         urlBuilder.append("?");
         for (int i = 0; i < languages.size(); i++) {
@@ -281,7 +214,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
         return urlBuilder.toString();
     }
 
-    public List<String> getAllConfiguredLanguages() {
+    private List<String> getAllConfiguredLanguages() {
         Set<String> allLanguages = new LinkedHashSet<>();
         if (mandatoryLanguages != null) {
             allLanguages.addAll(mandatoryLanguages);
@@ -293,59 +226,108 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     }
 
     /**
-     * fetch Document Types and categories from master data
-     * @param languages List<String> languages
-     * @return List of JSON nodes representing document categories and types
+     * Fetch and process document types and categories
+     * @param languages languages from
      */
-    public List<JsonNode> fetchDocTypesAndCategories(List<String> languages) {
-        List<JsonNode> allFields = new ArrayList<>();
-        String url = this.buildDocumentTypeAndCategoryUrl(languages);
-        ResponseEntity<JsonNode> response = this.restTemplate.getForEntity(url, JsonNode.class);
-        JsonNode data = Objects.requireNonNull(response.getBody()).get("response").get("documentCategories");
-        if (data != null && data.isArray()) {
-            for (JsonNode field : data) {
-                if (field.has("isActive") && field.get("isActive").asBoolean()) {
-                    allFields.add(field);
+    private void fetchAndProcessDocTypesAndCategories(List<String> languages, ObjectNode result) {
+        String url = buildDocumentTypeAndCategoryUrl(languages);
+        ResponseEntity<JsonNode> response = restTemplate.getForEntity(url, JsonNode.class);
+        JsonNode responseBody = response.getBody();
+
+        if (responseBody != null && responseBody.has("response")) {
+            JsonNode data = responseBody.get("response").get("documentCategories");
+            if (data != null && data.isArray()) {
+                for (JsonNode item : data) {
+                    if (!item.has("isActive") || !item.get("isActive").asBoolean()) continue;
+
+                    String categoryCode = item.hasNonNull("code") ? item.get("code").asText() : null;
+                    String langCode = item.hasNonNull("langCode") ? item.get("langCode").asText() : null;
+                    JsonNode documentTypes = item.get("documentTypes");
+
+                    if (categoryCode == null || langCode == null || documentTypes == null || !documentTypes.isArray())
+                        continue;
+
+                    ObjectNode docTypeMap = (ObjectNode) result.get(categoryCode);
+                    if (docTypeMap == null) {
+                        docTypeMap = objectMapper.createObjectNode();
+                        result.set(categoryCode, docTypeMap);
+                    }
+
+                    for (JsonNode docType : documentTypes) {
+                        String docTypeCode = docType.hasNonNull("code") ? docType.get("code").asText() : null;
+                        String docTypeName = docType.hasNonNull("name") ? docType.get("name").asText() : null;
+                        if (docTypeCode == null || docTypeName == null) continue;
+
+                        ObjectNode langMap = (ObjectNode) docTypeMap.get(docTypeCode);
+                        if (langMap == null) {
+                            langMap = objectMapper.createObjectNode();
+                            docTypeMap.set(docTypeCode, langMap);
+                        }
+                        langMap.put(langCode, docTypeName);
+                    }
                 }
             }
         }
-        return allFields;
     }
 
     /**
-     * fetch Dynamic Fields from master data
-     * @return List of JSON nodes representing dynamic fields
+     * Fetch and processes the dynamic fields JSON list and adds their structured data into the provided ObjectNode.
+     * @param result The ObjectNode where data is accumulated
      */
-    public List<JsonNode> fetchDynamicFields() {
-        List<JsonNode> allFields = new ArrayList<>();
+    private void fetchAndProcessDynamicFields(ObjectNode result) {
         int pageNumber = 0;
         int pageSize = 10;
         int totalPages = 1;
         int totalItems = 0;
+
         while (pageNumber < totalPages) {
             String url = buildDynamicFieldsUrl(pageNumber, pageSize);
             ResponseEntity<JsonNode> response = restTemplate.getForEntity(url, JsonNode.class);
             JsonNode responseNode = Objects.requireNonNull(response.getBody()).get("response");
+
             if (pageNumber == 0) {
                 totalPages = objectMapper.convertValue(responseNode.get("totalPages"), Integer.class);
                 totalItems = objectMapper.convertValue(responseNode.get("totalItems"), Integer.class);
             }
+
             JsonNode data = responseNode.get("data");
             if (data != null && data.isArray()) {
-                for (JsonNode field : data) {
-                    if (field.has("isActive") && field.get("isActive").asBoolean()) {
-                        allFields.add(field);
+                for (JsonNode item : data) {
+                    if (!item.has("isActive") || !item.get("isActive").asBoolean()) continue;
+
+                    String name = item.hasNonNull("name") ? item.get("name").asText() : null;
+                    String lang = item.hasNonNull("langCode") ? item.get("langCode").asText() : null;
+                    JsonNode fieldValues = item.get("fieldVal");
+
+                    if (name == null || lang == null || fieldValues == null || !fieldValues.isArray()) continue;
+
+                    ObjectNode nameNode = (ObjectNode) result.get(name);
+                    if (nameNode == null) {
+                        nameNode = objectMapper.createObjectNode();
+                        result.set(name, nameNode);
+                    }
+
+                    for (JsonNode fv : fieldValues) {
+                        String code = fv.hasNonNull("code") ? fv.get("code").asText() : null;
+                        String value = fv.hasNonNull("value") ? fv.get("value").asText() : null;
+                        if (code == null || value == null) continue;
+
+                        ObjectNode langMap = (ObjectNode) nameNode.get(code);
+                        if (langMap == null) {
+                            langMap = objectMapper.createObjectNode();
+                            nameNode.set(code, langMap);
+                        }
+                        langMap.put(lang, value);
                     }
                 }
             }
+
             pageNumber++;
-            // Adjust pageSize for the next iteration if needed
-            int remainingItems = totalItems - allFields.size();
+            int remainingItems = totalItems - (pageNumber * pageSize);
             if (remainingItems < pageSize) {
                 pageSize = remainingItems;
             }
         }
-        return allFields;
     }
 
 
