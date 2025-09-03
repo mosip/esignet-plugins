@@ -53,7 +53,6 @@ public class MockAuthenticationServiceTest {
     @Test
     public void doKycExchange_withValidDetails_thenPass() throws KycExchangeException {
         ReflectionTestUtils.setField(mockAuthenticationService, "kycExchangeUrl", "http://localhost:8080/kyc/exchange");
-        ReflectionTestUtils.setField(mockAuthenticationService, "kycExchangeV3Url", "http://localhost:8080/kyc/exchange");
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
         ReflectionTestUtils.setField(mockAuthenticationService, "objectMapper", objectMapper);
@@ -82,7 +81,7 @@ public class MockAuthenticationServiceTest {
 
     @Test
     public void doKycExchange_withEmptyResponse_thenFail() {
-        ReflectionTestUtils.setField(mockAuthenticationService, "kycExchangeV3Url", "http://localhost:8080/kyc/exchange");
+        ReflectionTestUtils.setField(mockAuthenticationService, "kycExchangeUrl", "http://localhost:8080/kyc/exchange");
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
         ReflectionTestUtils.setField(mockAuthenticationService, "objectMapper", objectMapper);
@@ -199,6 +198,7 @@ public class MockAuthenticationServiceTest {
         objectMapper.registerModule(new JavaTimeModule());
         ReflectionTestUtils.setField(mockAuthenticationService, "kycExchangeV2Url", "http://localhost:8080/kyc/exchange");
         ReflectionTestUtils.setField(mockAuthenticationService, "objectMapper", objectMapper);
+
         String relyingPartyId = "testRelyingPartyId";
         String clientId = "testClientId";
 
@@ -273,5 +273,3 @@ public class MockAuthenticationServiceTest {
         Assert.assertEquals(langCodes.get(1), "khm");
     }
 }
-
-

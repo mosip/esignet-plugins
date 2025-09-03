@@ -217,19 +217,4 @@ public class MockAuthenticationService implements Authenticator {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
-
-    //Converts an array of two-letter language codes to their corresponding ISO 639-2/T language codes.
-    protected List<String> convertLangCodesToISO3LanguageCodes(String[] langCodes) {
-        if(langCodes == null || langCodes.length == 0)
-            return List.of();
-        return Arrays.stream(langCodes)
-                .map(langCode -> {
-                    try {
-                        return org.springframework.util.StringUtils.isEmpty(langCode) ? null : new Locale(langCode).getISO3Language();
-                    } catch (MissingResourceException ex) {}
-                    return null;
-                })
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-    }
 }
