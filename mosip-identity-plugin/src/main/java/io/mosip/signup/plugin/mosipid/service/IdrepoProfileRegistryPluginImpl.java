@@ -188,7 +188,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     public JsonNode generateAllowedValues() {
         ObjectNode result = objectMapper.createObjectNode();
         fetchAndProcessDynamicFields(result);
-        fetchAndProcessDocTypesAndCategories(getAllConfiguredLanguages(), result);
+        fetchAndProcessDocTypesAndCategories(result);
         return result;
     }
 
@@ -197,41 +197,10 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     }
 
     /**
-     * This will build the url based on mandatory and optional languages
-     * <docTypesAndCategoryBaseUrl>?languages=eng&languages=fra....
-     * @param languages mandatory and optional languages from properties
-     *                  ${mosip.signup.idrepo.mandatory-language} and
-     *                  ${mosip.signup.idrepo.optional-language}
-     * @return url string
-     */
-    private String buildDocumentTypeAndCategoryUrl(List<String> languages) {
-        StringBuilder urlBuilder = new StringBuilder(docTypesAndCategoryBaseUrl);
-        urlBuilder.append("?");
-        for (int i = 0; i < languages.size(); i++) {
-            if (i != 0) urlBuilder.append("&");
-            urlBuilder.append("languages=").append(URLEncoder.encode(languages.get(i), StandardCharsets.UTF_8));
-        }
-        return urlBuilder.toString();
-    }
-
-    private List<String> getAllConfiguredLanguages() {
-        Set<String> allLanguages = new LinkedHashSet<>();
-        if (mandatoryLanguages != null) {
-            allLanguages.addAll(mandatoryLanguages);
-        }
-        if (optionalLanguages != null) {
-            allLanguages.addAll(optionalLanguages);
-        }
-        return new ArrayList<>(allLanguages);
-    }
-
-    /**
      * Fetch and process document types and categories
-     * @param languages languages from
      */
-    private void fetchAndProcessDocTypesAndCategories(List<String> languages, ObjectNode result) {
-        String url = buildDocumentTypeAndCategoryUrl(languages);
-        ResponseEntity<JsonNode> response = restTemplate.getForEntity(url, JsonNode.class);
+    private void fetchAndProcessDocTypesAndCategories(ObjectNode result) {
+        ResponseEntity<JsonNode> response = restTemplate.getForEntity(docTypesAndCategoryBaseUrl, JsonNode.class);
         JsonNode responseBody = response.getBody();
 
         if (responseBody != null && responseBody.has("response")) {
