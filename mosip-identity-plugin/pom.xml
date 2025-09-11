@@ -149,7 +149,7 @@
 
 		<dependency>
 			<groupId>io.mosip.kernel</groupId>
-			<artifactId>kernel-biometrics-api</artifactId>
+			<artifactId>kernel-cbeffutil-api</artifactId>
 			<version>1.2.0.3</version>
 			<exclusions>
 				<exclusion>

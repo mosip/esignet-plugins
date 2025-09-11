@@ -121,9 +121,6 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     @Value("${mosip.signup.idrepo.biometric.field-name:individualBiometrics}")
     private String biometricDataFieldName;
 
-    @Value("${mosip.signup.idrepo.biometric.compression-ratio:1000}")
-    private int faceImageCompressionRatio;
-
     @Autowired
     @Qualifier("selfTokenRestTemplate")
     private RestTemplate restTemplate;
@@ -133,6 +130,9 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
 
     @Autowired
     private ProfileCacheService profileCacheService;
+
+    @Autowired
+    private BiometricUtil biometricUtil;
 
     @Value("${mosip.signup.mosipid.get-ui-spec.endpoint}")
     private String uiSpecUrl;
@@ -732,7 +732,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
             String base64FaceImage = inputJson.path(biometricDataFieldName).path("value").textValue();
             String base64BirXmlEncoded = null;
             try {
-                base64BirXmlEncoded = BiometricUtil.convertBase64JpegToBase64BirXML(base64FaceImage, faceImageCompressionRatio);
+                base64BirXmlEncoded = biometricUtil.convertBase64JpegToBase64BirXML(base64FaceImage);
             } catch (Exception e) {
                 log.error("Failed to create cbeff from face image: ", e);
                 throw new ProfileException(INVALID_INDIVIDUAL_BIOMETRICS);
