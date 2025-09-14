@@ -45,6 +45,7 @@ public class MockIdentityVerifierPluginImplTest {
     public void before(){
         objectMapper = new ObjectMapper();
         ReflectionTestUtils.setField(mockIdentityVerifierPlugin, "objectMapper",objectMapper);
+        ReflectionTestUtils.setField(mockIdentityVerifierPlugin, "resultTopic","ANALYZE_FRAMES_RESULT");
     }
 
 
