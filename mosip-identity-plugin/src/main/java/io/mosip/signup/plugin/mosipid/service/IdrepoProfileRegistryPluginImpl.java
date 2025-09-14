@@ -42,7 +42,6 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.PostConstruct;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 import java.time.ZoneOffset;
@@ -140,6 +139,17 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     @Value("${mosip.signup.mosipid.uispec.schema-jsonpath:$[0].jsonSpec[0].spec.schema}")
     private String schemaJsonpath;
 
+    @Value("${mosip.signup.mosipid.uispec.schema-jsonpath:$[0].jsonSpec[0].spec.allowedValues}")
+    private String allowedValuesJsonpath;
+
+    @Value("${mosip.signup.mosipid.uispec.schema-jsonpath:$[0].jsonSpec[0].spec.i18nValues}")
+    private String i18nValuesJsonpath;
+
+    @Value("${mosip.signup.mosipid.uispec.schema-jsonpath:$[0].jsonSpec[0].spec.i18nValues.errors}")
+    private String i18nValuesErrorJsonpath;
+
+    @Value("${mosip.signup.mosipid.uispec.schema-jsonpath:$[0].jsonSpec[0].spec.maxUploadFileSize}")
+    private String maxUploadFileSizeJsonpath;
     @Value("${mosip.signup.mosipid.uispec.errors-jsonpath:$[0].jsonSpec[0].spec.errors}")
     private String errorsJsonpath;
 
@@ -162,31 +172,38 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
                 .getResponse()
                 .toString();
         Object schema = JsonPath.read(responseJson, schemaJsonpath);
+        Object maxUploadFileSize = JsonPath.read(responseJson, maxUploadFileSizeJsonpath);
+        ObjectNode i18nValues = objectMapper.convertValue(JsonPath.read(responseJson, i18nValuesJsonpath), ObjectNode.class);
         Object errors;
         try {
-            errors = JsonPath.read(responseJson, errorsJsonpath);
+            errors = JsonPath.read(responseJson, i18nValuesErrorJsonpath);
         } catch (PathNotFoundException e) {
             errors = errorsFromConfig;
         }
-        JsonNode allowedValues = generateAllowedValues();
+        i18nValues.set("errors", objectMapper.valueToTree(errors));
+        ObjectNode objectNode = objectMapper.convertValue(JsonPath.read(responseJson, allowedValuesJsonpath), ObjectNode.class);
+        JsonNode allowedValues = generateAllowedValues(objectNode);
 
         this.uiSpec = objectMapper.valueToTree(
                 Map.ofEntries(
                         Map.entry("schema", schema),
-                        Map.entry("errors", errors),
+                        Map.entry("i18nValues", i18nValues),
                         Map.entry("language", Map.of("mandatory", mandatoryLanguages, "optional", optionalLanguages)),
-                        Map.entry("allowedValues", allowedValues)
+                        Map.entry("allowedValues", allowedValues),
+                        Map.entry("maxUploadFileSize", maxUploadFileSize)
                 )
         );
     }
-
 
     /**
      * Generate combined JsonNode from List<JsonNode> dynamicFields and List<JsonNode> documentCategories
      * @return JsonNode containing the allowed values.
      */
-    public JsonNode generateAllowedValues() {
+    public JsonNode generateAllowedValues(ObjectNode allowedValuesFromSpec) {
         ObjectNode result = objectMapper.createObjectNode();
+        if (allowedValuesFromSpec != null && !allowedValuesFromSpec.isEmpty()) {
+            result.setAll(allowedValuesFromSpec); //allowed values from UI-Spec
+        }
         fetchAndProcessDynamicFields(result);
         fetchAndProcessDocTypesAndCategories(result);
         return result;
