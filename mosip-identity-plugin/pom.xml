@@ -211,12 +211,6 @@
 		</dependency>
 
 		<dependency>
-			<groupId>io.mosip.kernel</groupId>
-			<artifactId>kernel-cbeffutil-api</artifactId>
-			<version>1.2.0.3</version>
-		</dependency>
-
-		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
 			<version>4.13.1</version>

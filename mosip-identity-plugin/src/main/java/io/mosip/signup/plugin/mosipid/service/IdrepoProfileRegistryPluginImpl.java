@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
+import com.github.jaiimageio.jpeg2000.impl.J2KImageReaderSpi;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
 import io.micrometer.core.annotation.Timed;
@@ -42,7 +43,7 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.PostConstruct;
-import java.net.URLEncoder;
+import javax.imageio.spi.IIORegistry;
 import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 import java.time.ZoneOffset;
@@ -178,6 +179,8 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
                         Map.entry("allowedValues", allowedValues)
                 )
         );
+        IIORegistry registry = IIORegistry.getDefaultInstance();
+        registry.registerServiceProvider(new J2KImageReaderSpi());
     }
 
 
