@@ -142,14 +142,6 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     @Value("${mosip.signup.mosipid.uispec.schema-jsonpath:$[0].jsonSpec[0].spec.allowedValues}")
     private String allowedValuesJsonpath;
 
-    @Value("${mosip.signup.mosipid.uispec.schema-jsonpath:$[0].jsonSpec[0].spec.i18nValues}")
-    private String i18nValuesJsonpath;
-
-    @Value("${mosip.signup.mosipid.uispec.schema-jsonpath:$[0].jsonSpec[0].spec.i18nValues.errors}")
-    private String i18nValuesErrorJsonpath;
-
-    @Value("${mosip.signup.mosipid.uispec.schema-jsonpath:$[0].jsonSpec[0].spec.maxUploadFileSize}")
-    private String maxUploadFileSizeJsonpath;
     @Value("${mosip.signup.mosipid.uispec.errors-jsonpath:$[0].jsonSpec[0].spec.errors}")
     private String errorsJsonpath;
 
@@ -172,25 +164,28 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
                 .getResponse()
                 .toString();
         Object schema = JsonPath.read(responseJson, schemaJsonpath);
-        Object maxUploadFileSize = JsonPath.read(responseJson, maxUploadFileSizeJsonpath);
-        ObjectNode i18nValues = objectMapper.convertValue(JsonPath.read(responseJson, i18nValuesJsonpath), ObjectNode.class);
+
         Object errors;
         try {
-            errors = JsonPath.read(responseJson, i18nValuesErrorJsonpath);
+            errors = JsonPath.read(responseJson, errorsJsonpath);
         } catch (PathNotFoundException e) {
             errors = errorsFromConfig;
         }
-        i18nValues.set("errors", objectMapper.valueToTree(errors));
-        ObjectNode objectNode = objectMapper.convertValue(JsonPath.read(responseJson, allowedValuesJsonpath), ObjectNode.class);
-        JsonNode allowedValues = generateAllowedValues(objectNode);
+
+        JsonNode allowedValues;
+        ObjectNode allowedValuesFromSpec = objectMapper.convertValue(JsonPath.read(responseJson, allowedValuesJsonpath), ObjectNode.class);
+        if (allowedValuesFromSpec != null && !allowedValuesFromSpec.isEmpty()) {
+            allowedValues = allowedValuesFromSpec; //allowed values from UI-Spec
+        } else {
+            allowedValues = generateAllowedValues(); //allowed values from master-data
+        }
 
         this.uiSpec = objectMapper.valueToTree(
                 Map.ofEntries(
                         Map.entry("schema", schema),
-                        Map.entry("i18nValues", i18nValues),
+                        Map.entry("errors", errors),
                         Map.entry("language", Map.of("mandatory", mandatoryLanguages, "optional", optionalLanguages)),
-                        Map.entry("allowedValues", allowedValues),
-                        Map.entry("maxUploadFileSize", maxUploadFileSize)
+                        Map.entry("allowedValues", allowedValues)
                 )
         );
     }
@@ -199,11 +194,8 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
      * Generate combined JsonNode from List<JsonNode> dynamicFields and List<JsonNode> documentCategories
      * @return JsonNode containing the allowed values.
      */
-    public JsonNode generateAllowedValues(ObjectNode allowedValuesFromSpec) {
+    public JsonNode generateAllowedValues() {
         ObjectNode result = objectMapper.createObjectNode();
-        if (allowedValuesFromSpec != null && !allowedValuesFromSpec.isEmpty()) {
-            result.setAll(allowedValuesFromSpec); //allowed values from UI-Spec
-        }
         fetchAndProcessDynamicFields(result);
         fetchAndProcessDocTypesAndCategories(result);
         return result;

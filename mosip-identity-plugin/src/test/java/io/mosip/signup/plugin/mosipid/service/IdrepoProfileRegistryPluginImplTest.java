@@ -588,7 +588,7 @@ public class IdrepoProfileRegistryPluginImplTest {
         ResponseEntity<JsonNode> docEntity = new ResponseEntity<>(docWrapper, HttpStatus.OK);
         Mockito.when(restTemplate.getForEntity(Mockito.contains("docTypes"), Mockito.eq(JsonNode.class))).thenReturn(docEntity);
 
-        JsonNode result = idrepoProfileRegistryPlugin.generateAllowedValues(getAllowedValuesFromSpec());
+        JsonNode result = idrepoProfileRegistryPlugin.generateAllowedValues();
 
         Assert.assertNotNull(result);
         Assert.assertTrue(result.has("fieldName"));
@@ -598,36 +598,6 @@ public class IdrepoProfileRegistryPluginImplTest {
         Assert.assertTrue(result.has("cat1"));
         Assert.assertTrue(result.get("cat1").has("doc1"));
         Assert.assertEquals("Document Name", result.get("cat1").get("doc1").get("eng").asText());
-    }
-
-    private ObjectNode getAllowedValuesFromSpec() {
-        ObjectNode qualificationNode = objectMapper.createObjectNode();
-
-        ObjectNode highSchoolNode = objectMapper.createObjectNode();
-        highSchoolNode.put("eng", "High School");
-        highSchoolNode.put("khm", "សាលាថ្នាក់មធ្យម");
-        qualificationNode.set("highSchool", highSchoolNode);
-
-        ObjectNode bachelorNode = objectMapper.createObjectNode();
-        bachelorNode.put("en", "Bachelor's Degree");
-        bachelorNode.put("khm", "បរិញ្ញាបត្រទី១");
-        qualificationNode.set("bachelor", bachelorNode);
-
-        ObjectNode masterNode = objectMapper.createObjectNode();
-        masterNode.put("eng", "Master's Degree");
-        masterNode.put("km", "បរិញ្ញាបត្រទី២");
-        qualificationNode.set("master", masterNode);
-
-        ObjectNode phdNode = objectMapper.createObjectNode();
-        phdNode.put("en", "PhD");
-        phdNode.put("km", "បរិញ្ញាបត្រទី៣");
-        qualificationNode.set("phd", phdNode);
-
-        ObjectNode secondaryNode = objectMapper.createObjectNode();
-        secondaryNode.put("km", "Secondary School in khmer");
-        qualificationNode.set("secondary", secondaryNode);
-
-        return qualificationNode;
     }
 
     @Test
@@ -651,7 +621,7 @@ public class IdrepoProfileRegistryPluginImplTest {
         ResponseEntity<JsonNode> docEntity = new ResponseEntity<>(docWrapper, HttpStatus.OK);
         Mockito.when(restTemplate.getForEntity(Mockito.contains("docTypes"), Mockito.eq(JsonNode.class))).thenReturn(docEntity);
 
-        JsonNode result = idrepoProfileRegistryPlugin.generateAllowedValues(objectMapper.createObjectNode());
+        JsonNode result = idrepoProfileRegistryPlugin.generateAllowedValues();
         Assert.assertNotNull(result);
         Assert.assertEquals(0, result.size());
     }
@@ -698,7 +668,7 @@ public class IdrepoProfileRegistryPluginImplTest {
         ResponseEntity<JsonNode> docEntity = new ResponseEntity<>(docWrapper, HttpStatus.OK);
         Mockito.when(restTemplate.getForEntity(Mockito.contains("docTypes"), Mockito.eq(JsonNode.class))).thenReturn(docEntity);
 
-        JsonNode result = idrepoProfileRegistryPlugin.generateAllowedValues(objectMapper.createObjectNode());
+        JsonNode result = idrepoProfileRegistryPlugin.generateAllowedValues();
 
         Assert.assertNotNull(result);
         Assert.assertEquals(0, result.size());
