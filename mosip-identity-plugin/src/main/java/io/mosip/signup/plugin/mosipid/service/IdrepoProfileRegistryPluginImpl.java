@@ -197,13 +197,14 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
      */
     private ObjectNode readI18nValues(String responseJson) {
         Object i18nValueResponse;
-        ObjectNode  i18nValues = null;
+        ObjectNode  i18nValues;
         try {
             i18nValueResponse = JsonPath.read(responseJson, i18nValuesJsonpath);
             i18nValues = objectMapper.convertValue(i18nValueResponse, ObjectNode.class);
             i18nValues.set("errors", objectMapper.valueToTree(readErrors(responseJson, i18nValuesErrorJsonpath)));
         } catch (PathNotFoundException e) {
             log.error("i18nValues not found in schema");
+            i18nValues = objectMapper.createObjectNode();
         }
         return i18nValues;
     }
