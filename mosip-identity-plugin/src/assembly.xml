@@ -2,17 +2,43 @@
           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
           xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.3
                               https://maven.apache.org/xsd/assembly-1.1.3.xsd">
-    <id>jar-with-dependencies</id>
+
+    <!-- Custom ID for the built artifact -->
+    <id>jar-with-runtime-deps</id>
+
     <formats>
         <format>jar</format>
     </formats>
+
+    <!-- Don’t wrap contents in a top-level directory -->
     <includeBaseDirectory>false</includeBaseDirectory>
 
+    <fileSets>
+        <!-- ✅ Include compiled classes + resources (application.properties etc.) -->
+        <fileSet>
+            <directory>${project.build.outputDirectory}</directory>
+            <outputDirectory>/</outputDirectory>
+            <includes>
+                <include>**/*</include>
+            </includes>
+        </fileSet>
+
+        <!-- ✅ Optional: include Maven metadata like the built-in descriptor -->
+        <fileSet>
+            <directory>${project.basedir}</directory>
+            <outputDirectory>META-INF/maven/${project.groupId}/${project.artifactId}</outputDirectory>
+            <includes>
+                <include>pom.xml</include>
+            </includes>
+        </fileSet>
+    </fileSets>
+
     <dependencySets>
+        <!-- ✅ Unpack only runtime (compile + runtime) dependencies -->
         <dependencySet>
-            <useProjectArtifact>true</useProjectArtifact>
-            <unpack>false</unpack>
-            <scope>runtime</scope> <!-- ✅ only include runtime/compile deps -->
+            <useProjectArtifact>false</useProjectArtifact>
+            <unpack>true</unpack>
+            <scope>runtime</scope>
         </dependencySet>
     </dependencySets>
 </assembly>
