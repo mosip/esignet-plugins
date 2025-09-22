@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
+import com.github.jaiimageio.jpeg2000.impl.J2KImageReaderSpi;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
 import io.micrometer.core.annotation.Timed;
@@ -42,6 +43,7 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.PostConstruct;
+import javax.imageio.spi.IIORegistry;
 import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 import java.time.ZoneOffset;
@@ -120,9 +122,6 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     @Value("${mosip.signup.idrepo.biometric.field-name:individualBiometrics}")
     private String biometricDataFieldName;
 
-    @Value("${mosip.signup.idrepo.biometric.compression-ratio:1000}")
-    private int faceImageCompressionRatio;
-
     @Autowired
     @Qualifier("selfTokenRestTemplate")
     private RestTemplate restTemplate;
@@ -132,6 +131,9 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
 
     @Autowired
     private ProfileCacheService profileCacheService;
+
+    @Autowired
+    private BiometricUtil biometricUtil;
 
     @Value("${mosip.signup.mosipid.get-ui-spec.endpoint}")
     private String uiSpecUrl;
@@ -188,6 +190,8 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
                         Map.entry("maxUploadFileSize", maxUploadFileSize)
                 )
         );
+        IIORegistry registry = IIORegistry.getDefaultInstance();
+        registry.registerServiceProvider(new J2KImageReaderSpi());
     }
 
     /**
@@ -792,7 +796,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
             String base64FaceImage = inputJson.path(biometricDataFieldName).path("value").textValue();
             String base64BirXmlEncoded = null;
             try {
-                base64BirXmlEncoded = BiometricUtil.convertBase64JpegToBase64BirXML(base64FaceImage, faceImageCompressionRatio);
+                base64BirXmlEncoded = biometricUtil.convertBase64JpegToBase64BirXML(base64FaceImage);
             } catch (Exception e) {
                 log.error("Failed to create cbeff from face image: ", e);
                 throw new ProfileException(INVALID_INDIVIDUAL_BIOMETRICS);
