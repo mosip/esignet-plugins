@@ -62,6 +62,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
 
     private static final String ID_SCHEMA_VERSION_FIELD_ID = "IDSchemaVersion";
     private static final String UIN = "UIN";
+    private static final String VID = "VID";
     private static final String SELECTED_HANDLES_FIELD_ID = "selectedHandles";
     private static final String UTC_DATETIME_PATTERN = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
     private final Map<Double, SchemaResponse> schemaMap = new HashMap<>();
@@ -374,9 +375,15 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
         JsonNode inputJson = profileDto.getIdentity();
 
         if(profileDto.getIndividualId().contains(HANDLE_SEPARATOR)) {
-            ((ObjectNode) inputJson).set(UIN, objectMapper.valueToTree(getProfile(profileDto.getIndividualId()).getIndividualId()));
+            ((ObjectNode) inputJson).set(
+                    getProfile(profileDto.getIndividualId()).getIndividualId().length() > 10 ? VID : UIN,
+                    objectMapper.valueToTree(getProfile(profileDto.getIndividualId()).getIndividualId())
+            );
         } else {
-            ((ObjectNode) inputJson).set(UIN, objectMapper.valueToTree(profileDto.getIndividualId()));
+            ((ObjectNode) inputJson).set(
+                    profileDto.getIndividualId().length() > 10 ? VID : UIN,
+                    objectMapper.valueToTree(profileDto.getIndividualId())
+            );
         }
 
         //Build identity request
