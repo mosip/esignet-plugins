@@ -10,8 +10,8 @@ import io.mosip.signup.api.dto.ProfileResult;
 import io.mosip.signup.api.exception.InvalidProfileException;
 import io.mosip.signup.api.exception.ProfileException;
 import io.mosip.signup.api.util.ProfileCreateUpdateStatus;
-import io.mosip.signup.plugin.mosipid.dto.*;
 import io.mosip.signup.plugin.mosipid.dto.Error;
+import io.mosip.signup.plugin.mosipid.dto.*;
 import io.mosip.signup.plugin.mosipid.util.ProfileCacheService;
 import org.junit.Assert;
 import org.junit.Before;
@@ -23,7 +23,10 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
 
@@ -536,6 +539,12 @@ public class IdrepoProfileRegistryPluginImplTest {
         Map<String, Object> identityData = new HashMap<>();
         identityData.put("email","123@email.com");
         identityData.put("phone","+91841987567");
+        ObjectNode claimNode = objectMapper.createObjectNode();
+        ObjectNode verifiedClaims = objectMapper.createObjectNode();
+        claimNode.put("trust_framework", "QWE_RT");
+        claimNode.put("verification_process", "ver_proc");
+        verifiedClaims.set("name", claimNode);
+        identityData.put("verified_claims", verifiedClaims);
         return objectMapper.valueToTree(identityData);
     }
 

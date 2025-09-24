@@ -5,6 +5,7 @@
  */
 package io.mosip.esignet.plugin.mosipid.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.mosip.esignet.api.dto.*;
@@ -17,6 +18,7 @@ import io.mosip.esignet.plugin.mosipid.dto.*;
 import io.mosip.esignet.plugin.mosipid.helper.AuthTransactionHelper;
 import io.mosip.kernel.core.exception.ServiceError;
 import io.mosip.kernel.core.http.ResponseWrapper;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -654,6 +656,174 @@ public class IdaAuthenticatorImplTest {
 
 		Assert.assertThrows(KycSigningCertificateException.class,
 				() -> idaAuthenticatorImpl.getAllKycSigningCertificates());
+	}
+
+	@Test
+	public void getAllKycSigningCertificates_whenNon2xxStatus_thenThrowException(){
+		try {
+			Mockito.when(authTransactionHelper.getAuthToken()).thenReturn("tokenX");
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+		ResponseWrapper<GetAllCertificatesResponse> wrapper = new ResponseWrapper<>();
+		wrapper.setResponse(null);
+		wrapper.setErrors(null);
+		ResponseEntity<ResponseWrapper<GetAllCertificatesResponse>> responseEntity = new ResponseEntity<>(wrapper, HttpStatus.INTERNAL_SERVER_ERROR);
+		Mockito.when(restTemplate.exchange(any(RequestEntity.class), any(ParameterizedTypeReference.class))).thenReturn(responseEntity);
+		Assert.assertThrows(KycSigningCertificateException.class,
+				() -> idaAuthenticatorImpl.getAllKycSigningCertificates());
+	}
+
+	@Test
+	public void buildVerifiedClaimsMetadata_whenMetadataNull_thenFail() {
+		Map<String, List<JsonNode>> result = ReflectionTestUtils.invokeMethod(idaAuthenticatorImpl, "buildVerifiedClaimsMetadata", (String) null);
+        assert result != null;
+        Assert.assertTrue(result.isEmpty());
+		result = ReflectionTestUtils.invokeMethod(idaAuthenticatorImpl, "buildVerifiedClaimsMetadata", "");
+        assert result != null;
+        Assert.assertTrue(result.isEmpty());
+	}
+
+	@Test
+	public void buildVerifiedClaimsMetadata_whenInvalidJson_thenFail() {
+		String invalidJson = "{ invalid json }";
+		Map<String, List<JsonNode>> result = ReflectionTestUtils.invokeMethod(idaAuthenticatorImpl, "buildVerifiedClaimsMetadata", invalidJson);
+        assert result != null;
+        Assert.assertTrue(result.isEmpty());
+	}
+
+	@Test
+	public void doKycExchange_whenResponseHasNoEncryptedKyc_thenFail(){
+		KycExchangeDto kycExchangeDto = new KycExchangeDto();
+		kycExchangeDto.setIndividualId("IND123");
+		kycExchangeDto.setTransactionId("TRANS");
+		kycExchangeDto.setKycToken("TOKEN123");
+		kycExchangeDto.setAcceptedClaims(List.of("claim1"));
+		kycExchangeDto.setClaimsLocales(new String[]{"en"});
+		IdaKycExchangeResponse resp = new IdaKycExchangeResponse();
+		resp.setEncryptedKyc(null);
+		IdaResponseWrapper<IdaKycExchangeResponse> wrapper = new IdaResponseWrapper<>();
+		wrapper.setResponse(resp);
+		wrapper.setErrors(List.of()); // no errors
+		ResponseEntity<IdaResponseWrapper<IdaKycExchangeResponse>> responseEntity =
+				new ResponseEntity<>(wrapper, HttpStatus.OK);
+		Mockito.when(restTemplate.exchange(any(RequestEntity.class), any(ParameterizedTypeReference.class)))
+				.thenReturn(responseEntity);
+		KycExchangeException ex = Assert.assertThrows(KycExchangeException.class, () -> {
+			idaAuthenticatorImpl.doKycExchange("rp", "client", kycExchangeDto);
+		});
+		Assert.assertEquals(ErrorConstants.DATA_EXCHANGE_FAILED, ex.getErrorCode());
+	}
+
+	@Test
+	public void getUnVerifiedConsentedClaims_whenAcceptedClaimDetailsNull_thenFail() {
+		Map<String, Object> result = ReflectionTestUtils.invokeMethod(idaAuthenticatorImpl, "getUnVerifiedConsentedClaims", (Map<String, JsonNode>) null);
+        assert result != null;
+        Assert.assertTrue(result.isEmpty());
+	}
+
+	@Test
+	public void getUnVerifiedConsentedClaims_whenOnlyVerifiedClaimsPresent_thenPass() {
+		ObjectMapper m = new ObjectMapper();
+		Map<String, JsonNode> accepted = new HashMap<>();
+		JsonNode verifiedClaimsNode;
+		try {
+			verifiedClaimsNode = m.readTree("[{\"some\":\"value\"}]");
+		} catch (JsonProcessingException e) {
+			throw new RuntimeException(e);
+		}
+		accepted.put("verified_claims", verifiedClaimsNode);
+		Map<String, Object> result = ReflectionTestUtils.invokeMethod(idaAuthenticatorImpl, "getUnVerifiedConsentedClaims", accepted);
+        assert result != null;
+        Assert.assertTrue(result.isEmpty());
+	}
+
+	@Test
+	public void doKycAuth_whenResponseKycStatusFalse_thenFail(){
+		KycAuthDto dto = new KycAuthDto();
+		dto.setIndividualId("ID1");
+		dto.setTransactionId("T1");
+		AuthChallenge ac = new AuthChallenge();
+		ac.setAuthFactorType("OTP");
+		ac.setChallenge("1234");
+		dto.setChallengeList(List.of(ac));
+		IdaKycAuthResponse resp = new IdaKycAuthResponse();
+		resp.setKycStatus(false);
+		resp.setKycToken(null);
+		IdaResponseWrapper<IdaKycAuthResponse> wrapper = new IdaResponseWrapper<>();
+		wrapper.setResponse(resp);
+		wrapper.setErrors(List.of());  // empty list
+		ResponseEntity<IdaResponseWrapper<IdaKycAuthResponse>> responseEntity = new ResponseEntity<>(wrapper, HttpStatus.OK);
+		Mockito.when(restTemplate.exchange(any(RequestEntity.class), any(ParameterizedTypeReference.class))).thenReturn(responseEntity);
+		KycAuthException ex = Assert.assertThrows(KycAuthException.class, () -> {
+			idaAuthenticatorImpl.doKycAuth("rp", "client", dto);
+		});
+		Assert.assertEquals(ErrorConstants.AUTH_FAILED, ex.getErrorCode());
+	}
+
+	@Test
+	public void doKycExchange_setClaims_whenVerifiedClaimsNodeNull_thenFail(){
+		VerifiedKycExchangeDto dto = new VerifiedKycExchangeDto();
+		dto.setIndividualId("ID2");
+		dto.setKycToken("TK2");
+		dto.setTransactionId("TX2");
+		dto.setClaimsLocales(new String[] {"en"});
+		dto.setAcceptedClaims(List.of("A"));
+		ObjectMapper m = new ObjectMapper();
+		Map<String, JsonNode> details = new HashMap<>();
+		details.put("verified_claims", null);
+		try {
+			details.put("name", m.readTree("\"NameVal\""));
+		} catch (JsonProcessingException e) {
+			throw new RuntimeException(e);
+		}
+		dto.setAcceptedClaimDetails(details);
+		IdaKycExchangeResponse resp = new IdaKycExchangeResponse();
+		resp.setEncryptedKyc("ENC2");
+		IdaResponseWrapper<IdaKycExchangeResponse> wrapper = new IdaResponseWrapper<>();
+		wrapper.setResponse(resp);
+		ResponseEntity<IdaResponseWrapper<IdaKycExchangeResponse>> responseEntity = new ResponseEntity<>(wrapper, HttpStatus.OK);
+		Mockito.when(restTemplate.exchange(any(RequestEntity.class), any(ParameterizedTypeReference.class))).thenReturn(responseEntity);
+		KycExchangeResult result;
+		try {
+			result = idaAuthenticatorImpl.doKycExchange("rp", "client", dto);
+		} catch (KycExchangeException e) {
+			throw new RuntimeException(e);
+		}
+		Assert.assertEquals("ENC2", result.getEncryptedKyc());
+	}
+
+	@Test
+	public void kycExchange_withV2_callsSetClaimsSuccessfully() throws Exception {
+		VerifiedKycExchangeDto verifiedDto = getVerifiedKycExchangeDto();
+		IdaKycExchangeResponse idaResponse = new IdaKycExchangeResponse();
+		IdaResponseWrapper<IdaKycExchangeResponse> responseWrapper = new IdaResponseWrapper<>();
+		responseWrapper.setResponse(idaResponse);
+		idaResponse.setEncryptedKyc("encrypted-kyc-data");
+		ResponseEntity<IdaResponseWrapper<IdaKycExchangeResponse>> responseEntity =
+				new ResponseEntity<>(responseWrapper, HttpStatus.OK);
+		Mockito.when(restTemplate.exchange(
+				Mockito.any(),
+				Mockito.<ParameterizedTypeReference<IdaResponseWrapper<IdaKycExchangeResponse>>>any())
+		).thenReturn(responseEntity);
+		KycExchangeResult result = idaAuthenticatorImpl.doVerifiedKycExchange(
+				"rpId", "clientId", verifiedDto);
+		Assert.assertNotNull(result);
+		Assert.assertEquals("encrypted-kyc-data", result.getEncryptedKyc());
+	}
+
+	@NotNull
+	private VerifiedKycExchangeDto getVerifiedKycExchangeDto() throws JsonProcessingException {
+		VerifiedKycExchangeDto verifiedDto = new VerifiedKycExchangeDto();
+		verifiedDto.setTransactionId("txn-1000");
+		verifiedDto.setKycToken("kyc-token-123");
+		verifiedDto.setIndividualId("ind-1000");
+		Map<String, JsonNode> acceptedClaimDetails = new HashMap<>();
+		ObjectMapper mapper = new ObjectMapper();
+		JsonNode verifiedClaimsNode = mapper.readTree("[{\"claim\":\"value\"}]");
+		acceptedClaimDetails.put("verified_claims", verifiedClaimsNode);
+		verifiedDto.setAcceptedClaimDetails(acceptedClaimDetails);
+		return verifiedDto;
 	}
 
 }

@@ -186,4 +186,86 @@ public class IdaKeyBinderImplTest {
             Assert.assertEquals(IdaKeyBinderImpl.REQUIRED_HEADERS_MISSING, e.getErrorCode());
         }
     }
+
+    @Test
+    public void sendBindingOtp_withSendOtpException_thenFail() {
+        Map<String, String> headers = new HashMap<>();
+        headers.put(PARTNER_ID_HEADER, PARTNER_ID_HEADER);
+        headers.put(PARTNER_API_KEY_HEADER, PARTNER_API_KEY_HEADER);
+        Mockito.when(helperService.getTransactionId(Mockito.anyString()))
+                .thenThrow(new RuntimeException("unexpected"));
+        try {
+            idaKeyBinderImpl.sendBindingOtp("individualId", List.of("email"), headers);
+            Assert.fail();
+        } catch (SendOtpException e) {
+            Assert.assertEquals(ErrorConstants.SEND_OTP_FAILED,e.getErrorCode());
+        }
+    }
+
+    @Test
+    public void doKeyBinding_withInvalidStatusResponse_thenFail() {
+        ResponseEntity<IdaResponseWrapper<KeyBindingResponse>> responseEntity =
+                new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        Mockito.when(restTemplate.exchange(Mockito.<RequestEntity<Void>>any(),
+                        Mockito.<ParameterizedTypeReference<IdaResponseWrapper<KeyBindingResponse>>>any()))
+                .thenReturn(responseEntity);
+        Map<String, String> headers = new HashMap<>();
+        headers.put(PARTNER_ID_HEADER, PARTNER_ID_HEADER);
+        headers.put(PARTNER_API_KEY_HEADER, PARTNER_API_KEY_HEADER);
+        try {
+            idaKeyBinderImpl.doKeyBinding("individualId", new ArrayList<>(), new HashMap<>(),
+                    "WLA", headers);
+            Assert.fail();
+        } catch (KeyBindingException e) {
+            Assert.assertEquals(ErrorConstants.KEY_BINDING_FAILED, e.getErrorCode());
+        }
+    }
+
+    @Test
+    public void doKeyBinding_withNullResponse_thenFail() {
+        ResponseEntity<IdaResponseWrapper<KeyBindingResponse>> responseEntity =
+                new ResponseEntity<>(null, HttpStatus.OK);
+        Mockito.when(restTemplate.exchange(Mockito.<RequestEntity<Void>>any(),
+                        Mockito.<ParameterizedTypeReference<IdaResponseWrapper<KeyBindingResponse>>>any()))
+                .thenReturn(responseEntity);
+        Map<String, String> headers = new HashMap<>();
+        headers.put(PARTNER_ID_HEADER, PARTNER_ID_HEADER);
+        headers.put(PARTNER_API_KEY_HEADER, PARTNER_API_KEY_HEADER);
+        try {
+            idaKeyBinderImpl.doKeyBinding("individualId", new ArrayList<>(), new HashMap<>(),
+                    "WLA", headers);
+            Assert.fail();
+        } catch (KeyBindingException e) {
+            Assert.assertEquals(ErrorConstants.KEY_BINDING_FAILED, e.getErrorCode());
+        }
+    }
+
+    @Test
+    public void doKeyBinding_withExceptionDuringExchange_thenFail() {
+        Mockito.when(restTemplate.exchange(Mockito.<RequestEntity<Void>>any(),
+                        Mockito.<ParameterizedTypeReference<IdaResponseWrapper<KeyBindingResponse>>>any()))
+                .thenThrow(new RuntimeException("unexpected failure"));
+        Map<String, String> headers = new HashMap<>();
+        headers.put(PARTNER_ID_HEADER, PARTNER_ID_HEADER);
+        headers.put(PARTNER_API_KEY_HEADER, PARTNER_API_KEY_HEADER);
+        try {
+            idaKeyBinderImpl.doKeyBinding("individualId", new ArrayList<>(), new HashMap<>(),
+                    "WLA", headers);
+            Assert.fail();
+        } catch (KeyBindingException e) {
+            Assert.assertEquals(ErrorConstants.KEY_BINDING_FAILED, e.getErrorCode());
+        }
+    }
+
+    @Test
+    public void getSupportedChallengeFormats_withKnownTypes_thenPass() {
+        Assert.assertEquals(List.of("alpha-numeric"), idaKeyBinderImpl.getSupportedChallengeFormats("OTP"));
+        Assert.assertEquals(List.of("number"), idaKeyBinderImpl.getSupportedChallengeFormats("PIN"));
+        Assert.assertEquals(List.of("encoded-json"), idaKeyBinderImpl.getSupportedChallengeFormats("BIO"));
+        Assert.assertEquals(List.of("jwt"), idaKeyBinderImpl.getSupportedChallengeFormats("WLA"));
+    }
+    @Test
+    public void getSupportedChallengeFormats_withUnknownType_thenFail() {
+        Assert.assertTrue(idaKeyBinderImpl.getSupportedChallengeFormats("UNKNOWN").isEmpty());
+    }
 }

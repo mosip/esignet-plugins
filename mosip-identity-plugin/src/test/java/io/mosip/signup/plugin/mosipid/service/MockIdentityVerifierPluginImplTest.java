@@ -1,4 +1,4 @@
-package io.mosip.signup.plugin.mock.service;
+package io.mosip.signup.plugin.mosipid.service;
 
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.mosip.signup.api.dto.*;
 import io.mosip.signup.api.exception.IdentityVerifierException;
 import io.mosip.signup.api.util.VerificationStatus;
-import io.mosip.signup.plugin.mock.verifier.MockIdentityVerifierPluginImpl;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
