@@ -18,7 +18,6 @@ import io.mosip.esignet.plugin.mosipid.dto.*;
 import io.mosip.esignet.plugin.mosipid.helper.AuthTransactionHelper;
 import io.mosip.kernel.core.exception.ServiceError;
 import io.mosip.kernel.core.http.ResponseWrapper;
-import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -812,7 +811,6 @@ public class IdaAuthenticatorImplTest {
 		Assert.assertEquals("encrypted-kyc-data", result.getEncryptedKyc());
 	}
 
-	@NotNull
 	private VerifiedKycExchangeDto getVerifiedKycExchangeDto() throws JsonProcessingException {
 		VerifiedKycExchangeDto verifiedDto = new VerifiedKycExchangeDto();
 		verifiedDto.setTransactionId("txn-1000");
