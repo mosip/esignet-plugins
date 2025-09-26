@@ -109,7 +109,7 @@ public class MockIdentityVerifierPluginImplTest {
 
 
     @Test
-    public void getVerifiedResult_withInValidTransactionId_thenFail() throws IdentityVerifierException, IOException {
+    public void getVerifiedResult_withInvalidTransactionId_thenFail() throws IdentityVerifierException, IOException {
 
         String transactionId = "transactionId123";
         String jsonContent = "{}";
