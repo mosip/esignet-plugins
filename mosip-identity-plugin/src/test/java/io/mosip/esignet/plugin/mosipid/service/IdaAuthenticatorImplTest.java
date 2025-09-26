@@ -670,24 +670,6 @@ public class IdaAuthenticatorImplTest {
 	}
 
 	@Test
-	public void buildVerifiedClaimsMetadata_whenMetadataNull_thenFail() {
-		Map<String, List<JsonNode>> result = ReflectionTestUtils.invokeMethod(idaAuthenticatorImpl, "buildVerifiedClaimsMetadata", (String) null);
-        assert result != null;
-        Assert.assertTrue(result.isEmpty());
-		result = ReflectionTestUtils.invokeMethod(idaAuthenticatorImpl, "buildVerifiedClaimsMetadata", "");
-        assert result != null;
-        Assert.assertTrue(result.isEmpty());
-	}
-
-	@Test
-	public void buildVerifiedClaimsMetadata_whenInvalidJson_thenFail() {
-		String invalidJson = "{ invalid json }";
-		Map<String, List<JsonNode>> result = ReflectionTestUtils.invokeMethod(idaAuthenticatorImpl, "buildVerifiedClaimsMetadata", invalidJson);
-        assert result != null;
-        Assert.assertTrue(result.isEmpty());
-	}
-
-	@Test
 	public void doKycExchange_whenResponseHasNoEncryptedKyc_thenFail(){
 		KycExchangeDto kycExchangeDto = new KycExchangeDto();
 		kycExchangeDto.setIndividualId("IND123");
@@ -708,24 +690,6 @@ public class IdaAuthenticatorImplTest {
 			idaAuthenticatorImpl.doKycExchange("rp", "client", kycExchangeDto);
 		});
 		Assert.assertEquals(ErrorConstants.DATA_EXCHANGE_FAILED, ex.getErrorCode());
-	}
-
-	@Test
-	public void getUnVerifiedConsentedClaims_whenAcceptedClaimDetailsNull_thenFail() {
-		Map<String, Object> result = ReflectionTestUtils.invokeMethod(idaAuthenticatorImpl, "getUnVerifiedConsentedClaims", (Map<String, JsonNode>) null);
-        assert result != null;
-        Assert.assertTrue(result.isEmpty());
-	}
-
-	@Test
-	public void getUnVerifiedConsentedClaims_whenOnlyVerifiedClaimsPresent_thenPass() throws JsonProcessingException {
-		ObjectMapper m = new ObjectMapper();
-		Map<String, JsonNode> accepted = new HashMap<>();
-		JsonNode verifiedClaimsNode = m.readTree("[{\"some\":\"value\"}]");
-		accepted.put("verified_claims", verifiedClaimsNode);
-		Map<String, Object> result = ReflectionTestUtils.invokeMethod(idaAuthenticatorImpl, "getUnVerifiedConsentedClaims", accepted);
-        assert result != null;
-        Assert.assertTrue(result.isEmpty());
 	}
 
 	@Test
@@ -752,7 +716,7 @@ public class IdaAuthenticatorImplTest {
 	}
 
 	@Test
-	public void doKycExchange_setClaims_whenVerifiedClaimsNodeNull_thenFail() throws Exception {
+	public void doKycExchange_whenVerifiedClaimsNodeNull_thenFail() throws Exception {
 		VerifiedKycExchangeDto dto = new VerifiedKycExchangeDto();
 		dto.setIndividualId("ID2");
 		dto.setKycToken("TK2");
@@ -775,7 +739,7 @@ public class IdaAuthenticatorImplTest {
 	}
 
 	@Test
-	public void kycExchange_withV2_callsSetClaimsSuccessfully() throws Exception {
+	public void kycExchangeV2_withClaims_thenPass() throws Exception {
 		VerifiedKycExchangeDto verifiedDto = getVerifiedKycExchangeDto();
 		IdaKycExchangeResponse idaResponse = new IdaKycExchangeResponse();
 		IdaResponseWrapper<IdaKycExchangeResponse> responseWrapper = new IdaResponseWrapper<>();

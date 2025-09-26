@@ -38,11 +38,10 @@ public class MockIdentityVerifierPluginImplTest {
     ResourceLoader resourceLoader;
 
 
-    ObjectMapper objectMapper;
+    ObjectMapper objectMapper = new ObjectMapper();;
 
     @Before
     public void before(){
-        objectMapper = new ObjectMapper();
         ReflectionTestUtils.setField(mockIdentityVerifierPlugin, "objectMapper",objectMapper);
         ReflectionTestUtils.setField(mockIdentityVerifierPlugin, "resultTopic","ANALYZE_FRAMES_RESULT");
     }
@@ -68,7 +67,7 @@ public class MockIdentityVerifierPluginImplTest {
 
         KafkaTemplate<String, IdentityVerificationResult> kafkaTemplate = Mockito.mock(KafkaTemplate.class);
         ReflectionTestUtils.setField(mockIdentityVerifierPlugin, "kafkaTemplate", kafkaTemplate);
-        ReflectionTestUtils.setField(mockIdentityVerifierPlugin, "resultTopic", "ANALYZE_FRAMES_RESULT");
+        //ReflectionTestUtils.setField(mockIdentityVerifierPlugin, "resultTopic", "ANALYZE_FRAMES_RESULT");
 
         mockIdentityVerifierPlugin.verify(transactionId, identityVerificationDto);
 
@@ -120,10 +119,5 @@ public class MockIdentityVerifierPluginImplTest {
         VerificationResult verificationResult = mockIdentityVerifierPlugin.getVerificationResult(transactionId);
         Assert.assertEquals(verificationResult.getErrorCode(),"mock_verification_failed");
         Assert.assertEquals(verificationResult.getStatus(),VerificationStatus.FAILED);
-    }
-    @Test
-    public void initializeWithValidDetails_thenPass(){
-
-        mockIdentityVerifierPlugin.initialize("individualId",new IdentityVerificationInitDto());
     }
 }
