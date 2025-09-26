@@ -658,12 +658,8 @@ public class IdaAuthenticatorImplTest {
 	}
 
 	@Test
-	public void getAllKycSigningCertificates_whenNon2xxStatus_thenThrowException(){
-		try {
-			Mockito.when(authTransactionHelper.getAuthToken()).thenReturn("tokenX");
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+	public void getAllKycSigningCertificates_whenNon2xxStatus_thenThrowException() throws Exception {
+		Mockito.when(authTransactionHelper.getAuthToken()).thenReturn("tokenX");
 		ResponseWrapper<GetAllCertificatesResponse> wrapper = new ResponseWrapper<>();
 		wrapper.setResponse(null);
 		wrapper.setErrors(null);
@@ -722,15 +718,10 @@ public class IdaAuthenticatorImplTest {
 	}
 
 	@Test
-	public void getUnVerifiedConsentedClaims_whenOnlyVerifiedClaimsPresent_thenPass() {
+	public void getUnVerifiedConsentedClaims_whenOnlyVerifiedClaimsPresent_thenPass() throws JsonProcessingException {
 		ObjectMapper m = new ObjectMapper();
 		Map<String, JsonNode> accepted = new HashMap<>();
-		JsonNode verifiedClaimsNode;
-		try {
-			verifiedClaimsNode = m.readTree("[{\"some\":\"value\"}]");
-		} catch (JsonProcessingException e) {
-			throw new RuntimeException(e);
-		}
+		JsonNode verifiedClaimsNode = m.readTree("[{\"some\":\"value\"}]");
 		accepted.put("verified_claims", verifiedClaimsNode);
 		Map<String, Object> result = ReflectionTestUtils.invokeMethod(idaAuthenticatorImpl, "getUnVerifiedConsentedClaims", accepted);
         assert result != null;
@@ -761,7 +752,7 @@ public class IdaAuthenticatorImplTest {
 	}
 
 	@Test
-	public void doKycExchange_setClaims_whenVerifiedClaimsNodeNull_thenFail(){
+	public void doKycExchange_setClaims_whenVerifiedClaimsNodeNull_thenFail() throws Exception {
 		VerifiedKycExchangeDto dto = new VerifiedKycExchangeDto();
 		dto.setIndividualId("ID2");
 		dto.setKycToken("TK2");
@@ -771,11 +762,7 @@ public class IdaAuthenticatorImplTest {
 		ObjectMapper m = new ObjectMapper();
 		Map<String, JsonNode> details = new HashMap<>();
 		details.put("verified_claims", null);
-		try {
-			details.put("name", m.readTree("\"NameVal\""));
-		} catch (JsonProcessingException e) {
-			throw new RuntimeException(e);
-		}
+		details.put("name", m.readTree("\"NameVal\""));
 		dto.setAcceptedClaimDetails(details);
 		IdaKycExchangeResponse resp = new IdaKycExchangeResponse();
 		resp.setEncryptedKyc("ENC2");
@@ -783,12 +770,7 @@ public class IdaAuthenticatorImplTest {
 		wrapper.setResponse(resp);
 		ResponseEntity<IdaResponseWrapper<IdaKycExchangeResponse>> responseEntity = new ResponseEntity<>(wrapper, HttpStatus.OK);
 		Mockito.when(restTemplate.exchange(any(RequestEntity.class), any(ParameterizedTypeReference.class))).thenReturn(responseEntity);
-		KycExchangeResult result;
-		try {
-			result = idaAuthenticatorImpl.doKycExchange("rp", "client", dto);
-		} catch (KycExchangeException e) {
-			throw new RuntimeException(e);
-		}
+		KycExchangeResult result = idaAuthenticatorImpl.doKycExchange("rp", "client", dto);
 		Assert.assertEquals("ENC2", result.getEncryptedKyc());
 	}
 
