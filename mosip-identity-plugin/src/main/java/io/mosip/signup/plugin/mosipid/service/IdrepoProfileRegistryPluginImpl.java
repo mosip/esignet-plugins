@@ -142,16 +142,16 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     @Value("${mosip.signup.mosipid.uispec.schema-jsonpath:$[0].jsonSpec[0].spec.schema}")
     private String schemaJsonpath;
 
-    @Value("${mosip.signup.mosipid.uispec.allowedValues-jsonpath:$[0].jsonSpec[0].spec.allowedValues}")
+    @Value("${mosip.signup.mosipid.uispec.allowedvalues-jsonpath:$[0].jsonSpec[0].spec.allowedValues}")
     private String allowedValuesJsonpath;
 
-    @Value("${mosip.signup.mosipid.uispec.i18nValues-jsonpath:$[0].jsonSpec[0].spec.i18nValues}")
+    @Value("${mosip.signup.mosipid.uispec.i18values-jsonpath:$[0].jsonSpec[0].spec.i18nValues}")
     private String i18nValuesJsonpath;
 
-    @Value("${mosip.signup.mosipid.uispec.i18nValues.errors-jsonpath:$[0].jsonSpec[0].spec.i18nValues.errors}")
+    @Value("${mosip.signup.mosipid.uispec.i18values-errors-jsonpath:$[0].jsonSpec[0].spec.i18nValues.errors}")
     private String i18nValuesErrorJsonpath;
 
-    @Value("${mosip.signup.mosipid.uispec.maxUploadFileSize-jsonpath:$[0].jsonSpec[0].spec.maxUploadFileSize}")
+    @Value("${mosip.signup.mosipid.uispec.maxuploadfilesize-jsonpath:$[0].jsonSpec[0].spec.maxUploadFileSize}")
     private String maxUploadFileSizeJsonpath;
 
     @Value("${mosip.signup.mosipid.uispec.errors-jsonpath:$[0].jsonSpec[0].spec.errors}")
