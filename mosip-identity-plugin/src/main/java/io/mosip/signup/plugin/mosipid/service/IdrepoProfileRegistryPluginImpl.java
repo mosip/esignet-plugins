@@ -62,6 +62,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
 
     private static final String ID_SCHEMA_VERSION_FIELD_ID = "IDSchemaVersion";
     private static final String UIN = "UIN";
+    private static final String VID = "VID";
     private static final String SELECTED_HANDLES_FIELD_ID = "selectedHandles";
     private static final String UTC_DATETIME_PATTERN = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
     private final Map<Double, SchemaResponse> schemaMap = new HashMap<>();
@@ -475,7 +476,11 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
                     RequestWrapper<IdRequestByIdDTO> idDTORequestWrapper=new RequestWrapper<>();
                     requestByIdDTO.setId(individualId);
                     requestByIdDTO.setType("demo");
-                    if(isHandle) requestByIdDTO.setIdType("HANDLE");
+                    if (isHandle) {
+                        requestByIdDTO.setIdType("HANDLE");
+                    } else {
+                        requestByIdDTO.setIdType(individualId.length() > 10 ? VID : UIN);
+                    }
                     idDTORequestWrapper.setRequest(requestByIdDTO);
                     idDTORequestWrapper.setRequesttime(getUTCDateTime());
                     responseWrapper = request(getIdentityEndpoint, HttpMethod.POST, idDTORequestWrapper,

@@ -58,6 +58,9 @@ public class MockAuthenticationService implements Authenticator {
     @Value("${mosip.esignet.mock.authenticator.kyc-exchange-v3-url}")
     private String kycExchangeV3Url;
 
+    @Value("${mosip.esignet.mock.authenticator.signing-keys-url}")
+    private String signingKeysUrl;
+
     @Autowired
     private ObjectMapper objectMapper;
 
@@ -140,14 +143,22 @@ public class MockAuthenticationService implements Authenticator {
 
     @Override
     public List<KycSigningCertificateData> getAllKycSigningCertificates() {
-        List<KycSigningCertificateData> certs = new ArrayList<>();
-        AllCertificatesDataResponseDto allCertificatesDataResponseDto = keymanagerService.getAllCertificates(APPLICATION_ID,
-                Optional.empty());
-        for (CertificateDataResponseDto dto : allCertificatesDataResponseDto.getAllCertificates()) {
-            certs.add(new KycSigningCertificateData(dto.getKeyId(), dto.getCertificateData(),
-                    dto.getExpiryAt(), dto.getIssuedAt()));
+        RequestEntity requestEntity = RequestEntity
+                .get(UriComponentsBuilder.fromUriString(signingKeysUrl).build().toUri()).build();
+        ResponseEntity<ResponseWrapper<AllCertificatesDataResponseDto>> responseEntity = restTemplate.exchange(requestEntity,
+                new ParameterizedTypeReference<>() {});
+
+        if( responseEntity.getStatusCode().is2xxSuccessful() && responseEntity.getBody() != null
+                && responseEntity.getBody().getResponse() != null ) {
+            AllCertificatesDataResponseDto allCertificatesDataResponseDto = responseEntity.getBody().getResponse();
+            return Arrays.stream(allCertificatesDataResponseDto.getAllCertificates())
+                    .map(certData -> new KycSigningCertificateData(certData.getKeyId(),
+                            certData.getCertificateData(), certData.getExpiryAt(), certData.getIssuedAt()))
+                    .collect(Collectors.toList());
         }
-        return certs;
+        log.error("Error response received from mock-identity-system while fetching signing keys with status and body : {} {}",
+                responseEntity.getStatusCode(), requestEntity.getBody());
+        return List.of();
     }
 
     @Override
