@@ -421,7 +421,11 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
                     RequestWrapper<IdRequestByIdDTO> idDTORequestWrapper=new RequestWrapper<>();
                     requestByIdDTO.setId(individualId);
                     requestByIdDTO.setType("demo");
-                    if(isHandle) requestByIdDTO.setIdType("HANDLE");
+                    if (isHandle) {
+                        requestByIdDTO.setIdType("HANDLE");
+                    } else {
+                        requestByIdDTO.setIdType(individualId.length() > 10 ? VID : UIN);
+                    }
                     idDTORequestWrapper.setRequest(requestByIdDTO);
                     idDTORequestWrapper.setRequesttime(getUTCDateTime());
                     responseWrapper = request(getIdentityEndpoint, HttpMethod.POST, idDTORequestWrapper,
