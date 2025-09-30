@@ -716,7 +716,7 @@ public class IdaAuthenticatorImplTest {
 	}
 
 	@Test
-	public void doKycExchange_whenVerifiedClaimsNodeNull_thenFail() throws Exception {
+	public void doKycExchange_whenVerifiedClaimsNodeNull_thenPass() throws Exception {
 		VerifiedKycExchangeDto dto = new VerifiedKycExchangeDto();
 		dto.setIndividualId("ID2");
 		dto.setKycToken("TK2");

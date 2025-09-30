@@ -264,6 +264,7 @@ public class IdaKeyBinderImplTest {
         Assert.assertEquals(List.of("encoded-json"), idaKeyBinderImpl.getSupportedChallengeFormats("BIO"));
         Assert.assertEquals(List.of("jwt"), idaKeyBinderImpl.getSupportedChallengeFormats("WLA"));
     }
+
     @Test
     public void getSupportedChallengeFormats_withUnknownType_thenFail() {
         Assert.assertTrue(idaKeyBinderImpl.getSupportedChallengeFormats("UNKNOWN").isEmpty());
