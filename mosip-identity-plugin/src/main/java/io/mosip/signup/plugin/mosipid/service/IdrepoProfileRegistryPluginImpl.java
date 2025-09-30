@@ -62,6 +62,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
 
     private static final String ID_SCHEMA_VERSION_FIELD_ID = "IDSchemaVersion";
     private static final String UIN = "UIN";
+    private static final String VID = "VID";
     private static final String SELECTED_HANDLES_FIELD_ID = "selectedHandles";
     private static final String UTC_DATETIME_PATTERN = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
     private final Map<Double, SchemaResponse> schemaMap = new HashMap<>();
@@ -141,6 +142,18 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     @Value("${mosip.signup.mosipid.uispec.schema-jsonpath:$[0].jsonSpec[0].spec.schema}")
     private String schemaJsonpath;
 
+    @Value("${mosip.signup.mosipid.uispec.allowedvalues-jsonpath:$[0].jsonSpec[0].spec.allowedValues}")
+    private String allowedValuesJsonpath;
+
+    @Value("${mosip.signup.mosipid.uispec.i18values-jsonpath:$[0].jsonSpec[0].spec.i18nValues}")
+    private String i18nValuesJsonpath;
+
+    @Value("${mosip.signup.mosipid.uispec.i18values-errors-jsonpath:$[0].jsonSpec[0].spec.i18nValues.errors}")
+    private String i18nValuesErrorJsonpath;
+
+    @Value("${mosip.signup.mosipid.uispec.maxuploadfilesize-jsonpath:$[0].jsonSpec[0].spec.maxUploadFileSize}")
+    private String maxUploadFileSizeJsonpath;
+
     @Value("${mosip.signup.mosipid.uispec.errors-jsonpath:$[0].jsonSpec[0].spec.errors}")
     private String errorsJsonpath;
 
@@ -163,26 +176,75 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
                 .getResponse()
                 .toString();
         Object schema = JsonPath.read(responseJson, schemaJsonpath);
-        Object errors;
-        try {
-            errors = JsonPath.read(responseJson, errorsJsonpath);
-        } catch (PathNotFoundException e) {
-            errors = errorsFromConfig;
-        }
-        JsonNode allowedValues = generateAllowedValues();
+        Object errors = readErrors(responseJson, errorsJsonpath);
+        ObjectNode i18nValues = readI18nValues(responseJson);
+        JsonNode allowedValues = readAllowedValues(responseJson);
+        Object maxUploadFileSize = JsonPath.read(responseJson, maxUploadFileSizeJsonpath);
 
         this.uiSpec = objectMapper.valueToTree(
                 Map.ofEntries(
                         Map.entry("schema", schema),
                         Map.entry("errors", errors),
+                        Map.entry("i18nValues", i18nValues),
                         Map.entry("language", Map.of("mandatory", mandatoryLanguages, "optional", optionalLanguages)),
-                        Map.entry("allowedValues", allowedValues)
+                        Map.entry("allowedValues", allowedValues),
+                        Map.entry("maxUploadFileSize", maxUploadFileSize)
                 )
         );
         IIORegistry registry = IIORegistry.getDefaultInstance();
         registry.registerServiceProvider(new J2KImageReaderSpi());
     }
 
+    /**
+     * Read the i18nValues from the UI-spec schema
+     * @param responseJson the response json from ${mosip.signup.mosipid.get-ui-spec.endpoint}
+     * @return i18nValues
+     */
+    private ObjectNode readI18nValues(String responseJson) {
+        Object i18nValueResponse;
+        ObjectNode  i18nValues;
+        try {
+            i18nValueResponse = JsonPath.read(responseJson, i18nValuesJsonpath);
+            i18nValues = objectMapper.convertValue(i18nValueResponse, ObjectNode.class);
+            i18nValues.set("errors", objectMapper.valueToTree(readErrors(responseJson, i18nValuesErrorJsonpath)));
+        } catch (PathNotFoundException e) {
+            log.error("i18nValues not found in schema");
+            i18nValues = objectMapper.createObjectNode();
+        }
+        return i18nValues;
+    }
+
+    /**
+     * Read the allowed values from master UI-spec and if not found read it from master data.
+     * @param responseJson the response json from ${mosip.signup.mosipid.get-ui-spec.endpoint}
+     * @return allowedValues
+     */
+    private JsonNode readAllowedValues(String responseJson) {
+        JsonNode allowedValues;
+        ObjectNode allowedValuesFromSpec = objectMapper.convertValue(JsonPath.read(responseJson, allowedValuesJsonpath), ObjectNode.class);
+        if (allowedValuesFromSpec != null && !allowedValuesFromSpec.isEmpty()) {
+            allowedValues = allowedValuesFromSpec; //allowed values from UI-Spec
+        } else {
+            allowedValues = generateAllowedValues(); //allowed values from master-data
+        }
+        return allowedValues;
+    }
+
+    /**
+     * Read the errors from UI-spec if not present, from config
+     * @param responseJson the response json from ${mosip.signup.mosipid.get-ui-spec.endpoint}
+     * @param jsonpath errors path inside schema
+     * @return errors
+     */
+    private Object readErrors(String responseJson, String jsonpath) {
+        Object errors;
+        try {
+            errors = JsonPath.read(responseJson, jsonpath);
+        } catch (PathNotFoundException e) {
+            errors = errorsFromConfig;
+        }
+        return errors;
+    }
 
     /**
      * Generate combined JsonNode from List<JsonNode> dynamicFields and List<JsonNode> documentCategories
@@ -414,7 +476,11 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
                     RequestWrapper<IdRequestByIdDTO> idDTORequestWrapper=new RequestWrapper<>();
                     requestByIdDTO.setId(individualId);
                     requestByIdDTO.setType("demo");
-                    if(isHandle) requestByIdDTO.setIdType("HANDLE");
+                    if (isHandle) {
+                        requestByIdDTO.setIdType("HANDLE");
+                    } else {
+                        requestByIdDTO.setIdType(individualId.length() > 10 ? VID : UIN);
+                    }
                     idDTORequestWrapper.setRequest(requestByIdDTO);
                     idDTORequestWrapper.setRequesttime(getUTCDateTime());
                     responseWrapper = request(getIdentityEndpoint, HttpMethod.POST, idDTORequestWrapper,
