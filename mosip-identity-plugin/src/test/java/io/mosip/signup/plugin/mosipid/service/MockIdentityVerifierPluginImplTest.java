@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.mosip.signup.api.dto.*;
 import io.mosip.signup.api.exception.IdentityVerifierException;
+import io.mosip.signup.api.util.ProcessType;
 import io.mosip.signup.api.util.VerificationStatus;
 import org.junit.Assert;
 import org.junit.Before;
@@ -120,4 +121,20 @@ public class MockIdentityVerifierPluginImplTest {
         Assert.assertEquals(verificationResult.getErrorCode(),"mock_verification_failed");
         Assert.assertEquals(verificationResult.getStatus(),VerificationStatus.FAILED);
     }
+
+    @Test
+    public void getSupportedProcessTypes_thenPass() {
+        List<ProcessType> supportedTypes = mockIdentityVerifierPlugin.getSupportedProcessTypes();
+        Assert.assertNotNull(supportedTypes);
+        Assert.assertEquals(1, supportedTypes.size());
+        Assert.assertEquals(ProcessType.VIDEO, supportedTypes.get(0));
+    }
+
+    @Test
+    public void initialize_thenPass() {
+        IdentityVerificationInitDto dto = new IdentityVerificationInitDto();
+        dto.setDisabilityType("NONE");
+        mockIdentityVerifierPlugin.initialize("txn-123", dto);
+    }
+
 }

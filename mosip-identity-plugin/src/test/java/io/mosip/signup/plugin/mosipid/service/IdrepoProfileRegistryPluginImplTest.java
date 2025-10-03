@@ -10,8 +10,9 @@ import io.mosip.signup.api.dto.ProfileResult;
 import io.mosip.signup.api.exception.InvalidProfileException;
 import io.mosip.signup.api.exception.ProfileException;
 import io.mosip.signup.api.util.ProfileCreateUpdateStatus;
-import io.mosip.signup.plugin.mosipid.dto.*;
 import io.mosip.signup.plugin.mosipid.dto.Error;
+import io.mosip.signup.plugin.mosipid.dto.*;
+import io.mosip.signup.plugin.mosipid.util.BiometricUtil;
 import io.mosip.signup.plugin.mosipid.util.ProfileCacheService;
 import org.junit.Assert;
 import org.junit.Before;
@@ -48,6 +49,8 @@ public class IdrepoProfileRegistryPluginImplTest {
 
     private static final String schemaSchemaJson="{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"description\":\"Identity schema for sign up\",\"additionalProperties\":false,\"title\":\"signup identity\",\"type\":\"object\",\"definitions\":{\"simpleType\":{\"uniqueItems\":true,\"additionalItems\":false,\"type\":\"array\",\"items\":{\"additionalProperties\":false,\"type\":\"object\",\"required\":[\"language\",\"value\"],\"properties\":{\"language\":{\"type\":\"string\"},\"value\":{\"type\":\"string\"}}}},\"documentType\":{\"additionalProperties\":false,\"type\":\"object\",\"properties\":{\"format\":{\"type\":\"string\"},\"type\":{\"type\":\"string\"},\"value\":{\"type\":\"string\"}}},\"biometricsType\":{\"additionalProperties\":false,\"type\":\"object\",\"properties\":{\"format\":{\"type\":\"string\"},\"version\":{\"type\":\"number\",\"minimum\":0},\"value\":{\"type\":\"string\"}}},\"hashType\":{\"additionalProperties\":false,\"type\":\"object\",\"properties\":{\"hash\":{\"type\":\"string\"},\"salt\":{\"type\":\"string\"}}}},\"properties\":{\"identity\":{\"additionalProperties\":false,\"type\":\"object\",\"required\":[\"IDSchemaVersion\",\"phone\"],\"properties\":{\"UIN\":{\"bioAttributes\":[],\"fieldCategory\":\"none\",\"format\":\"none\",\"type\":\"string\",\"fieldType\":\"default\"},\"IDSchemaVersion\":{\"bioAttributes\":[],\"fieldCategory\":\"none\",\"format\":\"none\",\"type\":\"number\",\"fieldType\":\"default\",\"minimum\":0},\"selectedHandles\":{\"fieldCategory\":\"none\",\"format\":\"none\",\"type\":\"array\",\"items\":{\"type\":\"string\"},\"fieldType\":\"default\"},\"fullName\":{\"bioAttributes\":[],\"validators\":[{\"validator\":\"^(.{3,50})$\",\"arguments\":[],\"type\":\"regex\"}],\"fieldCategory\":\"pvt\",\"format\":\"none\",\"fieldType\":\"default\",\"$ref\":\"#/definitions/simpleType\"},\"phone\":{\"bioAttributes\":[],\"validators\":[{\"validator\":\"^[+]91([0-9]{8,9})$\",\"arguments\":[],\"type\":\"regex\"}],\"fieldCategory\":\"pvt\",\"format\":\"none\",\"type\":\"string\",\"fieldType\":\"default\",\"requiredOn\":\"\",\"handle\":true},\"password\":{\"bioAttributes\":[],\"validators\":[],\"fieldCategory\":\"pvt\",\"format\":\"none\",\"fieldType\":\"default\",\"$ref\":\"#/definitions/hashType\"},\"preferredLang\":{\"bioAttributes\":[],\"validators\":[{\"validator\":\"(^eng$)\",\"arguments\":[],\"type\":\"regex\"}],\"fieldCategory\":\"pvt\",\"format\":\"none\",\"fieldType\":\"default\",\"type\":\"string\"},\"registrationType\":{\"bioAttributes\":[],\"validators\":[{\"validator\":\"^L[1-2]{1}$\",\"arguments\":[],\"type\":\"regex\"}],\"fieldCategory\":\"pvt\",\"format\":\"none\",\"fieldType\":\"default\",\"type\":\"string\"},\"phoneVerified\":{\"bioAttributes\":[],\"validators\":[],\"fieldCategory\":\"pvt\",\"format\":\"none\",\"fieldType\":\"default\",\"type\":\"boolean\"},\"updatedAt\":{\"bioAttributes\":[],\"validators\":[],\"fieldCategory\":\"pvt\",\"format\":\"none\",\"fieldType\":\"default\",\"type\":\"number\"}}}}}";
 
+    @Mock
+    private BiometricUtil biometricUtil;
 
     @Before
     public void beforeEach(){
@@ -69,6 +72,19 @@ public class IdrepoProfileRegistryPluginImplTest {
         ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "docTypesAndCategoryBaseUrl", "http://mock/api/docTypes");
         ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "mandatoryLanguages", List.of("en"));
         ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "optionalLanguages", List.of("fr","ar"));
+        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "schemaJsonpath", "$[0].jsonSpec[0].schema");
+        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "errorsJsonpath", "$[0].jsonSpec[0].errors");
+        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "i18nValuesJsonpath", "$[0].jsonSpec[0].i18nValues");
+        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "i18nValuesErrorJsonpath", "$[0].jsonSpec[0].i18nValues.errors");
+        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "allowedValuesJsonpath", "$[0].jsonSpec[0].allowedValues");
+        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "maxUploadFileSizeJsonpath", "$[0].jsonSpec[0].maxUploadFileSize");
+        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "uiSpecUrl", "http://mock/uispec");
+        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "biometricDataFieldName", "individualBiometrics");
+        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "defaultSelectedHandles", List.of("phone"));
+        /*ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "identifierField", "phone");
+        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "addIdentityRequestID", "add-id-req");
+        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "identityRequestVersion", "1.0");*/
+
     }
 
     @Test
@@ -683,4 +699,129 @@ public class IdrepoProfileRegistryPluginImplTest {
         Assert.assertEquals(0, result.size());
     }
 
+    @Test(expected = ProfileException.class)
+    public void validate_withInvalidSchemaResponse_thenFail() {
+        ProfileDto profileDto = new ProfileDto();
+        profileDto.setIndividualId("ind-123");
+        profileDto.setIdentity(objectMapper.createObjectNode());
+
+        // Return schema with null/invalid schemaJson
+        ResponseWrapper<SchemaResponse> responseWrapper = new ResponseWrapper<>();
+        responseWrapper.setResponse(new SchemaResponse());
+        ResponseEntity<ResponseWrapper<SchemaResponse>> responseEntity =
+                new ResponseEntity<>(responseWrapper, HttpStatus.OK);
+
+        Mockito.when(restTemplate.exchange(
+                Mockito.anyString(),
+                Mockito.eq(HttpMethod.GET),
+                Mockito.isNull(),
+                Mockito.<ParameterizedTypeReference<ResponseWrapper<SchemaResponse>>>any()
+        )).thenReturn(responseEntity);
+
+        idrepoProfileRegistryPlugin.validate("CREATE", profileDto);
+    }
+
+    @Test
+    public void init_shouldPopulateUiSpec_thenPass() {
+        ObjectNode specNode = objectMapper.createObjectNode();
+        specNode.set("schema", objectMapper.createObjectNode().put("someKey", "someValue"));
+        specNode.set("errors", objectMapper.createObjectNode().put("errKey", "errVal"));
+
+        ObjectNode i18n = objectMapper.createObjectNode();
+        i18n.set("en", objectMapper.createObjectNode().put("label", "Name"));
+        ObjectNode i18nErrors = objectMapper.createObjectNode().put("required", "Required");
+        i18n.set("errors", i18nErrors);
+        specNode.set("i18nValues", i18n);
+
+        specNode.set("allowedValues", objectMapper.createObjectNode().put("gender", "M,F"));
+        specNode.put("maxUploadFileSize", 1048576);
+
+        ArrayNode specArray = objectMapper.createArrayNode().add(specNode);
+        ObjectNode root = objectMapper.createObjectNode().set("jsonSpec", specArray);
+        ArrayNode rootArray = objectMapper.createArrayNode().add(root);
+
+        ResponseWrapper<JsonNode> wrapper = new ResponseWrapper<>();
+        wrapper.setResponse(rootArray);
+        ResponseEntity<ResponseWrapper<JsonNode>> responseEntity =
+                new ResponseEntity<>(wrapper, HttpStatus.OK);
+
+        Mockito.when(restTemplate.exchange(
+                Mockito.eq("http://mock/uispec"),
+                Mockito.eq(HttpMethod.GET),
+                Mockito.isNull(),
+                Mockito.<ParameterizedTypeReference<ResponseWrapper<JsonNode>>>any()
+        )).thenReturn(responseEntity);
+        idrepoProfileRegistryPlugin.init();
+
+        JsonNode uiSpec = idrepoProfileRegistryPlugin.getUISpecification();
+        Assert.assertNotNull(uiSpec);
+        Assert.assertTrue(uiSpec.has("schema"));
+        Assert.assertTrue(uiSpec.has("errors"));
+        Assert.assertTrue(uiSpec.has("i18nValues"));
+        Assert.assertTrue(uiSpec.has("allowedValues"));
+        Assert.assertTrue(uiSpec.has("maxUploadFileSize"));
+    }
+
+    @Test
+    public void createProfile_withValidBuildDocuments_thenPass() throws Exception {
+        String requestId = "req-123";
+        String individualId = "ind-456";
+
+        ObjectNode biometrics = objectMapper.createObjectNode();
+        biometrics.put("value", "base64string");
+        ObjectNode mockIdentity = objectMapper.createObjectNode();
+        mockIdentity.put("phone", individualId);
+        mockIdentity.set("individualBiometrics", biometrics);
+        ProfileDto profileDto = new ProfileDto();
+        profileDto.setIndividualId(individualId);
+        profileDto.setIdentity(mockIdentity);
+
+        ResponseWrapper<UINResponse> responseWrapper = new ResponseWrapper<>();
+        UINResponse uinResponse = new UINResponse();
+        uinResponse.setUIN("1234567890");
+        responseWrapper.setResponse(uinResponse);
+        ResponseEntity<ResponseWrapper<UINResponse>> responseEntity = new ResponseEntity<>(responseWrapper, HttpStatus.OK);
+
+        Mockito.when(profileCacheService.setHandleRequestIds(Mockito.anyString(),Mockito.anyList())).thenReturn(null);
+        Mockito.when(restTemplate.exchange(
+                "http://localhost:8080/identity/v1/uin",
+                HttpMethod.GET,
+                null,
+                new ParameterizedTypeReference<ResponseWrapper<UINResponse>>() {}
+        )).thenReturn(responseEntity);
+
+        ResponseWrapper<SchemaResponse> responseWrapper2 = new ResponseWrapper<>();
+        SchemaResponse schemaResponse = new SchemaResponse();
+        schemaResponse.setIdVersion(0.0);
+        schemaResponse.setSchemaJson("{\"properties\":{\"identity\":{\"required\":[\"phone\"],\"properties\":{\"phone\":{\"type\":\"string\"}}}}}");
+        responseWrapper2.setResponse(schemaResponse);
+        ResponseEntity<ResponseWrapper<SchemaResponse>> responseEntity2=new ResponseEntity<>(responseWrapper2, HttpStatus.OK);
+        Mockito.when(restTemplate.exchange(
+                "http://localhost:8080/identity/v1/schema/"+0.0,  // Matches any URL string
+                HttpMethod.GET,  // Matches any HTTP method
+                null,  // Matches any HttpEntity
+                new ParameterizedTypeReference<ResponseWrapper<SchemaResponse>>() {}
+        )).thenReturn(responseEntity2);
+
+        // Mock biometricUtil
+        Mockito.when(biometricUtil.convertBase64JpegToBase64BirXML("base64string")).thenReturn("encodedXml");
+
+        ResponseWrapper<IdentityResponse> responseWrapper3 = new ResponseWrapper<>();
+        IdentityResponse identityResponse = new IdentityResponse();
+        identityResponse.setStatus("SUCCESS");
+        responseWrapper3.setResponse(identityResponse);
+        ResponseEntity<ResponseWrapper<IdentityResponse>> responseEntity3=new ResponseEntity<>(responseWrapper3, HttpStatus.OK);
+
+        Mockito.when(restTemplate.exchange(
+                Mockito.anyString(),
+                Mockito.any(HttpMethod.class),
+                Mockito.any(HttpEntity.class),
+                Mockito.eq(new ParameterizedTypeReference<ResponseWrapper<IdentityResponse>>() {
+                }))).thenReturn(responseEntity3);
+        // Mock handle request ids
+        Mockito.when(profileCacheService.setHandleRequestIds(Mockito.anyString(), Mockito.anyList())).thenReturn(null);
+        ProfileResult profileResult = idrepoProfileRegistryPlugin.createProfile(requestId, profileDto);
+        Assert.assertNotNull(profileResult);
+        Assert.assertEquals(profileResult.getStatus(),"SUCCESS");
+    }
 }
