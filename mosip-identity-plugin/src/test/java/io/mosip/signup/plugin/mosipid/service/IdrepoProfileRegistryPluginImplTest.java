@@ -81,9 +81,6 @@ public class IdrepoProfileRegistryPluginImplTest {
         ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "uiSpecUrl", "http://mock/uispec");
         ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "biometricDataFieldName", "individualBiometrics");
         ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "defaultSelectedHandles", List.of("phone"));
-        /*ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "identifierField", "phone");
-        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "addIdentityRequestID", "add-id-req");
-        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "identityRequestVersion", "1.0");*/
 
     }
 
@@ -745,12 +742,8 @@ public class IdrepoProfileRegistryPluginImplTest {
         ResponseEntity<ResponseWrapper<JsonNode>> responseEntity =
                 new ResponseEntity<>(wrapper, HttpStatus.OK);
 
-        Mockito.when(restTemplate.exchange(
-                Mockito.eq("http://mock/uispec"),
-                Mockito.eq(HttpMethod.GET),
-                Mockito.isNull(),
-                Mockito.<ParameterizedTypeReference<ResponseWrapper<JsonNode>>>any()
-        )).thenReturn(responseEntity);
+        Mockito.when(restTemplate.exchange(Mockito.eq("http://mock/uispec"), Mockito.eq(HttpMethod.GET), Mockito.isNull(),
+                Mockito.<ParameterizedTypeReference<ResponseWrapper<JsonNode>>>any())).thenReturn(responseEntity);
         idrepoProfileRegistryPlugin.init();
 
         JsonNode uiSpec = idrepoProfileRegistryPlugin.getUISpecification();
@@ -783,10 +776,7 @@ public class IdrepoProfileRegistryPluginImplTest {
         ResponseEntity<ResponseWrapper<UINResponse>> responseEntity = new ResponseEntity<>(responseWrapper, HttpStatus.OK);
 
         Mockito.when(profileCacheService.setHandleRequestIds(Mockito.anyString(),Mockito.anyList())).thenReturn(null);
-        Mockito.when(restTemplate.exchange(
-                "http://localhost:8080/identity/v1/uin",
-                HttpMethod.GET,
-                null,
+        Mockito.when(restTemplate.exchange("http://localhost:8080/identity/v1/uin", HttpMethod.GET, null,
                 new ParameterizedTypeReference<ResponseWrapper<UINResponse>>() {}
         )).thenReturn(responseEntity);
 
@@ -797,9 +787,7 @@ public class IdrepoProfileRegistryPluginImplTest {
         responseWrapper2.setResponse(schemaResponse);
         ResponseEntity<ResponseWrapper<SchemaResponse>> responseEntity2=new ResponseEntity<>(responseWrapper2, HttpStatus.OK);
         Mockito.when(restTemplate.exchange(
-                "http://localhost:8080/identity/v1/schema/"+0.0,  // Matches any URL string
-                HttpMethod.GET,  // Matches any HTTP method
-                null,  // Matches any HttpEntity
+                "http://localhost:8080/identity/v1/schema/"+0.0, HttpMethod.GET, null,
                 new ParameterizedTypeReference<ResponseWrapper<SchemaResponse>>() {}
         )).thenReturn(responseEntity2);
 
@@ -818,7 +806,6 @@ public class IdrepoProfileRegistryPluginImplTest {
                 Mockito.any(HttpEntity.class),
                 Mockito.eq(new ParameterizedTypeReference<ResponseWrapper<IdentityResponse>>() {
                 }))).thenReturn(responseEntity3);
-        // Mock handle request ids
         Mockito.when(profileCacheService.setHandleRequestIds(Mockito.anyString(), Mockito.anyList())).thenReturn(null);
         ProfileResult profileResult = idrepoProfileRegistryPlugin.createProfile(requestId, profileDto);
         Assert.assertNotNull(profileResult);
