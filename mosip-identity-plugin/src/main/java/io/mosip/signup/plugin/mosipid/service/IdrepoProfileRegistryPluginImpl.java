@@ -435,7 +435,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     public ProfileResult updateProfile(String requestId, ProfileDto profileDto) throws ProfileException {
         JsonNode inputJson = profileDto.getIdentity();
 
-        if(profileDto.getIndividualId().contains(HANDLE_SEPARATOR)) {
+        if(profileDto.getIndividualId().contains(HANDLE_SEPARATOR) || profileDto.getIndividualId().length() > 10) {
             ((ObjectNode) inputJson).set(UIN, objectMapper.valueToTree(getProfile(profileDto.getIndividualId()).getIndividualId()));
         } else {
             ((ObjectNode) inputJson).set(UIN, objectMapper.valueToTree(profileDto.getIndividualId()));
