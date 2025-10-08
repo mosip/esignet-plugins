@@ -69,6 +69,7 @@ public class IdrepoProfileRegistryPluginImplTest {
         ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "docTypesAndCategoryBaseUrl", "http://mock/api/docTypes");
         ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "mandatoryLanguages", List.of("en"));
         ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "optionalLanguages", List.of("fr","ar"));
+        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "uinLength", 10);
     }
 
     @Test
