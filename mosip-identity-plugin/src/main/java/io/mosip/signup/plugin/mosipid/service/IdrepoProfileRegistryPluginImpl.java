@@ -123,6 +123,9 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     @Value("${mosip.signup.idrepo.biometric.field-name:individualBiometrics}")
     private String biometricDataFieldName;
 
+    @Value("${mosip.signup.idrepo.uin.length:10}")
+    private int uinLength;
+
     @Autowired
     @Qualifier("selfTokenRestTemplate")
     private RestTemplate restTemplate;
@@ -435,7 +438,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     public ProfileResult updateProfile(String requestId, ProfileDto profileDto) throws ProfileException {
         JsonNode inputJson = profileDto.getIdentity();
 
-        if(profileDto.getIndividualId().contains(HANDLE_SEPARATOR)) {
+        if(profileDto.getIndividualId().contains(HANDLE_SEPARATOR) || profileDto.getIndividualId().length() > uinLength) {
             ((ObjectNode) inputJson).set(UIN, objectMapper.valueToTree(getProfile(profileDto.getIndividualId()).getIndividualId()));
         } else {
             ((ObjectNode) inputJson).set(UIN, objectMapper.valueToTree(profileDto.getIndividualId()));
@@ -479,7 +482,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
                     if (isHandle) {
                         requestByIdDTO.setIdType("HANDLE");
                     } else {
-                        requestByIdDTO.setIdType(individualId.length() > 10 ? VID : UIN);
+                        requestByIdDTO.setIdType(individualId.length() > uinLength ? VID : UIN);
                     }
                     idDTORequestWrapper.setRequest(requestByIdDTO);
                     idDTORequestWrapper.setRequesttime(getUTCDateTime());
