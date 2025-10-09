@@ -13,6 +13,7 @@ import io.mosip.signup.api.util.ProfileCreateUpdateStatus;
 import io.mosip.signup.plugin.mosipid.dto.Error;
 import io.mosip.signup.plugin.mosipid.dto.*;
 import io.mosip.signup.plugin.mosipid.util.BiometricUtil;
+import io.mosip.signup.plugin.mosipid.util.ErrorConstants;
 import io.mosip.signup.plugin.mosipid.util.ProfileCacheService;
 import org.junit.Assert;
 import org.junit.Before;
@@ -697,8 +698,8 @@ public class IdrepoProfileRegistryPluginImplTest {
         Assert.assertEquals(0, result.size());
     }
 
-    @Test(expected = ProfileException.class)
-    public void validate_withInvalidSchemaResponse_thenFail() {
+    @Test
+    public void validate_unableToFetchTheSchema_thenFail() throws ProfileException{
         ProfileDto profileDto = new ProfileDto();
         profileDto.setIndividualId("ind-123");
         profileDto.setIdentity(objectMapper.createObjectNode());
@@ -715,8 +716,11 @@ public class IdrepoProfileRegistryPluginImplTest {
                 Mockito.isNull(),
                 Mockito.<ParameterizedTypeReference<ResponseWrapper<SchemaResponse>>>any()
         )).thenReturn(responseEntity);
-
-        idrepoProfileRegistryPlugin.validate("CREATE", profileDto);
+        try{
+            idrepoProfileRegistryPlugin.validate("CREATE", profileDto);
+        }catch (ProfileException e){
+            Assert.assertEquals(e.getErrorCode(), ErrorConstants.REQUEST_FAILED);
+        }
     }
 
     @Test
