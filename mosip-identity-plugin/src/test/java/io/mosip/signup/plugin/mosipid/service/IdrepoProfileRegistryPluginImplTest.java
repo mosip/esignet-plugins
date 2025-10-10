@@ -48,7 +48,7 @@ public class IdrepoProfileRegistryPluginImplTest {
 
     private  ObjectMapper objectMapper;
 
-    private static final String schemaSchemaJson="{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"description\":\"Identity schema for sign up\",\"additionalProperties\":false,\"title\":\"signup identity\",\"type\":\"object\",\"definitions\":{\"simpleType\":{\"uniqueItems\":true,\"additionalItems\":false,\"type\":\"array\",\"items\":{\"additionalProperties\":false,\"type\":\"object\",\"required\":[\"language\",\"value\"],\"properties\":{\"language\":{\"type\":\"string\"},\"value\":{\"type\":\"string\"}}}},\"documentType\":{\"additionalProperties\":false,\"type\":\"object\",\"properties\":{\"format\":{\"type\":\"string\"},\"type\":{\"type\":\"string\"},\"value\":{\"type\":\"string\"}}},\"biometricsType\":{\"additionalProperties\":false,\"type\":\"object\",\"properties\":{\"format\":{\"type\":\"string\"},\"version\":{\"type\":\"number\",\"minimum\":0},\"value\":{\"type\":\"string\"}}},\"hashType\":{\"additionalProperties\":false,\"type\":\"object\",\"properties\":{\"hash\":{\"type\":\"string\"},\"salt\":{\"type\":\"string\"}}}},\"properties\":{\"identity\":{\"additionalProperties\":false,\"type\":\"object\",\"required\":[\"IDSchemaVersion\",\"phone\"],\"properties\":{\"UIN\":{\"bioAttributes\":[],\"fieldCategory\":\"none\",\"format\":\"none\",\"type\":\"string\",\"fieldType\":\"default\"},\"IDSchemaVersion\":{\"bioAttributes\":[],\"fieldCategory\":\"none\",\"format\":\"none\",\"type\":\"number\",\"fieldType\":\"default\",\"minimum\":0},\"selectedHandles\":{\"fieldCategory\":\"none\",\"format\":\"none\",\"type\":\"array\",\"items\":{\"type\":\"string\"},\"fieldType\":\"default\"},\"fullName\":{\"bioAttributes\":[],\"validators\":[{\"validator\":\"^(.{3,50})$\",\"arguments\":[],\"type\":\"regex\"}],\"fieldCategory\":\"pvt\",\"format\":\"none\",\"fieldType\":\"default\",\"$ref\":\"#/definitions/simpleType\"},\"phone\":{\"bioAttributes\":[],\"validators\":[{\"validator\":\"^[+]91([0-9]{8,9})$\",\"arguments\":[],\"type\":\"regex\"}],\"fieldCategory\":\"pvt\",\"format\":\"none\",\"type\":\"string\",\"fieldType\":\"default\",\"requiredOn\":\"\",\"handle\":true},\"password\":{\"bioAttributes\":[],\"validators\":[],\"fieldCategory\":\"pvt\",\"format\":\"none\",\"fieldType\":\"default\",\"$ref\":\"#/definitions/hashType\"},\"preferredLang\":{\"bioAttributes\":[],\"validators\":[{\"validator\":\"(^eng$)\",\"arguments\":[],\"type\":\"regex\"}],\"fieldCategory\":\"pvt\",\"format\":\"none\",\"fieldType\":\"default\",\"type\":\"string\"},\"registrationType\":{\"bioAttributes\":[],\"validators\":[{\"validator\":\"^L[1-2]{1}$\",\"arguments\":[],\"type\":\"regex\"}],\"fieldCategory\":\"pvt\",\"format\":\"none\",\"fieldType\":\"default\",\"type\":\"string\"},\"phoneVerified\":{\"bioAttributes\":[],\"validators\":[],\"fieldCategory\":\"pvt\",\"format\":\"none\",\"fieldType\":\"default\",\"type\":\"boolean\"},\"updatedAt\":{\"bioAttributes\":[],\"validators\":[],\"fieldCategory\":\"pvt\",\"format\":\"none\",\"fieldType\":\"default\",\"type\":\"number\"}}}}}";
+    private static final String schemaJson ="{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"description\":\"Identity schema for sign up\",\"additionalProperties\":false,\"title\":\"signup identity\",\"type\":\"object\",\"definitions\":{\"simpleType\":{\"uniqueItems\":true,\"additionalItems\":false,\"type\":\"array\",\"items\":{\"additionalProperties\":false,\"type\":\"object\",\"required\":[\"language\",\"value\"],\"properties\":{\"language\":{\"type\":\"string\"},\"value\":{\"type\":\"string\"}}}},\"documentType\":{\"additionalProperties\":false,\"type\":\"object\",\"properties\":{\"format\":{\"type\":\"string\"},\"type\":{\"type\":\"string\"},\"value\":{\"type\":\"string\"}}},\"biometricsType\":{\"additionalProperties\":false,\"type\":\"object\",\"properties\":{\"format\":{\"type\":\"string\"},\"version\":{\"type\":\"number\",\"minimum\":0},\"value\":{\"type\":\"string\"}}},\"hashType\":{\"additionalProperties\":false,\"type\":\"object\",\"properties\":{\"hash\":{\"type\":\"string\"},\"salt\":{\"type\":\"string\"}}}},\"properties\":{\"identity\":{\"additionalProperties\":false,\"type\":\"object\",\"required\":[\"IDSchemaVersion\",\"phone\"],\"properties\":{\"UIN\":{\"bioAttributes\":[],\"fieldCategory\":\"none\",\"format\":\"none\",\"type\":\"string\",\"fieldType\":\"default\"},\"IDSchemaVersion\":{\"bioAttributes\":[],\"fieldCategory\":\"none\",\"format\":\"none\",\"type\":\"number\",\"fieldType\":\"default\",\"minimum\":0},\"selectedHandles\":{\"fieldCategory\":\"none\",\"format\":\"none\",\"type\":\"array\",\"items\":{\"type\":\"string\"},\"fieldType\":\"default\"},\"fullName\":{\"bioAttributes\":[],\"validators\":[{\"validator\":\"^(.{3,50})$\",\"arguments\":[],\"type\":\"regex\"}],\"fieldCategory\":\"pvt\",\"format\":\"none\",\"fieldType\":\"default\",\"$ref\":\"#/definitions/simpleType\"},\"phone\":{\"bioAttributes\":[],\"validators\":[{\"validator\":\"^[+]91([0-9]{8,9})$\",\"arguments\":[],\"type\":\"regex\"}],\"fieldCategory\":\"pvt\",\"format\":\"none\",\"type\":\"string\",\"fieldType\":\"default\",\"requiredOn\":\"\",\"handle\":true},\"password\":{\"bioAttributes\":[],\"validators\":[],\"fieldCategory\":\"pvt\",\"format\":\"none\",\"fieldType\":\"default\",\"$ref\":\"#/definitions/hashType\"},\"preferredLang\":{\"bioAttributes\":[],\"validators\":[{\"validator\":\"(^eng$)\",\"arguments\":[],\"type\":\"regex\"}],\"fieldCategory\":\"pvt\",\"format\":\"none\",\"fieldType\":\"default\",\"type\":\"string\"},\"registrationType\":{\"bioAttributes\":[],\"validators\":[{\"validator\":\"^L[1-2]{1}$\",\"arguments\":[],\"type\":\"regex\"}],\"fieldCategory\":\"pvt\",\"format\":\"none\",\"fieldType\":\"default\",\"type\":\"string\"},\"phoneVerified\":{\"bioAttributes\":[],\"validators\":[],\"fieldCategory\":\"pvt\",\"format\":\"none\",\"fieldType\":\"default\",\"type\":\"boolean\"},\"updatedAt\":{\"bioAttributes\":[],\"validators\":[],\"fieldCategory\":\"pvt\",\"format\":\"none\",\"fieldType\":\"default\",\"type\":\"number\"}}}}}";
 
     @Mock
     private BiometricUtil biometricUtil;
@@ -102,7 +102,7 @@ public class IdrepoProfileRegistryPluginImplTest {
         ResponseWrapper<SchemaResponse> responseWrapper = new ResponseWrapper<>();
         SchemaResponse schemaResponse = new SchemaResponse();
         schemaResponse.setIdVersion(0.0);
-        schemaResponse.setSchemaJson(schemaSchemaJson);
+        schemaResponse.setSchemaJson(schemaJson);
         responseWrapper.setResponse(schemaResponse);
         ResponseEntity<ResponseWrapper<SchemaResponse>> responseEntity2=new ResponseEntity<>(responseWrapper, HttpStatus.OK);
         Mockito.when(restTemplate.exchange(
@@ -136,7 +136,7 @@ public class IdrepoProfileRegistryPluginImplTest {
         ResponseWrapper<SchemaResponse> responseWrapper = new ResponseWrapper<>();
         SchemaResponse schemaResponse = new SchemaResponse();
         schemaResponse.setIdVersion(0.0);
-        schemaResponse.setSchemaJson(schemaSchemaJson);
+        schemaResponse.setSchemaJson(schemaJson);
         responseWrapper.setResponse(schemaResponse);
         ResponseEntity<ResponseWrapper<SchemaResponse>> responseEntity2=new ResponseEntity<>(responseWrapper, HttpStatus.OK);
         Mockito.when(restTemplate.exchange(
@@ -162,7 +162,7 @@ public class IdrepoProfileRegistryPluginImplTest {
         ResponseWrapper<SchemaResponse> responseWrapper = new ResponseWrapper<>();
         SchemaResponse schemaResponse = new SchemaResponse();
         schemaResponse.setIdVersion(0.0);
-        schemaResponse.setSchemaJson(schemaSchemaJson);
+        schemaResponse.setSchemaJson(schemaJson);
         responseWrapper.setResponse(schemaResponse);
         ResponseEntity<ResponseWrapper<SchemaResponse>> responseEntity=new ResponseEntity<>(responseWrapper, HttpStatus.OK);
         Mockito.when(restTemplate.exchange(
@@ -205,7 +205,7 @@ public class IdrepoProfileRegistryPluginImplTest {
         ResponseWrapper<SchemaResponse> responseWrapper2 = new ResponseWrapper<>();
         SchemaResponse schemaResponse = new SchemaResponse();
         schemaResponse.setIdVersion(0.0);
-        schemaResponse.setSchemaJson(schemaSchemaJson);
+        schemaResponse.setSchemaJson(schemaJson);
         responseWrapper2.setResponse(schemaResponse);
         ResponseEntity<ResponseWrapper<SchemaResponse>> responseEntity2=new ResponseEntity<>(responseWrapper2, HttpStatus.OK);
         Mockito.when(restTemplate.exchange(
@@ -260,7 +260,7 @@ public class IdrepoProfileRegistryPluginImplTest {
         ResponseWrapper<SchemaResponse> responseWrapper2 = new ResponseWrapper<>();
         SchemaResponse schemaResponse = new SchemaResponse();
         schemaResponse.setIdVersion(0.0);
-        schemaResponse.setSchemaJson(schemaSchemaJson);
+        schemaResponse.setSchemaJson(schemaJson);
         responseWrapper2.setResponse(schemaResponse);
         ResponseEntity<ResponseWrapper<SchemaResponse>> responseEntity2=new ResponseEntity<>(responseWrapper2, HttpStatus.OK);
         Mockito.when(restTemplate.exchange(
@@ -310,7 +310,7 @@ public class IdrepoProfileRegistryPluginImplTest {
             ResponseWrapper<SchemaResponse> responseWrapper= new ResponseWrapper<>();
             SchemaResponse schemaResponse = new SchemaResponse();
             schemaResponse.setIdVersion(0.0);
-            schemaResponse.setSchemaJson(schemaSchemaJson);
+            schemaResponse.setSchemaJson(schemaJson);
             responseWrapper.setResponse(schemaResponse);
             ResponseEntity<ResponseWrapper<SchemaResponse>> responseEntity=new ResponseEntity<>(responseWrapper, HttpStatus.OK);
             Mockito.when(restTemplate.exchange(
