@@ -75,6 +75,12 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     @Value("${mosip.signup.mock.get-schema.endpoint}")
     private String getSchemaEndpoint;
 
+    @Value("${mosip.signup.mock.face.biometric.field-name:encodedPhoto}")
+    private String faceBiometricFieldName;
+
+    @Value("${mosip.signup.mock.face.biometric.value.prefix:data:image/jpeg;base64,}")
+    private String faceBiometricValuePrefix;
+
     @Autowired
     @Qualifier("selfTokenRestTemplate")
     private RestTemplate restTemplate;
@@ -107,8 +113,13 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
             log.error("{} and userName mismatch", usernameField);
             throw new InvalidProfileException(ErrorConstants.IDENTIFIER_MISMATCH);
         }
-    	JsonNode inputJson = profileDto.getIdentity();
-        ((ObjectNode)inputJson).put("individualId", profileDto.getIndividualId());
+        ObjectNode inputJson = (ObjectNode) profileDto.getIdentity();
+        inputJson.put("individualId", profileDto.getIndividualId());
+
+        if(inputJson.hasNonNull(faceBiometricFieldName) && inputJson.get(faceBiometricFieldName).hasNonNull("value")) {
+            ObjectNode facePhotoNode = (ObjectNode) inputJson.get(faceBiometricFieldName);
+            inputJson.put(faceBiometricFieldName, faceBiometricValuePrefix+facePhotoNode.get("value").asText());
+        }
 
         MockIdentityResponse identityResponse = addIdentity(inputJson);
         ProfileResult profileResult = new ProfileResult();
