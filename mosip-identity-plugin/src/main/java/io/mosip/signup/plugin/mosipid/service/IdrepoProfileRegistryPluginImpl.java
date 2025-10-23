@@ -170,8 +170,6 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     private String docTypesAndCategoryBaseUrl;
 
 
-    private JsonNode uiSpec;
-
     @PostConstruct
     public void init() {
 
@@ -529,8 +527,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
         ObjectNode i18nValues = readI18nValues(responseJson);
         JsonNode allowedValues = readAllowedValues(responseJson);
         Object maxUploadFileSize = JsonPath.read(responseJson, maxUploadFileSizeJsonpath);
-
-        this.uiSpec = objectMapper.valueToTree(
+        return objectMapper.valueToTree(
                 Map.ofEntries(
                         Map.entry("schema", schema),
                         Map.entry("errors", errors),
@@ -540,7 +537,6 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
                         Map.entry("maxUploadFileSize", maxUploadFileSize)
                 )
         );
-        return this.uiSpec;
     }
 
     private SchemaResponse getSchemaJson(double version) throws ProfileException {
