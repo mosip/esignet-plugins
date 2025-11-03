@@ -2,14 +2,18 @@ package io.mosip.signup.plugin.mosipid.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.mosip.signup.api.dto.ProfileDto;
 import io.mosip.signup.api.dto.ProfileResult;
 import io.mosip.signup.api.exception.InvalidProfileException;
 import io.mosip.signup.api.exception.ProfileException;
 import io.mosip.signup.api.util.ProfileCreateUpdateStatus;
-import io.mosip.signup.plugin.mosipid.dto.*;
 import io.mosip.signup.plugin.mosipid.dto.Error;
+import io.mosip.signup.plugin.mosipid.dto.*;
+import io.mosip.signup.plugin.mosipid.util.BiometricUtil;
+import io.mosip.signup.plugin.mosipid.util.ErrorConstants;
 import io.mosip.signup.plugin.mosipid.util.ProfileCacheService;
 import org.junit.Assert;
 import org.junit.Before;
@@ -21,7 +25,10 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
 
@@ -41,8 +48,10 @@ public class IdrepoProfileRegistryPluginImplTest {
 
     private  ObjectMapper objectMapper;
 
-    private static final String schemaSchemaJson="{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"description\":\"Identity schema for sign up\",\"additionalProperties\":false,\"title\":\"signup identity\",\"type\":\"object\",\"definitions\":{\"simpleType\":{\"uniqueItems\":true,\"additionalItems\":false,\"type\":\"array\",\"items\":{\"additionalProperties\":false,\"type\":\"object\",\"required\":[\"language\",\"value\"],\"properties\":{\"language\":{\"type\":\"string\"},\"value\":{\"type\":\"string\"}}}},\"documentType\":{\"additionalProperties\":false,\"type\":\"object\",\"properties\":{\"format\":{\"type\":\"string\"},\"type\":{\"type\":\"string\"},\"value\":{\"type\":\"string\"}}},\"biometricsType\":{\"additionalProperties\":false,\"type\":\"object\",\"properties\":{\"format\":{\"type\":\"string\"},\"version\":{\"type\":\"number\",\"minimum\":0},\"value\":{\"type\":\"string\"}}},\"hashType\":{\"additionalProperties\":false,\"type\":\"object\",\"properties\":{\"hash\":{\"type\":\"string\"},\"salt\":{\"type\":\"string\"}}}},\"properties\":{\"identity\":{\"additionalProperties\":false,\"type\":\"object\",\"required\":[\"IDSchemaVersion\",\"phone\"],\"properties\":{\"UIN\":{\"bioAttributes\":[],\"fieldCategory\":\"none\",\"format\":\"none\",\"type\":\"string\",\"fieldType\":\"default\"},\"IDSchemaVersion\":{\"bioAttributes\":[],\"fieldCategory\":\"none\",\"format\":\"none\",\"type\":\"number\",\"fieldType\":\"default\",\"minimum\":0},\"selectedHandles\":{\"fieldCategory\":\"none\",\"format\":\"none\",\"type\":\"array\",\"items\":{\"type\":\"string\"},\"fieldType\":\"default\"},\"fullName\":{\"bioAttributes\":[],\"validators\":[{\"validator\":\"^(.{3,50})$\",\"arguments\":[],\"type\":\"regex\"}],\"fieldCategory\":\"pvt\",\"format\":\"none\",\"fieldType\":\"default\",\"$ref\":\"#/definitions/simpleType\"},\"phone\":{\"bioAttributes\":[],\"validators\":[{\"validator\":\"^[+]91([0-9]{8,9})$\",\"arguments\":[],\"type\":\"regex\"}],\"fieldCategory\":\"pvt\",\"format\":\"none\",\"type\":\"string\",\"fieldType\":\"default\",\"requiredOn\":\"\",\"handle\":true},\"password\":{\"bioAttributes\":[],\"validators\":[],\"fieldCategory\":\"pvt\",\"format\":\"none\",\"fieldType\":\"default\",\"$ref\":\"#/definitions/hashType\"},\"preferredLang\":{\"bioAttributes\":[],\"validators\":[{\"validator\":\"(^eng$)\",\"arguments\":[],\"type\":\"regex\"}],\"fieldCategory\":\"pvt\",\"format\":\"none\",\"fieldType\":\"default\",\"type\":\"string\"},\"registrationType\":{\"bioAttributes\":[],\"validators\":[{\"validator\":\"^L[1-2]{1}$\",\"arguments\":[],\"type\":\"regex\"}],\"fieldCategory\":\"pvt\",\"format\":\"none\",\"fieldType\":\"default\",\"type\":\"string\"},\"phoneVerified\":{\"bioAttributes\":[],\"validators\":[],\"fieldCategory\":\"pvt\",\"format\":\"none\",\"fieldType\":\"default\",\"type\":\"boolean\"},\"updatedAt\":{\"bioAttributes\":[],\"validators\":[],\"fieldCategory\":\"pvt\",\"format\":\"none\",\"fieldType\":\"default\",\"type\":\"number\"}}}}}";
+    private static final String schemaJson ="{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"description\":\"Identity schema for sign up\",\"additionalProperties\":false,\"title\":\"signup identity\",\"type\":\"object\",\"definitions\":{\"simpleType\":{\"uniqueItems\":true,\"additionalItems\":false,\"type\":\"array\",\"items\":{\"additionalProperties\":false,\"type\":\"object\",\"required\":[\"language\",\"value\"],\"properties\":{\"language\":{\"type\":\"string\"},\"value\":{\"type\":\"string\"}}}},\"documentType\":{\"additionalProperties\":false,\"type\":\"object\",\"properties\":{\"format\":{\"type\":\"string\"},\"type\":{\"type\":\"string\"},\"value\":{\"type\":\"string\"}}},\"biometricsType\":{\"additionalProperties\":false,\"type\":\"object\",\"properties\":{\"format\":{\"type\":\"string\"},\"version\":{\"type\":\"number\",\"minimum\":0},\"value\":{\"type\":\"string\"}}},\"hashType\":{\"additionalProperties\":false,\"type\":\"object\",\"properties\":{\"hash\":{\"type\":\"string\"},\"salt\":{\"type\":\"string\"}}}},\"properties\":{\"identity\":{\"additionalProperties\":false,\"type\":\"object\",\"required\":[\"IDSchemaVersion\",\"phone\"],\"properties\":{\"UIN\":{\"bioAttributes\":[],\"fieldCategory\":\"none\",\"format\":\"none\",\"type\":\"string\",\"fieldType\":\"default\"},\"IDSchemaVersion\":{\"bioAttributes\":[],\"fieldCategory\":\"none\",\"format\":\"none\",\"type\":\"number\",\"fieldType\":\"default\",\"minimum\":0},\"selectedHandles\":{\"fieldCategory\":\"none\",\"format\":\"none\",\"type\":\"array\",\"items\":{\"type\":\"string\"},\"fieldType\":\"default\"},\"fullName\":{\"bioAttributes\":[],\"validators\":[{\"validator\":\"^(.{3,50})$\",\"arguments\":[],\"type\":\"regex\"}],\"fieldCategory\":\"pvt\",\"format\":\"none\",\"fieldType\":\"default\",\"$ref\":\"#/definitions/simpleType\"},\"phone\":{\"bioAttributes\":[],\"validators\":[{\"validator\":\"^[+]91([0-9]{8,9})$\",\"arguments\":[],\"type\":\"regex\"}],\"fieldCategory\":\"pvt\",\"format\":\"none\",\"type\":\"string\",\"fieldType\":\"default\",\"requiredOn\":\"\",\"handle\":true},\"password\":{\"bioAttributes\":[],\"validators\":[],\"fieldCategory\":\"pvt\",\"format\":\"none\",\"fieldType\":\"default\",\"$ref\":\"#/definitions/hashType\"},\"preferredLang\":{\"bioAttributes\":[],\"validators\":[{\"validator\":\"(^eng$)\",\"arguments\":[],\"type\":\"regex\"}],\"fieldCategory\":\"pvt\",\"format\":\"none\",\"fieldType\":\"default\",\"type\":\"string\"},\"registrationType\":{\"bioAttributes\":[],\"validators\":[{\"validator\":\"^L[1-2]{1}$\",\"arguments\":[],\"type\":\"regex\"}],\"fieldCategory\":\"pvt\",\"format\":\"none\",\"fieldType\":\"default\",\"type\":\"string\"},\"phoneVerified\":{\"bioAttributes\":[],\"validators\":[],\"fieldCategory\":\"pvt\",\"format\":\"none\",\"fieldType\":\"default\",\"type\":\"boolean\"},\"updatedAt\":{\"bioAttributes\":[],\"validators\":[],\"fieldCategory\":\"pvt\",\"format\":\"none\",\"fieldType\":\"default\",\"type\":\"number\"}}}}}";
 
+    @Mock
+    private BiometricUtil biometricUtil;
 
     @Before
     public void beforeEach(){
@@ -58,9 +67,23 @@ public class IdrepoProfileRegistryPluginImplTest {
         ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "identityEndpoint","http://localhost:8080/identity/v1/identity/");
         ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "generateHashEndpoint","http://localhost:8080/identity/v1/identity/genereateHash/");
         ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "getIdentityEndpoint","http://localhost:8080/identity/v1/identity/");
-        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "mandatoryLanguages",List.of("eng"));
         ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "getIdentityEndpointMethod", "POST");
         ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "getStatusEndpoint","http://localhost:8080/identity/v1/identity/");
+        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "dynamicFieldsBaseUrl","http://mock/api/dynamicFields");
+        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "docTypesAndCategoryBaseUrl", "http://mock/api/docTypes");
+        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "mandatoryLanguages", List.of("en"));
+        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "optionalLanguages", List.of("fr","ar"));
+        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "uinLength", 10);
+        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "schemaJsonpath", "$[0].jsonSpec[0].schema");
+        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "errorsJsonpath", "$[0].jsonSpec[0].errors");
+        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "i18nValuesJsonpath", "$[0].jsonSpec[0].i18nValues");
+        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "i18nValuesErrorJsonpath", "$[0].jsonSpec[0].i18nValues.errors");
+        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "allowedValuesJsonpath", "$[0].jsonSpec[0].allowedValues");
+        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "maxUploadFileSizeJsonpath", "$[0].jsonSpec[0].maxUploadFileSize");
+        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "uiSpecUrl", "http://mock/uispec");
+        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "biometricDataFieldName", "individualBiometrics");
+        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "defaultSelectedHandles", List.of("phone"));
+
     }
 
     @Test
@@ -79,7 +102,7 @@ public class IdrepoProfileRegistryPluginImplTest {
         ResponseWrapper<SchemaResponse> responseWrapper = new ResponseWrapper<>();
         SchemaResponse schemaResponse = new SchemaResponse();
         schemaResponse.setIdVersion(0.0);
-        schemaResponse.setSchemaJson(schemaSchemaJson);
+        schemaResponse.setSchemaJson(schemaJson);
         responseWrapper.setResponse(schemaResponse);
         ResponseEntity<ResponseWrapper<SchemaResponse>> responseEntity2=new ResponseEntity<>(responseWrapper, HttpStatus.OK);
         Mockito.when(restTemplate.exchange(
@@ -99,7 +122,7 @@ public class IdrepoProfileRegistryPluginImplTest {
         Map<String, Object> identityData = new HashMap<>();
         SimpleType [] simpleTypesArray=new SimpleType[1];
         SimpleType simpleType=new SimpleType();
-        simpleType.setLanguage("eng");
+        simpleType.setLanguage("en");
         simpleType.setValue("John Doe");
         simpleTypesArray[0]=simpleType;
         identityData.put("phone","+91841987567");
@@ -113,7 +136,7 @@ public class IdrepoProfileRegistryPluginImplTest {
         ResponseWrapper<SchemaResponse> responseWrapper = new ResponseWrapper<>();
         SchemaResponse schemaResponse = new SchemaResponse();
         schemaResponse.setIdVersion(0.0);
-        schemaResponse.setSchemaJson(schemaSchemaJson);
+        schemaResponse.setSchemaJson(schemaJson);
         responseWrapper.setResponse(schemaResponse);
         ResponseEntity<ResponseWrapper<SchemaResponse>> responseEntity2=new ResponseEntity<>(responseWrapper, HttpStatus.OK);
         Mockito.when(restTemplate.exchange(
@@ -139,7 +162,7 @@ public class IdrepoProfileRegistryPluginImplTest {
         ResponseWrapper<SchemaResponse> responseWrapper = new ResponseWrapper<>();
         SchemaResponse schemaResponse = new SchemaResponse();
         schemaResponse.setIdVersion(0.0);
-        schemaResponse.setSchemaJson(schemaSchemaJson);
+        schemaResponse.setSchemaJson(schemaJson);
         responseWrapper.setResponse(schemaResponse);
         ResponseEntity<ResponseWrapper<SchemaResponse>> responseEntity=new ResponseEntity<>(responseWrapper, HttpStatus.OK);
         Mockito.when(restTemplate.exchange(
@@ -182,7 +205,7 @@ public class IdrepoProfileRegistryPluginImplTest {
         ResponseWrapper<SchemaResponse> responseWrapper2 = new ResponseWrapper<>();
         SchemaResponse schemaResponse = new SchemaResponse();
         schemaResponse.setIdVersion(0.0);
-        schemaResponse.setSchemaJson(schemaSchemaJson);
+        schemaResponse.setSchemaJson(schemaJson);
         responseWrapper2.setResponse(schemaResponse);
         ResponseEntity<ResponseWrapper<SchemaResponse>> responseEntity2=new ResponseEntity<>(responseWrapper2, HttpStatus.OK);
         Mockito.when(restTemplate.exchange(
@@ -237,7 +260,7 @@ public class IdrepoProfileRegistryPluginImplTest {
         ResponseWrapper<SchemaResponse> responseWrapper2 = new ResponseWrapper<>();
         SchemaResponse schemaResponse = new SchemaResponse();
         schemaResponse.setIdVersion(0.0);
-        schemaResponse.setSchemaJson(schemaSchemaJson);
+        schemaResponse.setSchemaJson(schemaJson);
         responseWrapper2.setResponse(schemaResponse);
         ResponseEntity<ResponseWrapper<SchemaResponse>> responseEntity2=new ResponseEntity<>(responseWrapper2, HttpStatus.OK);
         Mockito.when(restTemplate.exchange(
@@ -287,7 +310,7 @@ public class IdrepoProfileRegistryPluginImplTest {
             ResponseWrapper<SchemaResponse> responseWrapper= new ResponseWrapper<>();
             SchemaResponse schemaResponse = new SchemaResponse();
             schemaResponse.setIdVersion(0.0);
-            schemaResponse.setSchemaJson(schemaSchemaJson);
+            schemaResponse.setSchemaJson(schemaJson);
             responseWrapper.setResponse(schemaResponse);
             ResponseEntity<ResponseWrapper<SchemaResponse>> responseEntity=new ResponseEntity<>(responseWrapper, HttpStatus.OK);
             Mockito.when(restTemplate.exchange(
@@ -531,6 +554,266 @@ public class IdrepoProfileRegistryPluginImplTest {
         Map<String, Object> identityData = new HashMap<>();
         identityData.put("email","123@email.com");
         identityData.put("phone","+91841987567");
+        ObjectNode claimNode = objectMapper.createObjectNode();
+        ObjectNode verifiedClaims = objectMapper.createObjectNode();
+        claimNode.put("trust_framework", "QWE_RT");
+        claimNode.put("verification_process", "ver_proc");
+        verifiedClaims.set("name", claimNode);
+        identityData.put("verified_claims", verifiedClaims);
         return objectMapper.valueToTree(identityData);
+    }
+
+    @Test
+    public void generateAllowedValues_withValidDetails_thenPass() {
+        ObjectNode dynamicItem = objectMapper.createObjectNode();
+        dynamicItem.put("isActive", true);
+        dynamicItem.put("name", "fieldName");
+        dynamicItem.put("langCode", "eng");
+
+        ArrayNode fieldValArray = objectMapper.createArrayNode();
+        ObjectNode fieldVal = objectMapper.createObjectNode();
+        fieldVal.put("code", "code1");
+        fieldVal.put("value", "value1");
+        fieldValArray.add(fieldVal);
+        dynamicItem.set("fieldVal", fieldValArray);
+        ArrayNode dynamicDataArray = objectMapper.createArrayNode();
+        dynamicDataArray.add(dynamicItem);
+
+        ObjectNode dynamicResponseNode = objectMapper.createObjectNode();
+        dynamicResponseNode.put("totalPages", 1);
+        dynamicResponseNode.put("totalItems", 1);
+        dynamicResponseNode.set("data", dynamicDataArray);
+        ObjectNode dynamicWrapper = objectMapper.createObjectNode();
+        dynamicWrapper.set("response", dynamicResponseNode);
+
+        ResponseEntity<JsonNode> dynamicEntity = new ResponseEntity<>(dynamicWrapper, HttpStatus.OK);
+        Mockito.when(restTemplate.getForEntity(Mockito.contains("dynamic"), Mockito.eq(JsonNode.class))).thenReturn(dynamicEntity);
+
+        ObjectNode categoryItem = objectMapper.createObjectNode();
+        categoryItem.put("isActive", true);
+        categoryItem.put("code", "cat1");
+        categoryItem.put("langCode", "eng");
+
+        ArrayNode docTypesArray = objectMapper.createArrayNode();
+        ObjectNode docType = objectMapper.createObjectNode();
+        docType.put("code", "doc1");
+        docType.put("name", "Document Name");
+        docTypesArray.add(docType);
+
+        categoryItem.set("documentTypes", docTypesArray);
+
+        ArrayNode docCategoriesArray = objectMapper.createArrayNode();
+        docCategoriesArray.add(categoryItem);
+        ObjectNode docResponseNode = objectMapper.createObjectNode();
+        docResponseNode.set("documentCategories", docCategoriesArray);
+        ObjectNode docWrapper = objectMapper.createObjectNode();
+        docWrapper.set("response", docResponseNode);
+
+        ResponseEntity<JsonNode> docEntity = new ResponseEntity<>(docWrapper, HttpStatus.OK);
+        Mockito.when(restTemplate.getForEntity(Mockito.contains("docTypes"), Mockito.eq(JsonNode.class))).thenReturn(docEntity);
+
+        JsonNode result = idrepoProfileRegistryPlugin.generateAllowedValues();
+
+        Assert.assertNotNull(result);
+        Assert.assertTrue(result.has("fieldName"));
+        Assert.assertTrue(result.get("fieldName").has("code1"));
+        Assert.assertEquals("value1", result.get("fieldName").get("code1").get("eng").asText());
+
+        Assert.assertTrue(result.has("cat1"));
+        Assert.assertTrue(result.get("cat1").has("doc1"));
+        Assert.assertEquals("Document Name", result.get("cat1").get("doc1").get("eng").asText());
+    }
+
+    @Test
+    public void generateAllowedValues_withInactiveDynamicField_thenFail() {
+        ObjectNode dynamicItem = objectMapper.createObjectNode();
+        dynamicItem.put("isActive", false);
+
+        ArrayNode dynamicDataArray = objectMapper.createArrayNode();
+        dynamicDataArray.add(dynamicItem);
+        ObjectNode dynamicResponseNode = objectMapper.createObjectNode();
+        dynamicResponseNode.put("totalPages", 1);
+        dynamicResponseNode.put("totalItems", 1);
+        dynamicResponseNode.set("data", dynamicDataArray);
+        ObjectNode dynamicWrapper = objectMapper.createObjectNode();
+        dynamicWrapper.set("response", dynamicResponseNode);
+
+        ResponseEntity<JsonNode> dynamicEntity = new ResponseEntity<>(dynamicWrapper, HttpStatus.OK);
+        Mockito.when(restTemplate.getForEntity(Mockito.contains("dynamic"), Mockito.eq(JsonNode.class))).thenReturn(dynamicEntity);
+        ObjectNode docWrapper = objectMapper.createObjectNode();
+        docWrapper.set("response", objectMapper.createObjectNode().set("documentCategories", objectMapper.createArrayNode()));
+        ResponseEntity<JsonNode> docEntity = new ResponseEntity<>(docWrapper, HttpStatus.OK);
+        Mockito.when(restTemplate.getForEntity(Mockito.contains("docTypes"), Mockito.eq(JsonNode.class))).thenReturn(docEntity);
+
+        JsonNode result = idrepoProfileRegistryPlugin.generateAllowedValues();
+        Assert.assertNotNull(result);
+        Assert.assertEquals(0, result.size());
+    }
+
+    @Test
+    public void generateAllowedValues_withInactiveDocumentTypesAndCategories_thenFail() {
+        ObjectNode dynamicResponseNode = objectMapper.createObjectNode();
+        dynamicResponseNode.put("totalPages", 1);
+        dynamicResponseNode.put("totalItems", 0);
+        dynamicResponseNode.set("data", objectMapper.createArrayNode());
+
+        ObjectNode dynamicWrapper = objectMapper.createObjectNode();
+        dynamicWrapper.set("response", dynamicResponseNode);
+
+        ResponseEntity<JsonNode> dynamicEntity = new ResponseEntity<>(dynamicWrapper, HttpStatus.OK);
+        Mockito.when(restTemplate.getForEntity(Mockito.contains("dynamic"), Mockito.eq(JsonNode.class))).thenReturn(dynamicEntity);
+
+        ObjectNode inactiveCategory = objectMapper.createObjectNode();
+        inactiveCategory.put("isActive", false); // should be skipped
+        inactiveCategory.put("code", "cat1");
+        inactiveCategory.put("langCode", "eng");
+
+        ObjectNode activeCategoryWithInactiveDocType = objectMapper.createObjectNode();
+        activeCategoryWithInactiveDocType.put("isActive", false);
+        activeCategoryWithInactiveDocType.put("code", "cat2");
+        activeCategoryWithInactiveDocType.put("langCode", "eng");
+
+        ArrayNode docTypesArray = objectMapper.createArrayNode();
+        ObjectNode inactiveDocType = objectMapper.createObjectNode();
+        inactiveDocType.put("code", "doc1");
+        docTypesArray.add(inactiveDocType);
+        activeCategoryWithInactiveDocType.set("documentTypes", docTypesArray);
+
+        ArrayNode docCategoriesArray = objectMapper.createArrayNode();
+        docCategoriesArray.add(inactiveCategory);
+        docCategoriesArray.add(activeCategoryWithInactiveDocType);
+
+        ObjectNode docResponseNode = objectMapper.createObjectNode();
+        docResponseNode.set("documentCategories", docCategoriesArray);
+
+        ObjectNode docWrapper = objectMapper.createObjectNode();
+        docWrapper.set("response", docResponseNode);
+
+        ResponseEntity<JsonNode> docEntity = new ResponseEntity<>(docWrapper, HttpStatus.OK);
+        Mockito.when(restTemplate.getForEntity(Mockito.contains("docTypes"), Mockito.eq(JsonNode.class))).thenReturn(docEntity);
+
+        JsonNode result = idrepoProfileRegistryPlugin.generateAllowedValues();
+
+        Assert.assertNotNull(result);
+        Assert.assertEquals(0, result.size());
+    }
+
+    @Test
+    public void validate_unableToFetchTheSchema_thenFail() throws ProfileException{
+        ProfileDto profileDto = new ProfileDto();
+        profileDto.setIndividualId("ind-123");
+        profileDto.setIdentity(objectMapper.createObjectNode());
+
+        // Return schema with null/invalid schemaJson
+        ResponseWrapper<SchemaResponse> responseWrapper = new ResponseWrapper<>();
+        responseWrapper.setResponse(new SchemaResponse());
+        ResponseEntity<ResponseWrapper<SchemaResponse>> responseEntity =
+                new ResponseEntity<>(responseWrapper, HttpStatus.OK);
+
+        Mockito.when(restTemplate.exchange(
+                Mockito.anyString(),
+                Mockito.eq(HttpMethod.GET),
+                Mockito.isNull(),
+                Mockito.<ParameterizedTypeReference<ResponseWrapper<SchemaResponse>>>any()
+        )).thenReturn(responseEntity);
+        try{
+            idrepoProfileRegistryPlugin.validate("CREATE", profileDto);
+        }catch (ProfileException e){
+            Assert.assertEquals(e.getErrorCode(), ErrorConstants.REQUEST_FAILED);
+        }
+    }
+
+    @Test
+    public void init_shouldPopulateUiSpec_thenPass() {
+        ObjectNode specNode = objectMapper.createObjectNode();
+        specNode.set("schema", objectMapper.createObjectNode().put("someKey", "someValue"));
+        specNode.set("errors", objectMapper.createObjectNode().put("errKey", "errVal"));
+
+        ObjectNode i18n = objectMapper.createObjectNode();
+        i18n.set("en", objectMapper.createObjectNode().put("label", "Name"));
+        ObjectNode i18nErrors = objectMapper.createObjectNode().put("required", "Required");
+        i18n.set("errors", i18nErrors);
+        specNode.set("i18nValues", i18n);
+
+        specNode.set("allowedValues", objectMapper.createObjectNode().put("gender", "M,F"));
+        specNode.put("maxUploadFileSize", 1048576);
+
+        ArrayNode specArray = objectMapper.createArrayNode().add(specNode);
+        ObjectNode root = objectMapper.createObjectNode().set("jsonSpec", specArray);
+        ArrayNode rootArray = objectMapper.createArrayNode().add(root);
+
+        ResponseWrapper<JsonNode> wrapper = new ResponseWrapper<>();
+        wrapper.setResponse(rootArray);
+        ResponseEntity<ResponseWrapper<JsonNode>> responseEntity =
+                new ResponseEntity<>(wrapper, HttpStatus.OK);
+
+        Mockito.when(restTemplate.exchange(Mockito.eq("http://mock/uispec"), Mockito.eq(HttpMethod.GET), Mockito.isNull(),
+                Mockito.<ParameterizedTypeReference<ResponseWrapper<JsonNode>>>any())).thenReturn(responseEntity);
+        idrepoProfileRegistryPlugin.init();
+
+        JsonNode uiSpec = idrepoProfileRegistryPlugin.getUISpecification();
+        Assert.assertNotNull(uiSpec);
+        Assert.assertTrue(uiSpec.has("schema"));
+        Assert.assertTrue(uiSpec.has("errors"));
+        Assert.assertTrue(uiSpec.has("i18nValues"));
+        Assert.assertTrue(uiSpec.has("allowedValues"));
+        Assert.assertTrue(uiSpec.has("maxUploadFileSize"));
+    }
+
+    @Test
+    public void createProfile_withValidBuildDocuments_thenPass() throws Exception {
+        String requestId = "req-123";
+        String individualId = "ind-456";
+
+        ObjectNode biometrics = objectMapper.createObjectNode();
+        biometrics.put("value", "base64string");
+        ObjectNode mockIdentity = objectMapper.createObjectNode();
+        mockIdentity.put("phone", individualId);
+        mockIdentity.set("individualBiometrics", biometrics);
+        ProfileDto profileDto = new ProfileDto();
+        profileDto.setIndividualId(individualId);
+        profileDto.setIdentity(mockIdentity);
+
+        ResponseWrapper<UINResponse> responseWrapper = new ResponseWrapper<>();
+        UINResponse uinResponse = new UINResponse();
+        uinResponse.setUIN("1234567890");
+        responseWrapper.setResponse(uinResponse);
+        ResponseEntity<ResponseWrapper<UINResponse>> responseEntity = new ResponseEntity<>(responseWrapper, HttpStatus.OK);
+
+        Mockito.when(profileCacheService.setHandleRequestIds(Mockito.anyString(),Mockito.anyList())).thenReturn(null);
+        Mockito.when(restTemplate.exchange("http://localhost:8080/identity/v1/uin", HttpMethod.GET, null,
+                new ParameterizedTypeReference<ResponseWrapper<UINResponse>>() {}
+        )).thenReturn(responseEntity);
+
+        ResponseWrapper<SchemaResponse> responseWrapper2 = new ResponseWrapper<>();
+        SchemaResponse schemaResponse = new SchemaResponse();
+        schemaResponse.setIdVersion(0.0);
+        schemaResponse.setSchemaJson("{\"properties\":{\"identity\":{\"required\":[\"phone\"],\"properties\":{\"phone\":{\"type\":\"string\"}}}}}");
+        responseWrapper2.setResponse(schemaResponse);
+        ResponseEntity<ResponseWrapper<SchemaResponse>> responseEntity2=new ResponseEntity<>(responseWrapper2, HttpStatus.OK);
+        Mockito.when(restTemplate.exchange(
+                "http://localhost:8080/identity/v1/schema/"+0.0, HttpMethod.GET, null,
+                new ParameterizedTypeReference<ResponseWrapper<SchemaResponse>>() {}
+        )).thenReturn(responseEntity2);
+
+        // Mock biometricUtil
+        Mockito.when(biometricUtil.convertBase64JpegToBase64BirXML("base64string")).thenReturn("encodedXml");
+
+        ResponseWrapper<IdentityResponse> responseWrapper3 = new ResponseWrapper<>();
+        IdentityResponse identityResponse = new IdentityResponse();
+        identityResponse.setStatus("SUCCESS");
+        responseWrapper3.setResponse(identityResponse);
+        ResponseEntity<ResponseWrapper<IdentityResponse>> responseEntity3=new ResponseEntity<>(responseWrapper3, HttpStatus.OK);
+
+        Mockito.when(restTemplate.exchange(
+                Mockito.anyString(),
+                Mockito.any(HttpMethod.class),
+                Mockito.any(HttpEntity.class),
+                Mockito.eq(new ParameterizedTypeReference<ResponseWrapper<IdentityResponse>>() {
+                }))).thenReturn(responseEntity3);
+        Mockito.when(profileCacheService.setHandleRequestIds(Mockito.anyString(), Mockito.anyList())).thenReturn(null);
+        ProfileResult profileResult = idrepoProfileRegistryPlugin.createProfile(requestId, profileDto);
+        Assert.assertNotNull(profileResult);
+        Assert.assertEquals(profileResult.getStatus(),"SUCCESS");
     }
 }

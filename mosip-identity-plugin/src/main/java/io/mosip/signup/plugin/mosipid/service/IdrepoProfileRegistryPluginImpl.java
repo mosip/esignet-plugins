@@ -8,14 +8,14 @@ package io.mosip.signup.plugin.mosipid.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
+import com.github.jaiimageio.jpeg2000.impl.J2KImageReaderSpi;
+import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.PathNotFoundException;
 import io.micrometer.core.annotation.Timed;
 import io.mosip.esignet.core.util.IdentityProviderUtil;
-import io.mosip.signup.plugin.mosipid.dto.VerificationMetadata;
-import io.mosip.signup.plugin.mosipid.dto.*;
-import io.mosip.signup.plugin.mosipid.util.ErrorConstants;
-import io.mosip.signup.plugin.mosipid.util.ProfileCacheService;
 import io.mosip.kernel.core.util.HMACUtils2;
 import io.mosip.signup.api.dto.ProfileDto;
 import io.mosip.signup.api.dto.ProfileResult;
@@ -23,6 +23,10 @@ import io.mosip.signup.api.exception.InvalidProfileException;
 import io.mosip.signup.api.exception.ProfileException;
 import io.mosip.signup.api.spi.ProfileRegistryPlugin;
 import io.mosip.signup.api.util.ProfileCreateUpdateStatus;
+import io.mosip.signup.plugin.mosipid.dto.*;
+import io.mosip.signup.plugin.mosipid.util.BiometricUtil;
+import io.mosip.signup.plugin.mosipid.util.ErrorConstants;
+import io.mosip.signup.plugin.mosipid.util.ProfileCacheService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -31,13 +35,15 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
-import javax.validation.constraints.NotNull;
+import javax.annotation.PostConstruct;
+import javax.imageio.spi.IIORegistry;
 import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 import java.time.ZoneOffset;
@@ -46,6 +52,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 import static io.mosip.signup.api.util.ErrorConstants.SERVER_UNREACHABLE;
+import static io.mosip.signup.plugin.mosipid.util.ErrorConstants.INVALID_INDIVIDUAL_BIOMETRICS;
 import static io.mosip.signup.plugin.mosipid.util.ErrorConstants.REQUEST_FAILED;
 
 @Slf4j
@@ -55,6 +62,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
 
     private static final String ID_SCHEMA_VERSION_FIELD_ID = "IDSchemaVersion";
     private static final String UIN = "UIN";
+    private static final String VID = "VID";
     private static final String SELECTED_HANDLES_FIELD_ID = "selectedHandles";
     private static final String UTC_DATETIME_PATTERN = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
     private final Map<Double, SchemaResponse> schemaMap = new HashMap<>();
@@ -112,6 +120,12 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     @Value("${mosip.signup.idrepo.get-identity-fallback-path}")
     private String getIdentityEndpointFallbackPath;
 
+    @Value("${mosip.signup.idrepo.biometric.field-name:individualBiometrics}")
+    private String biometricDataFieldName;
+
+    @Value("${mosip.signup.idrepo.uin.length:10}")
+    private int uinLength;
+
     @Autowired
     @Qualifier("selfTokenRestTemplate")
     private RestTemplate restTemplate;
@@ -121,6 +135,232 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
 
     @Autowired
     private ProfileCacheService profileCacheService;
+
+    @Autowired
+    private BiometricUtil biometricUtil;
+
+    @Value("${mosip.signup.mosipid.get-ui-spec.endpoint}")
+    private String uiSpecUrl;
+
+    @Value("${mosip.signup.mosipid.uispec.schema-jsonpath:$[0].jsonSpec[0].spec.schema}")
+    private String schemaJsonpath;
+
+    @Value("${mosip.signup.mosipid.uispec.allowedvalues-jsonpath:$[0].jsonSpec[0].spec.allowedValues}")
+    private String allowedValuesJsonpath;
+
+    @Value("${mosip.signup.mosipid.uispec.i18values-jsonpath:$[0].jsonSpec[0].spec.i18nValues}")
+    private String i18nValuesJsonpath;
+
+    @Value("${mosip.signup.mosipid.uispec.i18values-errors-jsonpath:$[0].jsonSpec[0].spec.i18nValues.errors}")
+    private String i18nValuesErrorJsonpath;
+
+    @Value("${mosip.signup.mosipid.uispec.maxuploadfilesize-jsonpath:$[0].jsonSpec[0].spec.maxUploadFileSize}")
+    private String maxUploadFileSizeJsonpath;
+
+    @Value("${mosip.signup.mosipid.uispec.errors-jsonpath:$[0].jsonSpec[0].spec.errors}")
+    private String errorsJsonpath;
+
+    @Value("#{${mosip.signup.mosipid.uispec.errors:null}}")
+    private Map<String, Object> errorsFromConfig = new HashMap<>();
+
+    @Value("${mosip.signup.mosipid.dynamic-fields.endpoint}")
+    private String dynamicFieldsBaseUrl;
+
+    @Value("${mosip.signup.mosipid.doc-types-category.endpoint}")
+    private String docTypesAndCategoryBaseUrl;
+
+
+    @PostConstruct
+    public void init() {
+
+        IIORegistry registry = IIORegistry.getDefaultInstance();
+        registry.registerServiceProvider(new J2KImageReaderSpi());
+    }
+
+    /**
+     * Read the i18nValues from the UI-spec schema
+     * @param responseJson the response json from ${mosip.signup.mosipid.get-ui-spec.endpoint}
+     * @return i18nValues
+     */
+    private ObjectNode readI18nValues(String responseJson) {
+        Object i18nValueResponse;
+        ObjectNode  i18nValues;
+        try {
+            i18nValueResponse = JsonPath.read(responseJson, i18nValuesJsonpath);
+            i18nValues = objectMapper.convertValue(i18nValueResponse, ObjectNode.class);
+            i18nValues.set("errors", objectMapper.valueToTree(readErrors(responseJson, i18nValuesErrorJsonpath)));
+        } catch (PathNotFoundException e) {
+            log.error("i18nValues not found in schema");
+            i18nValues = objectMapper.createObjectNode();
+        }
+        return i18nValues;
+    }
+
+    /**
+     * Read the allowed values from master UI-spec and if not found read it from master data.
+     * @param responseJson the response json from ${mosip.signup.mosipid.get-ui-spec.endpoint}
+     * @return allowedValues
+     */
+    private JsonNode readAllowedValues(String responseJson) {
+        JsonNode allowedValues;
+        ObjectNode allowedValuesFromSpec = objectMapper.convertValue(JsonPath.read(responseJson, allowedValuesJsonpath), ObjectNode.class);
+        if (allowedValuesFromSpec != null && !allowedValuesFromSpec.isEmpty()) {
+            allowedValues = allowedValuesFromSpec; //allowed values from UI-Spec
+        } else {
+            allowedValues = generateAllowedValues(); //allowed values from master-data
+        }
+        return allowedValues;
+    }
+
+    /**
+     * Read the errors from UI-spec if not present, from config
+     * @param responseJson the response json from ${mosip.signup.mosipid.get-ui-spec.endpoint}
+     * @param jsonpath errors path inside schema
+     * @return errors
+     */
+    private Object readErrors(String responseJson, String jsonpath) {
+        Object errors;
+        try {
+            errors = JsonPath.read(responseJson, jsonpath);
+        } catch (PathNotFoundException e) {
+            errors = errorsFromConfig;
+        }
+        return errors;
+    }
+
+    /**
+     * Reads max upload file size from the UI-spec
+     * @param responseJson the response json from ${mosip.signup.mosipid.get-ui-spec.endpoint}
+     * @return maxUploadFileSize
+     */
+    private Object readMaxUploadFileSize(String responseJson) {
+        Object maxUploadFileSize;
+        try {
+            maxUploadFileSize = JsonPath.read(responseJson, maxUploadFileSizeJsonpath);
+        } catch (PathNotFoundException e) {
+            log.error("maxUploadFileSize not found in schema, setting to default");
+            maxUploadFileSize = 5242880;
+        }
+        return maxUploadFileSize;
+    }
+
+    /**
+     * Generate combined JsonNode from List<JsonNode> dynamicFields and List<JsonNode> documentCategories
+     * @return JsonNode containing the allowed values.
+     */
+    public JsonNode generateAllowedValues() {
+        ObjectNode result = objectMapper.createObjectNode();
+        fetchAndProcessDynamicFields(result);
+        fetchAndProcessDocTypesAndCategories(result);
+        return result;
+    }
+
+    private String buildDynamicFieldsUrl(int pageNumber, int pageSize) {
+        return String.format(dynamicFieldsBaseUrl, pageNumber, pageSize);
+    }
+
+    /**
+     * Fetch and process document types and categories
+     */
+    private void fetchAndProcessDocTypesAndCategories(ObjectNode result) {
+        ResponseEntity<JsonNode> response = restTemplate.getForEntity(docTypesAndCategoryBaseUrl, JsonNode.class);
+        JsonNode responseBody = response.getBody();
+
+        if (responseBody != null && responseBody.has("response")) {
+            JsonNode data = responseBody.get("response").get("documentCategories");
+            if (data != null && data.isArray()) {
+                for (JsonNode item : data) {
+                    if (!item.has("isActive") || !item.get("isActive").asBoolean()) continue;
+
+                    String categoryCode = item.hasNonNull("code") ? item.get("code").asText() : null;
+                    String langCode = item.hasNonNull("langCode") ? item.get("langCode").asText() : null;
+                    JsonNode documentTypes = item.get("documentTypes");
+
+                    if (categoryCode == null || langCode == null || documentTypes == null || !documentTypes.isArray())
+                        continue;
+
+                    ObjectNode docTypeMap = (ObjectNode) result.get(categoryCode);
+                    if (docTypeMap == null) {
+                        docTypeMap = objectMapper.createObjectNode();
+                        result.set(categoryCode, docTypeMap);
+                    }
+
+                    for (JsonNode docType : documentTypes) {
+                        String docTypeCode = docType.hasNonNull("code") ? docType.get("code").asText() : null;
+                        String docTypeName = docType.hasNonNull("name") ? docType.get("name").asText() : null;
+                        if (docTypeCode == null || docTypeName == null) continue;
+
+                        ObjectNode langMap = (ObjectNode) docTypeMap.get(docTypeCode);
+                        if (langMap == null) {
+                            langMap = objectMapper.createObjectNode();
+                            docTypeMap.set(docTypeCode, langMap);
+                        }
+                        langMap.put(langCode, docTypeName);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Fetch and processes the dynamic fields JSON list and adds their structured data into the provided ObjectNode.
+     * @param result The ObjectNode where data is accumulated
+     */
+    private void fetchAndProcessDynamicFields(ObjectNode result) {
+        int pageNumber = 0;
+        int pageSize = 10;
+        int totalPages = 1;
+        int totalItems = 0;
+
+        while (pageNumber < totalPages) {
+            String url = buildDynamicFieldsUrl(pageNumber, pageSize);
+            ResponseEntity<JsonNode> response = restTemplate.getForEntity(url, JsonNode.class);
+            JsonNode responseBody = response.getBody();
+            if (responseBody != null && responseBody.has("response")) {
+                JsonNode responseNode = responseBody.get("response");
+                if (pageNumber == 0) {
+                    totalPages = objectMapper.convertValue(responseNode.get("totalPages"), Integer.class);
+                    totalItems = objectMapper.convertValue(responseNode.get("totalItems"), Integer.class);
+                }
+                JsonNode data = responseNode.get("data");
+                if (data != null && data.isArray()) {
+                    for (JsonNode item : data) {
+                        if (!item.has("isActive") || !item.get("isActive").asBoolean()) continue;
+
+                        String name = item.hasNonNull("name") ? item.get("name").asText() : null;
+                        String lang = item.hasNonNull("langCode") ? item.get("langCode").asText() : null;
+                        JsonNode fieldValues = item.get("fieldVal");
+
+                        if (name == null || lang == null || fieldValues == null || !fieldValues.isArray()) continue;
+
+                        ObjectNode nameNode = (ObjectNode) result.get(name);
+                        if (nameNode == null) {
+                            nameNode = objectMapper.createObjectNode();
+                            result.set(name, nameNode);
+                        }
+
+                        for (JsonNode fv : fieldValues) {
+                            String code = fv.hasNonNull("code") ? fv.get("code").asText() : null;
+                            String value = fv.hasNonNull("value") ? fv.get("value").asText() : null;
+                            if (code == null || value == null) continue;
+
+                            ObjectNode langMap = (ObjectNode) nameNode.get(code);
+                            if (langMap == null) {
+                                langMap = objectMapper.createObjectNode();
+                                nameNode.set(code, langMap);
+                            }
+                            langMap.put(lang, value);
+                        }
+                    }
+                }
+            }
+            pageNumber++;
+            int remainingItems = totalItems - (pageNumber * pageSize);
+            if (remainingItems < pageSize) {
+                pageSize = remainingItems;
+            }
+        }
+    }
 
 
     @Override
@@ -193,7 +433,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     public ProfileResult updateProfile(String requestId, ProfileDto profileDto) throws ProfileException {
         JsonNode inputJson = profileDto.getIdentity();
 
-        if(profileDto.getIndividualId().contains(HANDLE_SEPARATOR)) {
+        if(profileDto.getIndividualId().contains(HANDLE_SEPARATOR) || profileDto.getIndividualId().length() > uinLength) {
             ((ObjectNode) inputJson).set(UIN, objectMapper.valueToTree(getProfile(profileDto.getIndividualId()).getIndividualId()));
         } else {
             ((ObjectNode) inputJson).set(UIN, objectMapper.valueToTree(profileDto.getIndividualId()));
@@ -234,7 +474,11 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
                     RequestWrapper<IdRequestByIdDTO> idDTORequestWrapper=new RequestWrapper<>();
                     requestByIdDTO.setId(individualId);
                     requestByIdDTO.setType("demo");
-                    if(isHandle) requestByIdDTO.setIdType("HANDLE");
+                    if (isHandle) {
+                        requestByIdDTO.setIdType("HANDLE");
+                    } else {
+                        requestByIdDTO.setIdType(individualId.length() > uinLength ? VID : UIN);
+                    }
                     idDTORequestWrapper.setRequest(requestByIdDTO);
                     idDTORequestWrapper.setRequesttime(getUTCDateTime());
                     responseWrapper = request(getIdentityEndpoint, HttpMethod.POST, idDTORequestWrapper,
@@ -247,11 +491,9 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
                             new ParameterizedTypeReference<ResponseWrapper<IdentityResponse>>() {});
                     break;
             }
-
             if(responseWrapper==null || responseWrapper.getResponse() == null || responseWrapper.getResponse().getIdentity() == null){
                 throw new ProfileException(REQUEST_FAILED);
             }
-
             ProfileDto profileDto = new ProfileDto();
             profileDto.setIndividualId(responseWrapper.getResponse().getIdentity().get(UIN).textValue());
             profileDto.setIdentity(responseWrapper.getResponse().getIdentity());
@@ -269,7 +511,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     }
 
     @Override
-    public boolean isMatch(@NotNull JsonNode identity, @NotNull JsonNode inputChallenge) {
+    public boolean isMatch(JsonNode identity, JsonNode inputChallenge) {
         int matchCount = 0;
         Iterator itr = inputChallenge.fieldNames();
         while(itr.hasNext()) {
@@ -288,6 +530,30 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
             }
         }
         return !inputChallenge.isEmpty() && matchCount >= inputChallenge.size();
+    }
+
+    @Override
+    public JsonNode getUISpecification() {
+        String responseJson = request(uiSpecUrl, HttpMethod.GET, null, new ParameterizedTypeReference<ResponseWrapper<JsonNode>>() {
+        })
+                .getResponse()
+                .toString();
+        Object schema = JsonPath.read(responseJson, schemaJsonpath);
+        Object errors = readErrors(responseJson, errorsJsonpath);
+        ObjectNode i18nValues = readI18nValues(responseJson);
+        JsonNode allowedValues = readAllowedValues(responseJson);
+        Object maxUploadFileSize = readMaxUploadFileSize(responseJson);
+
+        return objectMapper.valueToTree(
+                Map.ofEntries(
+                        Map.entry("schema", schema),
+                        Map.entry("errors", errors),
+                        Map.entry("i18nValues", i18nValues),
+                        Map.entry("language", Map.of("mandatory", mandatoryLanguages, "optional", optionalLanguages)),
+                        Map.entry("allowedValues", allowedValues),
+                        Map.entry("maxUploadFileSize", maxUploadFileSize)
+                )
+        );
     }
 
     private SchemaResponse getSchemaJson(double version) throws ProfileException {
@@ -442,6 +708,8 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
             ((ObjectNode) inputJson).remove("verified_claims");
         }
 
+        identityRequest.setDocuments(buildDocuments(inputJson));
+
         identityRequest.setIdentity(inputJson);
         return identityRequest;
     }
@@ -543,4 +811,30 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
         if(!mandatoryLanguages.contains(language) && (optionalLanguages != null && !optionalLanguages.contains(language)))
             throw new InvalidProfileException(ErrorConstants.INVALID_LANGUAGE);
     }
+
+    private ArrayNode buildDocuments(JsonNode inputJson) {
+        ArrayNode documents = objectMapper.createArrayNode();
+        if (!inputJson.path(biometricDataFieldName).path("value").isMissingNode()) {
+            String base64FaceImage = inputJson.path(biometricDataFieldName).path("value").textValue();
+            String base64BirXmlEncoded = null;
+            try {
+                base64BirXmlEncoded = biometricUtil.convertBase64JpegToBase64BirXML(base64FaceImage);
+            } catch (Exception e) {
+                log.error("Failed to create cbeff from face image: ", e);
+                throw new ProfileException(INVALID_INDIVIDUAL_BIOMETRICS);
+            }
+            ((ObjectNode) inputJson).set(biometricDataFieldName, objectMapper.valueToTree(Map.ofEntries(
+                    Map.entry("format", "cbeff"),
+                    Map.entry("version", 1),
+                    Map.entry("value", "fileReferenceID")
+            )));
+            documents.add(objectMapper.createObjectNode()
+                    .put("category", biometricDataFieldName)
+                    .put("value", base64BirXmlEncoded)
+            );
+        }
+        if(documents.isEmpty()) return null;
+        return documents;
+    }
+
 }

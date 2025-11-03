@@ -4,6 +4,7 @@ package io.mosip.signup.plugin.mock.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.mosip.esignet.core.dto.Error;
 import io.mosip.esignet.core.dto.ResponseWrapper;
@@ -33,6 +34,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static org.mockito.Mockito.mock;
 
 @RunWith(MockitoJUnitRunner.class)
 public class MockProfileRegistryPluginImplTest {
@@ -156,6 +159,49 @@ public class MockProfileRegistryPluginImplTest {
         }catch (ProfileException e){
             Assert.assertEquals(ErrorConstants.IDENTIFIER_MISMATCH,e.getMessage());
         }
+    }
+
+    @Test
+    public void createProfile_withFacePhoto_thenPass() throws ProfileException {
+        // Arrange
+        ReflectionTestUtils.setField(mockProfileRegistryPlugin, "identityEndpoint","http://localhost:8080/");
+        ReflectionTestUtils.setField(mockProfileRegistryPlugin, "usernameField","individualId");
+        ReflectionTestUtils.setField(mockProfileRegistryPlugin, "faceBiometricFieldName","encodedPhoto");
+        ReflectionTestUtils.setField(mockProfileRegistryPlugin, "faceBiometricValuePrefix","data:image/jpeg;base64,");
+
+        ObjectNode mockIdentity = mock(ObjectNode.class);
+        Mockito.when(mockIdentity.get("individualId")).thenReturn(objectMapper.valueToTree("1234567890"));
+        Mockito.when(mockIdentity.hasNonNull("encodedPhoto")).thenReturn(true);
+        ObjectNode encodedPhotoNode = mock(ObjectNode.class);
+        Mockito.when(mockIdentity.get("encodedPhoto")).thenReturn(encodedPhotoNode)
+                .thenReturn(encodedPhotoNode);
+        Mockito.when(encodedPhotoNode.hasNonNull("value")).thenReturn(true);
+        Mockito.when(encodedPhotoNode.get("value")).thenReturn(objectMapper.valueToTree("encodedPhotoString"))
+                .thenReturn(objectMapper.valueToTree("encodedPhotoString"));
+        ProfileDto profileDto = new ProfileDto();
+        profileDto.setIndividualId("1234567890");
+        profileDto.setIdentity(mockIdentity);
+
+        MockIdentityResponse mockIdentityResponse=new MockIdentityResponse();
+        mockIdentityResponse.setStatus("CREATED");
+        ResponseWrapper<MockIdentityResponse> responseWrapper = new ResponseWrapper<>();
+        responseWrapper.setResponse(mockIdentityResponse);
+        ResponseEntity<ResponseWrapper<MockIdentityResponse>> responseEntity=new ResponseEntity<>(responseWrapper, HttpStatus.OK);
+
+        Mockito.when(restTemplate.exchange(
+                Mockito.anyString(),
+                Mockito.any(HttpMethod.class),
+                Mockito.any(),
+                Mockito.eq(new ParameterizedTypeReference<ResponseWrapper<MockIdentityResponse>>() {
+                }))).thenReturn(responseEntity);
+
+        ProfileResult result = mockProfileRegistryPlugin.createProfile("requestId", profileDto);
+        Mockito.verify(mockIdentity, Mockito.times(1)).put("individualId",
+                "1234567890");
+        Mockito.verify(mockIdentity, Mockito.times(1)).put("encodedPhoto",
+                "data:image/jpeg;base64,encodedPhotoString");
+        Assert.assertNotNull(result);
+        Assert.assertEquals(result.getStatus(), "CREATED");
     }
 
 

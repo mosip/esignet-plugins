@@ -180,10 +180,33 @@ public class MockAuthenticationServiceTest {
         certificateDataResponseDto1.setKeyId("keyId1");
         allCertificatesDataResponseDto.getAllCertificates()[1]= certificateDataResponseDto1;
 
-        Mockito.when(keymanagerService.getAllCertificates(Mockito.anyString(),Mockito.any())).thenReturn(allCertificatesDataResponseDto);
+        ResponseWrapper<AllCertificatesDataResponseDto> responseWrapper = new ResponseWrapper<>();
+        responseWrapper.setResponse(allCertificatesDataResponseDto);
+        ResponseEntity<ResponseWrapper<AllCertificatesDataResponseDto>> responseEntity =
+                new ResponseEntity<>(responseWrapper, HttpStatus.OK);
+        ReflectionTestUtils.setField(mockAuthenticationService, "signingKeysUrl", "http://localhost:8080/mock-identity-system/keys.json");
+        Mockito.when(restTemplate.exchange(
+                any(RequestEntity.class),
+                any(ParameterizedTypeReference.class))
+        ).thenReturn(responseEntity);
+
         List<KycSigningCertificateData> allKycSigningCertificates = mockAuthenticationService.getAllKycSigningCertificates();
         Assert.assertNotNull(allKycSigningCertificates);
         Assert.assertEquals(allKycSigningCertificates.size(), 2);
+    }
+
+    @Test
+    public void getAllKycSigningCertificates_ThrowError_thenReturnEmpty() {
+        ResponseEntity<ResponseWrapper<AllCertificatesDataResponseDto>> responseEntity = new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        ReflectionTestUtils.setField(mockAuthenticationService, "signingKeysUrl", "http://localhost:8080/mock-identity-system/keys.json");
+        Mockito.when(restTemplate.exchange(
+                any(RequestEntity.class),
+                any(ParameterizedTypeReference.class))
+        ).thenReturn(responseEntity);
+
+        List<KycSigningCertificateData> allKycSigningCertificates = mockAuthenticationService.getAllKycSigningCertificates();
+        Assert.assertNotNull(allKycSigningCertificates);
+        Assert.assertEquals(allKycSigningCertificates.size(), 0);
     }
 
     @Test
@@ -278,6 +301,5 @@ public class MockAuthenticationServiceTest {
         Assert.assertEquals(langCodes.get(0), "eng");
         Assert.assertEquals(langCodes.get(1), "khm");
     }
+
 }
-
-

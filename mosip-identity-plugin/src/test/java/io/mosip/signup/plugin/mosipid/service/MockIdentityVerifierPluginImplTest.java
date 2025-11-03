@@ -1,12 +1,12 @@
-package io.mosip.signup.plugin.mock.service;
+package io.mosip.signup.plugin.mosipid.service;
 
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.mosip.signup.api.dto.*;
 import io.mosip.signup.api.exception.IdentityVerifierException;
+import io.mosip.signup.api.util.ProcessType;
 import io.mosip.signup.api.util.VerificationStatus;
-import io.mosip.signup.plugin.mock.verifier.MockIdentityVerifierPluginImpl;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -39,11 +39,10 @@ public class MockIdentityVerifierPluginImplTest {
     ResourceLoader resourceLoader;
 
 
-    ObjectMapper objectMapper;
+    ObjectMapper objectMapper = new ObjectMapper();;
 
     @Before
     public void before(){
-        objectMapper = new ObjectMapper();
         ReflectionTestUtils.setField(mockIdentityVerifierPlugin, "objectMapper",objectMapper);
         ReflectionTestUtils.setField(mockIdentityVerifierPlugin, "resultTopic","ANALYZE_FRAMES_RESULT");
     }
@@ -69,7 +68,7 @@ public class MockIdentityVerifierPluginImplTest {
 
         KafkaTemplate<String, IdentityVerificationResult> kafkaTemplate = Mockito.mock(KafkaTemplate.class);
         ReflectionTestUtils.setField(mockIdentityVerifierPlugin, "kafkaTemplate", kafkaTemplate);
-        ReflectionTestUtils.setField(mockIdentityVerifierPlugin, "resultTopic", "ANALYZE_FRAMES_RESULT");
+        //ReflectionTestUtils.setField(mockIdentityVerifierPlugin, "resultTopic", "ANALYZE_FRAMES_RESULT");
 
         mockIdentityVerifierPlugin.verify(transactionId, identityVerificationDto);
 
@@ -111,7 +110,7 @@ public class MockIdentityVerifierPluginImplTest {
 
 
     @Test
-    public void getVerifiedResult_withInValidTransactionId_thenFail() throws IdentityVerifierException, IOException {
+    public void getVerifiedResult_withInvalidTransactionId_thenFail() throws IdentityVerifierException, IOException {
 
         String transactionId = "transactionId123";
         String jsonContent = "{}";
@@ -122,9 +121,20 @@ public class MockIdentityVerifierPluginImplTest {
         Assert.assertEquals(verificationResult.getErrorCode(),"mock_verification_failed");
         Assert.assertEquals(verificationResult.getStatus(),VerificationStatus.FAILED);
     }
-    @Test
-    public void initializeWithValidDetails_thenPass(){
 
-        mockIdentityVerifierPlugin.initialize("individualId",new IdentityVerificationInitDto());
+    @Test
+    public void getSupportedProcessTypes_thenPass() {
+        List<ProcessType> supportedTypes = mockIdentityVerifierPlugin.getSupportedProcessTypes();
+        Assert.assertNotNull(supportedTypes);
+        Assert.assertEquals(1, supportedTypes.size());
+        Assert.assertEquals(ProcessType.VIDEO, supportedTypes.get(0));
     }
+
+    @Test
+    public void initialize_thenPass() {
+        IdentityVerificationInitDto dto = new IdentityVerificationInitDto();
+        dto.setDisabilityType("NONE");
+        mockIdentityVerifierPlugin.initialize("txn-123", dto);
+    }
+
 }

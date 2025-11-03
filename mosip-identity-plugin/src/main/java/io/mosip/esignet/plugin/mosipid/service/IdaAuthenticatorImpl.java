@@ -81,10 +81,10 @@ public class IdaAuthenticatorImpl implements Authenticator {
     @Value("${mosip.esignet.authenticator.ida.get-certificates-url}")
     private String getCertsUrl;
     
-    @Value("${mosip.esignet.authenticator.ida.application-id:IDA}")
+    @Value("${mosip.esignet.authenticator.ida.application-id:IDA_KYC_EXCHANGE}")
     private String applicationId;
     
-    @Value("${mosip.esignet.authenticator.ida.reference-id:SIGN}")
+    @Value("${mosip.esignet.authenticator.ida.reference-id: }")
     private String referenceId;
     
     @Value("${mosip.esignet.authenticator.ida.client-id}")
