@@ -52,6 +52,7 @@ public class BiometricUtil {
         BDBInfo bdbInfo = new BDBInfo.BDBInfoBuilder()
                 .withCreationDate(LocalDateTime.now(ZoneOffset.UTC))
                 .withType(List.of(BiometricType.FACE))
+                .withSubtype(List.of())
                 .withPurpose(PurposeType.ENROLL)
                 .withLevel(ProcessedLevelType.RAW)
                 .withFormat(new RegistryIDType("Mosip", "8"))
