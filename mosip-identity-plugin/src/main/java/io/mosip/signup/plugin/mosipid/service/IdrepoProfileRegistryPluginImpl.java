@@ -42,7 +42,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 import javax.imageio.spi.IIORegistry;
 import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;

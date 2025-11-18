@@ -11,10 +11,10 @@ import io.mosip.kernel.biometrics.spi.CbeffUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.util.Base64Utils;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.Base64;
 import java.util.List;
 
 import static io.mosip.biometrics.util.CommonUtil.convertJPEGToJP2UsingOpenCV;
@@ -29,7 +29,7 @@ public class BiometricUtil {
     private int faceImageCompressionRatio;
 
     public String convertBase64JpegToBase64BirXML(String base64Jpeg) throws Exception {
-        byte[] jpegImage = Base64Utils.decodeFromString(base64Jpeg);
+        byte[] jpegImage = Base64.getDecoder().decode(base64Jpeg);
         byte[] jp2Image = convertJPEGToJP2UsingOpenCV(jpegImage, faceImageCompressionRatio);
 
         ConvertRequestDto convertRequest = new ConvertRequestDto();
@@ -44,7 +44,7 @@ public class BiometricUtil {
 
         BIR bir = createBIRFromISO(isoImage);
 
-        return Base64Utils.encodeToUrlSafeString(cbeffUtil.createXML(List.of(bir)));
+        return Base64.getUrlEncoder().encodeToString(cbeffUtil.createXML(List.of(bir)));
     }
 
     public BIR createBIRFromISO(byte[] isoImage) {
