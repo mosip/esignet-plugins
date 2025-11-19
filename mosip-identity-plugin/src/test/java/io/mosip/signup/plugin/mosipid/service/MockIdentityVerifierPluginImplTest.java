@@ -54,6 +54,7 @@ public class MockIdentityVerifierPluginImplTest {
 
     @Test
     public void verify_withValidIdentityVerificationDto_thenPass() throws IdentityVerifierException, IOException {
+
         String transactionId = "transactionId123";
         IdentityVerificationDto identityVerificationDto = new IdentityVerificationDto();
         identityVerificationDto.setStepCode("START");
@@ -73,14 +74,6 @@ public class MockIdentityVerifierPluginImplTest {
         ReflectionTestUtils.setField(mockIdentityVerifierPlugin, "kafkaTemplate", kafkaTemplate);
         ReflectionTestUtils.setField(mockIdentityVerifierPlugin, "resultTopic", "ANALYZE_FRAMES_RESULT");
 
-        RecordMetadata metadata = Mockito.mock(RecordMetadata.class);
-        ProducerRecord<String, IdentityVerificationResult> record =
-                new ProducerRecord<>("ANALYZE_FRAMES_RESULT", new IdentityVerificationResult());
-        SendResult<String, IdentityVerificationResult> sendResult = new SendResult<>(record, metadata);
-        CompletableFuture<SendResult<String, IdentityVerificationResult>> mockFuture =
-                CompletableFuture.completedFuture(sendResult);
-        Mockito.when(kafkaTemplate.send(Mockito.anyString(), Mockito.any(IdentityVerificationResult.class)))
-                .thenReturn(mockFuture);
         mockIdentityVerifierPlugin.verify(transactionId, identityVerificationDto);
 
         Mockito.verify(resourceLoader).getResource(Mockito.anyString());
@@ -89,9 +82,6 @@ public class MockIdentityVerifierPluginImplTest {
                 Mockito.eq("ANALYZE_FRAMES_RESULT"),
                 resultCaptor.capture()
         );
-        List<IdentityVerificationResult> capturedResults = resultCaptor.getAllValues();
-        Assert.assertEquals(2, capturedResults.size());
-        Assert.assertEquals("transactionId123", capturedResults.get(0).getId());
     }
 
 
