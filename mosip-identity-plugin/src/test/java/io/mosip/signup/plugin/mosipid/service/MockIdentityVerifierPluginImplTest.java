@@ -39,7 +39,11 @@ public class MockIdentityVerifierPluginImplTest {
     ResourceLoader resourceLoader;
 
 
-    ObjectMapper objectMapper = new ObjectMapper();;
+    ObjectMapper objectMapper = new ObjectMapper();
+
+    @Mock
+    private KafkaTemplate<String, IdentityVerificationResult> kafkaTemplate;
+
 
     @Before
     public void before(){
@@ -65,10 +69,6 @@ public class MockIdentityVerifierPluginImplTest {
         Resource resource = Mockito.mock(Resource.class);
         Mockito.when(resourceLoader.getResource(Mockito.anyString())).thenReturn(resource);
         Mockito.when(resource.getInputStream()).thenReturn(new ByteArrayInputStream(jsonContent.getBytes()));
-
-        KafkaTemplate<String, IdentityVerificationResult> kafkaTemplate = Mockito.mock(KafkaTemplate.class);
-        ReflectionTestUtils.setField(mockIdentityVerifierPlugin, "kafkaTemplate", kafkaTemplate);
-        //ReflectionTestUtils.setField(mockIdentityVerifierPlugin, "resultTopic", "ANALYZE_FRAMES_RESULT");
 
         mockIdentityVerifierPlugin.verify(transactionId, identityVerificationDto);
 
