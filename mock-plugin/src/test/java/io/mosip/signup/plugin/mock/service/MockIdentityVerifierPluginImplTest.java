@@ -48,8 +48,10 @@ public class MockIdentityVerifierPluginImplTest {
         ReflectionTestUtils.setField(mockIdentityVerifierPlugin, "resultTopic","ANALYZE_FRAMES_RESULT");
     }
 
+
     @Test
     public void verify_withValidIdentityVerificationDto_thenPass() throws IdentityVerifierException, IOException {
+
         String transactionId = "transactionId123";
         IdentityVerificationDto identityVerificationDto = new IdentityVerificationDto();
         identityVerificationDto.setStepCode("START");
@@ -78,6 +80,7 @@ public class MockIdentityVerifierPluginImplTest {
                 resultCaptor.capture()
         );
     }
+
 
     @Test
     public void getVerifiedResult_withValidTransactionId_thenPass() throws IdentityVerifierException, IOException {
