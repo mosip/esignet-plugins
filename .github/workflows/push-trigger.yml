@@ -133,7 +133,7 @@ jobs:
   sonar-analysis-sunbird-rc-plugin:
     needs: build-maven-sunbird-rc-plugin
     if: "${{  github.event_name != 'pull_request' }}"
-    uses: mosip/kattu/.github/workflows/maven-sonar-analysis.yml@mmaster
+    uses: mosip/kattu/.github/workflows/maven-sonar-analysis.yml@master
     with:
       SERVICE_LOCATION: ./sunbird-rc-plugin
     secrets:
