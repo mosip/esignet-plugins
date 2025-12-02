@@ -4,7 +4,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import io.mosip.esignet.api.dto.*;
+import io.mosip.esignet.api.dto.AuthChallenge;
+import io.mosip.esignet.api.dto.KycAuthDto;
+import io.mosip.esignet.api.dto.KycAuthResult;
+import io.mosip.esignet.api.dto.SendOtpResult;
 import io.mosip.esignet.api.exception.KycAuthException;
 import io.mosip.esignet.api.exception.SendOtpException;
 import io.mosip.esignet.api.util.ErrorConstants;
@@ -14,7 +17,6 @@ import io.mosip.kernel.core.http.ResponseWrapper;
 import io.mosip.kernel.signature.dto.JWTSignatureResponseDto;
 import io.mosip.kernel.signature.service.SignatureService;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -28,8 +30,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -51,34 +51,6 @@ public class MockHelperServiceTest {
 
     private ObjectMapper objectMapper = new ObjectMapper();
 
-
-    @Before
-    public void setUp() throws Exception {
-        // Create the map you want to set
-        Map<String, List<String>> supportedKycAuthFormats = new HashMap<>();
-        supportedKycAuthFormats.put("OTP", List.of("alpha-numeric"));
-        supportedKycAuthFormats.put("PIN", List.of("number"));
-        supportedKycAuthFormats.put("BIO", List.of("encoded-json"));
-        supportedKycAuthFormats.put("WLA", List.of("jwt"));
-        supportedKycAuthFormats.put("KBI", List.of("base64url-encoded-json"));
-        supportedKycAuthFormats.put("PWD", List.of("alpha-numeric"));
-
-        // Get the field
-        Field field = MockHelperService.class.getDeclaredField("supportedKycAuthFormats");
-
-        // Make the field accessible
-        field.setAccessible(true);
-
-        // Remove the final modifier
-        Field modifiersField = Field.class.getDeclaredField("modifiers");
-        modifiersField.setAccessible(true);
-        int modifiers = field.getModifiers();
-        modifiers &= ~Modifier.FINAL; // Clear the FINAL bit
-        modifiersField.setInt(field, modifiers);
-
-        // Now you can set the field value
-        field.set(null, supportedKycAuthFormats); // Setting static field
-    }
 
     @Test
     public void doKycAuthMock_withAuthFactorAsOTP_thenPass() throws KycAuthException {
