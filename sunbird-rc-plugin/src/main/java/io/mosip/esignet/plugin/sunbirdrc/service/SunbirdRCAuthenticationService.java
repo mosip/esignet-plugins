@@ -264,7 +264,7 @@ public class SunbirdRCAuthenticationService implements Authenticator {
             String requestBody = objectMapper.writeValueAsString(registrySearchRequestDto);
             RequestEntity requestEntity = RequestEntity
                     .post(UriComponentsBuilder.fromUriString(registrySearchUrl).build().toUri())
-                    .contentType(MediaType.APPLICATION_JSON_UTF8)
+                    .contentType(MediaType.APPLICATION_JSON)
                     .body(requestBody);
             ResponseEntity<List<Map<String,Object>>> responseEntity = restTemplate.exchange(requestEntity,
                     new ParameterizedTypeReference<List<Map<String,Object>>>() {});
