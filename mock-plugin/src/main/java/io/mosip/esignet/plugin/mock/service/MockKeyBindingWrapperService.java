@@ -174,6 +174,7 @@ public class MockKeyBindingWrapperService implements KeyBinder {
 
     private void setupMockBindingKey() {
         KeyPairGenerateRequestDto mockBindingKeyRequest = new KeyPairGenerateRequestDto();
+        mockBindingKeyRequest.setReferenceId("");
         mockBindingKeyRequest.setApplicationId(BINDING_SERVICE_APP_ID);
         keymanagerService.generateMasterKey("CSR", mockBindingKeyRequest);
         log.info("===================== MOCK_BINDING_SERVICE KEY SETUP COMPLETED ========================");
