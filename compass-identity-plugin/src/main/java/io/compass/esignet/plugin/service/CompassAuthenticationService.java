@@ -126,17 +126,13 @@ public class CompassAuthenticationService implements Authenticator {
             throws SendOtpException {
         String transactionId=sendOtpDto.getTransactionId();
 
-        String challenge = "111111";
-        if(!isMockOtp) {
-            challenge = identityAPIClient.generateOTPChallenge(transactionId);
-        }
-        String challengeHash = IdentityProviderUtil.generateB64EncodedHash(IdentityProviderUtil.ALGO_SHA3_256, challenge);
-        cacheService.setChallengeHash(challengeHash,transactionId);
-
         UserInfo userInfo=identityAPIClient.getUserInfoByNationalUid(sendOtpDto.getIndividualId());
         String email=userInfo.getEmail();
 
+        String challenge = "111111";
+
         if(!isMockOtp) {
+            challenge = identityAPIClient.generateOTPChallenge(transactionId);
             log.info("Sending OTP to email: {} for transactionId: {}", maskEmail(email), transactionId);
             String firstName=userInfo.getFirstNamePrimary();
             identityAPIClient.sendEmailNotification(
@@ -147,6 +143,8 @@ public class CompassAuthenticationService implements Authenticator {
                     new MultipartFile[0]
             );
         }
+        String challengeHash = IdentityProviderUtil.generateB64EncodedHash(IdentityProviderUtil.ALGO_SHA3_256, challenge);
+        cacheService.setChallengeHash(challengeHash,transactionId);
 
         SendOtpResult sendOtpResult=new SendOtpResult();
         sendOtpResult.setTransactionId(transactionId);
