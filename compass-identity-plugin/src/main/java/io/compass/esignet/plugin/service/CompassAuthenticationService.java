@@ -52,6 +52,9 @@ public class CompassAuthenticationService implements Authenticator {
     @Autowired
     private IdentityAPIClient identityAPIClient;
 
+    @Value("${mosip.compass.mock.otp:false}")
+    private boolean isMockOtp;
+
     @Value("${mosip.compass.email.subject}")
     private String emailSubject;
 
@@ -122,19 +125,27 @@ public class CompassAuthenticationService implements Authenticator {
     public SendOtpResult sendOtp(String relyingPartyId, String clientId, SendOtpDto sendOtpDto)
             throws SendOtpException {
         String transactionId=sendOtpDto.getTransactionId();
-        String challenge = identityAPIClient.generateOTPChallenge(transactionId);
-        String challengeHash = IdentityProviderUtil.generateB64EncodedHash(IdentityProviderUtil.ALGO_SHA3_256, challenge);
-        cacheService.setChallengeHash(challengeHash,transactionId);
+
         UserInfo userInfo=identityAPIClient.getUserInfoByNationalUid(sendOtpDto.getIndividualId());
         String email=userInfo.getEmail();
-        String firstName=userInfo.getFirstNamePrimary();
-        identityAPIClient.sendEmailNotification(
-                new String[]{email},
-                new String[0],
-                new String[]{emailSubject},
-                new String[]{String.format(emailContent,firstName,challenge)},
-                new MultipartFile[0]
-        );
+
+        String challenge = "111111";
+
+        if(!isMockOtp) {
+            challenge = identityAPIClient.generateOTPChallenge(transactionId);
+            log.info("Sending OTP to email: {} for transactionId: {}", maskEmail(email), transactionId);
+            String firstName=userInfo.getFirstNamePrimary();
+            identityAPIClient.sendEmailNotification(
+                    new String[]{email},
+                    new String[0],
+                    new String[]{emailSubject},
+                    new String[]{String.format(emailContent,firstName,challenge)},
+                    new MultipartFile[0]
+            );
+        }
+        String challengeHash = IdentityProviderUtil.generateB64EncodedHash(IdentityProviderUtil.ALGO_SHA3_256, challenge);
+        cacheService.setChallengeHash(challengeHash,transactionId);
+
         SendOtpResult sendOtpResult=new SendOtpResult();
         sendOtpResult.setTransactionId(transactionId);
         sendOtpResult.setMaskedEmail(maskEmail(email));
