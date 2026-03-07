@@ -20,6 +20,7 @@ on:
       - develop
       - MOSIP*
       - release*
+      - mc2026
 
 jobs:
   build-maven-mock-plugin:
