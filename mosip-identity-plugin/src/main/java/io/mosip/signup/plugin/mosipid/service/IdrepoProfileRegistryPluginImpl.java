@@ -566,7 +566,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
                         Map.entry("i18nValues", i18nValues),
                         Map.entry("language", Map.of("mandatory", mandatoryLanguages, "optional", optionalLanguages)),
                         Map.entry("allowedValues", allowedValues),
-                        Map.entry("maxUploadFileSize", maxUploadFileSize)
+                        Map.entry("maxUploadFileSize", maxUploadFileSize),
                         Map.entry("resetPasswordChallengeFields",resetPasswordChallengeFields)
                 )
         );
