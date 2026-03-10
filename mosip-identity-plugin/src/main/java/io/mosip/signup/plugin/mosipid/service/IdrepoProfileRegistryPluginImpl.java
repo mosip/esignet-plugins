@@ -157,6 +157,9 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     @Value("${mosip.signup.mosipid.uispec.maxuploadfilesize-jsonpath:$[0].jsonSpec[0].spec.maxUploadFileSize}")
     private String maxUploadFileSizeJsonpath;
 
+    @Value("${mosip.signup.mosipid.uispec.resetPasswordChallengeFields-jsonpath:$[0].jsonSpec[0].spec.resetPasswordChallengeFields}")
+    private String resetPasswordChallengeFieldsJsonpath;
+
     @Value("${mosip.signup.mosipid.uispec.errors-jsonpath:$[0].jsonSpec[0].spec.errors}")
     private String errorsJsonpath;
 
@@ -242,6 +245,17 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
             maxUploadFileSize = 5242880;
         }
         return maxUploadFileSize;
+    }
+
+    private Object readResetPasswordChallengeFields(String responseJson) {
+        Object resetPasswordChallengeFields;
+        try {
+            resetPasswordChallengeFields = JsonPath.read(responseJson, resetPasswordChallengeFieldsJsonpath);
+        } catch (PathNotFoundException e) {
+            log.error("resetPasswordChallengeFields not found in schema");
+            return Collections.emptyList();
+        }
+        return resetPasswordChallengeFields;
     }
 
     /**
@@ -543,6 +557,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
         ObjectNode i18nValues = readI18nValues(responseJson);
         JsonNode allowedValues = readAllowedValues(responseJson);
         Object maxUploadFileSize = readMaxUploadFileSize(responseJson);
+        Object resetPasswordChallengeFields = readResetPasswordChallengeFields(responseJson);
 
         return objectMapper.valueToTree(
                 Map.ofEntries(
@@ -552,6 +567,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
                         Map.entry("language", Map.of("mandatory", mandatoryLanguages, "optional", optionalLanguages)),
                         Map.entry("allowedValues", allowedValues),
                         Map.entry("maxUploadFileSize", maxUploadFileSize)
+                        Map.entry("resetPasswordChallengeFields",resetPasswordChallengeFields)
                 )
         );
     }
