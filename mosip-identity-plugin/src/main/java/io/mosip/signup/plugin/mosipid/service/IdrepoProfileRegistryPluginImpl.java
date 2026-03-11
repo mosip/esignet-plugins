@@ -327,7 +327,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
 
         JsonNode extractedUiSpec = responseJson.at(uiSpecJsonPointer);
         if (extractedUiSpec.isMissingNode() || extractedUiSpec.isNull() || !extractedUiSpec.isObject()) {
-            log.error("UI Spec is missing in the response from {} at json path {}", uiSpecUrl, uiSpecJsonPointer);
+            log.error("UI Spec is missing in the response from {} at json pointer {}", uiSpecUrl, uiSpecJsonPointer);
             return objectMapper.createObjectNode();
         }
         ObjectNode uiSpec = (ObjectNode) extractedUiSpec;
