@@ -63,7 +63,7 @@ public class IdrepoProfileRegistryPluginImplTest {
         defaultSelectedHandles.add("email");
         ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "defaultSelectedHandles",defaultSelectedHandles);
         ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "objectMapper",objectMapper);
-        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "uiSpecJsonpath", "/0/jsonSpec/0/spec");
+        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "uiSpecJsonPointer", "/0/jsonSpec/0/spec");
         ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "getUinEndpoint","http://localhost:8080/identity/v1/uin");
         ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "schemaUrl","http://localhost:8080/identity/v1/schema/");
         ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "identityEndpoint","http://localhost:8080/identity/v1/identity/");

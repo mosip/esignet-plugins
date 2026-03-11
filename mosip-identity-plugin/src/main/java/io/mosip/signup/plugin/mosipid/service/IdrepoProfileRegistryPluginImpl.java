@@ -12,8 +12,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.github.jaiimageio.jpeg2000.impl.J2KImageReaderSpi;
-import com.jayway.jsonpath.JsonPath;
-import com.jayway.jsonpath.PathNotFoundException;
 import io.micrometer.core.annotation.Timed;
 import io.mosip.esignet.core.util.IdentityProviderUtil;
 import io.mosip.kernel.core.util.HMACUtils2;
@@ -35,7 +33,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -123,8 +120,8 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     @Value("${mosip.signup.mosipid.get-ui-spec.endpoint}")
     private String uiSpecUrl;
 
-    @Value("${mosip.signup.mosipid.uispec.schema-jsonpath:/0/jsonSpec/0/spec}")
-    private String uiSpecJsonpath;
+    @Value("${mosip.signup.mosipid.uispec.json.pointer:/0/jsonSpec/0/spec}")
+    private String uiSpecJsonPointer;
 
     @Value("${mosip.signup.mosipid.dynamic-fields.endpoint}")
     private String dynamicFieldsBaseUrl;
@@ -328,9 +325,9 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
         JsonNode responseJson = request(uiSpecUrl, HttpMethod.GET, null, new ParameterizedTypeReference<ResponseWrapper<JsonNode>>() {
         }).getResponse();
 
-        JsonNode extractedUiSpec = responseJson.at(uiSpecJsonpath);
+        JsonNode extractedUiSpec = responseJson.at(uiSpecJsonPointer);
         if (extractedUiSpec.isMissingNode() || extractedUiSpec.isNull() || !extractedUiSpec.isObject()) {
-            log.error("UI Spec is missing in the response from {} at json path {}", uiSpecUrl, uiSpecJsonpath);
+            log.error("UI Spec is missing in the response from {} at json path {}", uiSpecUrl, uiSpecJsonPointer);
             return objectMapper.createObjectNode();
         }
         ObjectNode uiSpec = (ObjectNode) extractedUiSpec;
@@ -701,8 +698,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
             if (!response.getResponse().isNull()) {
                 JsonNode responseNode = response.getResponse();
                 if (pageNumber == 0) {
-                    totalPages = objectMapper.convertValue(responseNode.get("totalPages"), Integer.class);
-                    totalItems = objectMapper.convertValue(responseNode.get("totalItems"), Integer.class);
+                    totalPages = Math.max(1, responseNode.path("totalPages").asInt(1));
                 }
                 JsonNode data = responseNode.get("data");
                 if (data != null && data.isArray()) {
