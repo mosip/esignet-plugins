@@ -71,18 +71,12 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
 
     @Value("#{'${mosip.signup.idrepo.default.selected-handles:phone}'.split(',')}")
     private List<String> defaultSelectedHandles;
-    
-    @Value("${mosip.signup.idrepo.identifier-field:phone}")
+
+    @Value("${mosip.signup.identifier.name}")
     private String identifierField;
 
     @Value("${mosip.signup.idrepo.schema-url}")
     private String schemaUrl;
-
-    @Value("#{'${mosip.kernel.idobjectvalidator.mandatory-attributes.id-repository.new-registration:}'.split(',')}")
-    private List<String> requiredFields;
-
-    @Value("#{'${mosip.kernel.idobjectvalidator.mandatory-attributes.id-repository.update-uin:}'.split(',')}")
-    private List<String> requiredUpdateFields;
 
     @Value("${mosip.signup.idrepo.add-identity.request.id}")
     private String addIdentityRequestID;
@@ -126,6 +120,18 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     @Value("${mosip.signup.idrepo.uin.length:10}")
     private int uinLength;
 
+    @Value("${mosip.signup.mosipid.get-ui-spec.endpoint}")
+    private String uiSpecUrl;
+
+    @Value("${mosip.signup.mosipid.uispec.schema-jsonpath:/0/jsonSpec/0/spec}")
+    private String uiSpecJsonpath;
+
+    @Value("${mosip.signup.mosipid.dynamic-fields.endpoint}")
+    private String dynamicFieldsBaseUrl;
+
+    @Value("${mosip.signup.mosipid.doc-types-category.endpoint}")
+    private String docTypesAndCategoryBaseUrl;
+
     @Autowired
     @Qualifier("selfTokenRestTemplate")
     private RestTemplate restTemplate;
@@ -139,227 +145,12 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     @Autowired
     private BiometricUtil biometricUtil;
 
-    @Value("${mosip.signup.mosipid.get-ui-spec.endpoint}")
-    private String uiSpecUrl;
-
-    @Value("${mosip.signup.mosipid.uispec.schema-jsonpath:$[0].jsonSpec[0].spec.schema}")
-    private String schemaJsonpath;
-
-    @Value("${mosip.signup.mosipid.uispec.allowedvalues-jsonpath:$[0].jsonSpec[0].spec.allowedValues}")
-    private String allowedValuesJsonpath;
-
-    @Value("${mosip.signup.mosipid.uispec.i18values-jsonpath:$[0].jsonSpec[0].spec.i18nValues}")
-    private String i18nValuesJsonpath;
-
-    @Value("${mosip.signup.mosipid.uispec.i18values-errors-jsonpath:$[0].jsonSpec[0].spec.i18nValues.errors}")
-    private String i18nValuesErrorJsonpath;
-
-    @Value("${mosip.signup.mosipid.uispec.maxuploadfilesize-jsonpath:$[0].jsonSpec[0].spec.maxUploadFileSize}")
-    private String maxUploadFileSizeJsonpath;
-
-    @Value("${mosip.signup.mosipid.uispec.errors-jsonpath:$[0].jsonSpec[0].spec.errors}")
-    private String errorsJsonpath;
-
-    @Value("#{${mosip.signup.mosipid.uispec.errors:null}}")
-    private Map<String, Object> errorsFromConfig = new HashMap<>();
-
-    @Value("${mosip.signup.mosipid.dynamic-fields.endpoint}")
-    private String dynamicFieldsBaseUrl;
-
-    @Value("${mosip.signup.mosipid.doc-types-category.endpoint}")
-    private String docTypesAndCategoryBaseUrl;
-
 
     @PostConstruct
     public void init() {
 
         IIORegistry registry = IIORegistry.getDefaultInstance();
         registry.registerServiceProvider(new J2KImageReaderSpi());
-    }
-
-    /**
-     * Read the i18nValues from the UI-spec schema
-     * @param responseJson the response json from ${mosip.signup.mosipid.get-ui-spec.endpoint}
-     * @return i18nValues
-     */
-    private ObjectNode readI18nValues(String responseJson) {
-        Object i18nValueResponse;
-        ObjectNode  i18nValues;
-        try {
-            i18nValueResponse = JsonPath.read(responseJson, i18nValuesJsonpath);
-            i18nValues = objectMapper.convertValue(i18nValueResponse, ObjectNode.class);
-            i18nValues.set("errors", objectMapper.valueToTree(readErrors(responseJson, i18nValuesErrorJsonpath)));
-        } catch (PathNotFoundException e) {
-            log.error("i18nValues not found in schema");
-            i18nValues = objectMapper.createObjectNode();
-        }
-        return i18nValues;
-    }
-
-    /**
-     * Read the allowed values from master UI-spec and if not found read it from master data.
-     * @param responseJson the response json from ${mosip.signup.mosipid.get-ui-spec.endpoint}
-     * @return allowedValues
-     */
-    private JsonNode readAllowedValues(String responseJson) {
-        JsonNode allowedValues;
-        ObjectNode allowedValuesFromSpec = objectMapper.convertValue(JsonPath.read(responseJson, allowedValuesJsonpath), ObjectNode.class);
-        if (allowedValuesFromSpec != null && !allowedValuesFromSpec.isEmpty()) {
-            allowedValues = allowedValuesFromSpec; //allowed values from UI-Spec
-        } else {
-            allowedValues = generateAllowedValues(); //allowed values from master-data
-        }
-        return allowedValues;
-    }
-
-    /**
-     * Read the errors from UI-spec if not present, from config
-     * @param responseJson the response json from ${mosip.signup.mosipid.get-ui-spec.endpoint}
-     * @param jsonpath errors path inside schema
-     * @return errors
-     */
-    private Object readErrors(String responseJson, String jsonpath) {
-        Object errors;
-        try {
-            errors = JsonPath.read(responseJson, jsonpath);
-        } catch (PathNotFoundException e) {
-            errors = errorsFromConfig;
-        }
-        return errors;
-    }
-
-    /**
-     * Reads max upload file size from the UI-spec
-     * @param responseJson the response json from ${mosip.signup.mosipid.get-ui-spec.endpoint}
-     * @return maxUploadFileSize
-     */
-    private Object readMaxUploadFileSize(String responseJson) {
-        Object maxUploadFileSize;
-        try {
-            maxUploadFileSize = JsonPath.read(responseJson, maxUploadFileSizeJsonpath);
-        } catch (PathNotFoundException e) {
-            log.error("maxUploadFileSize not found in schema, setting to default");
-            maxUploadFileSize = 5242880;
-        }
-        return maxUploadFileSize;
-    }
-
-    /**
-     * Generate combined JsonNode from List<JsonNode> dynamicFields and List<JsonNode> documentCategories
-     * @return JsonNode containing the allowed values.
-     */
-    public JsonNode generateAllowedValues() {
-        ObjectNode result = objectMapper.createObjectNode();
-        fetchAndProcessDynamicFields(result);
-        fetchAndProcessDocTypesAndCategories(result);
-        return result;
-    }
-
-    private String buildDynamicFieldsUrl(int pageNumber, int pageSize) {
-        return String.format(dynamicFieldsBaseUrl, pageNumber, pageSize);
-    }
-
-    /**
-     * Fetch and process document types and categories
-     */
-    private void fetchAndProcessDocTypesAndCategories(ObjectNode result) {
-        ResponseEntity<JsonNode> response = restTemplate.getForEntity(docTypesAndCategoryBaseUrl, JsonNode.class);
-        JsonNode responseBody = response.getBody();
-
-        if (responseBody != null && responseBody.has("response")) {
-            JsonNode data = responseBody.get("response").get("documentCategories");
-            if (data != null && data.isArray()) {
-                for (JsonNode item : data) {
-                    if (!item.has("isActive") || !item.get("isActive").asBoolean()) continue;
-
-                    String categoryCode = item.hasNonNull("code") ? item.get("code").asText() : null;
-                    String langCode = item.hasNonNull("langCode") ? item.get("langCode").asText() : null;
-                    JsonNode documentTypes = item.get("documentTypes");
-
-                    if (categoryCode == null || langCode == null || documentTypes == null || !documentTypes.isArray())
-                        continue;
-
-                    ObjectNode docTypeMap = (ObjectNode) result.get(categoryCode);
-                    if (docTypeMap == null) {
-                        docTypeMap = objectMapper.createObjectNode();
-                        result.set(categoryCode, docTypeMap);
-                    }
-
-                    for (JsonNode docType : documentTypes) {
-                        String docTypeCode = docType.hasNonNull("code") ? docType.get("code").asText() : null;
-                        String docTypeName = docType.hasNonNull("name") ? docType.get("name").asText() : null;
-                        if (docTypeCode == null || docTypeName == null) continue;
-
-                        ObjectNode langMap = (ObjectNode) docTypeMap.get(docTypeCode);
-                        if (langMap == null) {
-                            langMap = objectMapper.createObjectNode();
-                            docTypeMap.set(docTypeCode, langMap);
-                        }
-                        langMap.put(langCode, docTypeName);
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Fetch and processes the dynamic fields JSON list and adds their structured data into the provided ObjectNode.
-     * @param result The ObjectNode where data is accumulated
-     */
-    private void fetchAndProcessDynamicFields(ObjectNode result) {
-        int pageNumber = 0;
-        int pageSize = 10;
-        int totalPages = 1;
-        int totalItems = 0;
-
-        while (pageNumber < totalPages) {
-            String url = buildDynamicFieldsUrl(pageNumber, pageSize);
-            ResponseEntity<JsonNode> response = restTemplate.getForEntity(url, JsonNode.class);
-            JsonNode responseBody = response.getBody();
-            if (responseBody != null && responseBody.has("response")) {
-                JsonNode responseNode = responseBody.get("response");
-                if (pageNumber == 0) {
-                    totalPages = objectMapper.convertValue(responseNode.get("totalPages"), Integer.class);
-                    totalItems = objectMapper.convertValue(responseNode.get("totalItems"), Integer.class);
-                }
-                JsonNode data = responseNode.get("data");
-                if (data != null && data.isArray()) {
-                    for (JsonNode item : data) {
-                        if (!item.has("isActive") || !item.get("isActive").asBoolean()) continue;
-
-                        String name = item.hasNonNull("name") ? item.get("name").asText() : null;
-                        String lang = item.hasNonNull("langCode") ? item.get("langCode").asText() : null;
-                        JsonNode fieldValues = item.get("fieldVal");
-
-                        if (name == null || lang == null || fieldValues == null || !fieldValues.isArray()) continue;
-
-                        ObjectNode nameNode = (ObjectNode) result.get(name);
-                        if (nameNode == null) {
-                            nameNode = objectMapper.createObjectNode();
-                            result.set(name, nameNode);
-                        }
-
-                        for (JsonNode fv : fieldValues) {
-                            String code = fv.hasNonNull("code") ? fv.get("code").asText() : null;
-                            String value = fv.hasNonNull("value") ? fv.get("value").asText() : null;
-                            if (code == null || value == null) continue;
-
-                            ObjectNode langMap = (ObjectNode) nameNode.get(code);
-                            if (langMap == null) {
-                                langMap = objectMapper.createObjectNode();
-                                nameNode.set(code, langMap);
-                            }
-                            langMap.put(lang, value);
-                        }
-                    }
-                }
-            }
-            pageNumber++;
-            int remainingItems = totalItems - (pageNumber * pageSize);
-            if (remainingItems < pageSize) {
-                pageSize = remainingItems;
-            }
-        }
     }
 
 
@@ -534,26 +325,18 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
 
     @Override
     public JsonNode getUISpecification() {
-        String responseJson = request(uiSpecUrl, HttpMethod.GET, null, new ParameterizedTypeReference<ResponseWrapper<JsonNode>>() {
-        })
-                .getResponse()
-                .toString();
-        Object schema = JsonPath.read(responseJson, schemaJsonpath);
-        Object errors = readErrors(responseJson, errorsJsonpath);
-        ObjectNode i18nValues = readI18nValues(responseJson);
-        JsonNode allowedValues = readAllowedValues(responseJson);
-        Object maxUploadFileSize = readMaxUploadFileSize(responseJson);
+        JsonNode responseJson = request(uiSpecUrl, HttpMethod.GET, null, new ParameterizedTypeReference<ResponseWrapper<JsonNode>>() {
+        }).getResponse();
+        ObjectNode uiSpec = (ObjectNode) responseJson.at(uiSpecJsonpath);
+        uiSpec.putIfAbsent("language", objectMapper.valueToTree(Map.of("mandatory", mandatoryLanguages,
+                "optional", optionalLanguages)));
 
-        return objectMapper.valueToTree(
-                Map.ofEntries(
-                        Map.entry("schema", schema),
-                        Map.entry("errors", errors),
-                        Map.entry("i18nValues", i18nValues),
-                        Map.entry("language", Map.of("mandatory", mandatoryLanguages, "optional", optionalLanguages)),
-                        Map.entry("allowedValues", allowedValues),
-                        Map.entry("maxUploadFileSize", maxUploadFileSize)
-                )
-        );
+        if(!uiSpec.has("allowedValues"))
+            uiSpec.putIfAbsent("allowedValues", fetchAllowedValuesFromMasterDataService());
+
+        uiSpec.putIfAbsent("maxUploadFileSize", objectMapper.valueToTree(5242880)); //5MB default max upload file size
+        uiSpec.putIfAbsent("resetPasswordChallengeFields", objectMapper.valueToTree(List.of("fullName")));
+        return uiSpec;
     }
 
     private SchemaResponse getSchemaJson(double version) throws ProfileException {
@@ -835,6 +618,125 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
         }
         if(documents.isEmpty()) return null;
         return documents;
+    }
+
+
+    /**
+     * Generate combined JsonNode from List<JsonNode> dynamicFields and List<JsonNode> documentCategories
+     * @return JsonNode containing the allowed values.
+     */
+    public JsonNode fetchAllowedValuesFromMasterDataService() {
+        ObjectNode result = objectMapper.createObjectNode();
+        fetchAndProcessDynamicFields(result);
+        fetchAndProcessDocTypesAndCategories(result);
+        return result;
+    }
+
+    private String buildDynamicFieldsUrl(int pageNumber, int pageSize) {
+        return String.format(dynamicFieldsBaseUrl, pageNumber, pageSize);
+    }
+
+    /**
+     * Fetch and process document types and categories
+     */
+    private void fetchAndProcessDocTypesAndCategories(ObjectNode result) {
+        ResponseEntity<JsonNode> response = restTemplate.getForEntity(docTypesAndCategoryBaseUrl, JsonNode.class);
+        JsonNode responseBody = response.getBody();
+
+        if (responseBody != null && responseBody.has("response")) {
+            JsonNode data = responseBody.get("response").get("documentCategories");
+            if (data != null && data.isArray()) {
+                for (JsonNode item : data) {
+                    if (!item.has("isActive") || !item.get("isActive").asBoolean()) continue;
+
+                    String categoryCode = item.hasNonNull("code") ? item.get("code").asText() : null;
+                    String langCode = item.hasNonNull("langCode") ? item.get("langCode").asText() : null;
+                    JsonNode documentTypes = item.get("documentTypes");
+
+                    if (categoryCode == null || langCode == null || documentTypes == null || !documentTypes.isArray())
+                        continue;
+
+                    ObjectNode docTypeMap = (ObjectNode) result.get(categoryCode);
+                    if (docTypeMap == null) {
+                        docTypeMap = objectMapper.createObjectNode();
+                        result.set(categoryCode, docTypeMap);
+                    }
+
+                    for (JsonNode docType : documentTypes) {
+                        String docTypeCode = docType.hasNonNull("code") ? docType.get("code").asText() : null;
+                        String docTypeName = docType.hasNonNull("name") ? docType.get("name").asText() : null;
+                        if (docTypeCode == null || docTypeName == null) continue;
+
+                        ObjectNode langMap = (ObjectNode) docTypeMap.get(docTypeCode);
+                        if (langMap == null) {
+                            langMap = objectMapper.createObjectNode();
+                            docTypeMap.set(docTypeCode, langMap);
+                        }
+                        langMap.put(langCode, docTypeName);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Fetch and processes the dynamic fields JSON list and adds their structured data into the provided ObjectNode.
+     * @param result The ObjectNode where data is accumulated
+     */
+    private void fetchAndProcessDynamicFields(ObjectNode result) {
+        int pageNumber = 0;
+        int pageSize = 10;
+        int totalPages = 1;
+        int totalItems = 0;
+
+        while (pageNumber < totalPages) {
+            String url = buildDynamicFieldsUrl(pageNumber, pageSize);
+            ResponseEntity<JsonNode> response = restTemplate.getForEntity(url, JsonNode.class);
+            JsonNode responseBody = response.getBody();
+            if (responseBody != null && responseBody.has("response")) {
+                JsonNode responseNode = responseBody.get("response");
+                if (pageNumber == 0) {
+                    totalPages = objectMapper.convertValue(responseNode.get("totalPages"), Integer.class);
+                    totalItems = objectMapper.convertValue(responseNode.get("totalItems"), Integer.class);
+                }
+                JsonNode data = responseNode.get("data");
+                if (data != null && data.isArray()) {
+                    for (JsonNode item : data) {
+                        if (!item.has("isActive") || !item.get("isActive").asBoolean()) continue;
+
+                        String name = item.hasNonNull("name") ? item.get("name").asText() : null;
+                        String lang = item.hasNonNull("langCode") ? item.get("langCode").asText() : null;
+                        JsonNode fieldValues = item.get("fieldVal");
+
+                        if (name == null || lang == null || fieldValues == null || !fieldValues.isArray()) continue;
+
+                        ObjectNode nameNode = (ObjectNode) result.get(name);
+                        if (nameNode == null) {
+                            nameNode = objectMapper.createObjectNode();
+                            result.set(name, nameNode);
+                        }
+
+                        for (JsonNode fv : fieldValues) {
+                            String code = fv.hasNonNull("code") ? fv.get("code").asText() : null;
+                            String value = fv.hasNonNull("value") ? fv.get("value").asText() : null;
+                            if (code == null || value == null) continue;
+
+                            ObjectNode langMap = (ObjectNode) nameNode.get(code);
+                            if (langMap == null) {
+                                langMap = objectMapper.createObjectNode();
+                                nameNode.set(code, langMap);
+                            }
+                            langMap.put(lang, value);
+                        }
+                    }
+                }
+            }
+            pageNumber++;
+            int remainingItems = totalItems - (pageNumber * pageSize);
+            if (remainingItems < pageSize) {
+                pageSize = remainingItems;
+            }
+        }
     }
 
 }
