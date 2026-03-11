@@ -328,11 +328,12 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
         JsonNode responseJson = request(uiSpecUrl, HttpMethod.GET, null, new ParameterizedTypeReference<ResponseWrapper<JsonNode>>() {
         }).getResponse();
 
-        ObjectNode uiSpec = (ObjectNode) responseJson.at(uiSpecJsonpath);
-        if(uiSpec.isMissingNode() || uiSpec.isNull()) {
+        JsonNode extractedUiSpec = responseJson.at(uiSpecJsonpath);
+        if (extractedUiSpec.isMissingNode() || extractedUiSpec.isNull() || !extractedUiSpec.isObject()) {
             log.error("UI Spec is missing in the response from {} at json path {}", uiSpecUrl, uiSpecJsonpath);
             return objectMapper.createObjectNode();
         }
+        ObjectNode uiSpec = (ObjectNode) extractedUiSpec;
 
         uiSpec.putIfAbsent("language", objectMapper.valueToTree(Map.of("mandatory", mandatoryLanguages,
                 "optional", optionalLanguages)));
@@ -736,10 +737,6 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
                 }
             }
             pageNumber++;
-            int remainingItems = totalItems - (pageNumber * pageSize);
-            if (remainingItems < pageSize) {
-                pageSize = remainingItems;
-            }
         }
     }
 
