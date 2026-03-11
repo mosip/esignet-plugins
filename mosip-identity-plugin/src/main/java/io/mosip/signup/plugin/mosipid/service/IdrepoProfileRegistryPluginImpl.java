@@ -327,7 +327,13 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     public JsonNode getUISpecification() {
         JsonNode responseJson = request(uiSpecUrl, HttpMethod.GET, null, new ParameterizedTypeReference<ResponseWrapper<JsonNode>>() {
         }).getResponse();
+
         ObjectNode uiSpec = (ObjectNode) responseJson.at(uiSpecJsonpath);
+        if(uiSpec.isMissingNode() || uiSpec.isNull()) {
+            log.error("UI Spec is missing in the response from {} at json path {}", uiSpecUrl, uiSpecJsonpath);
+            return objectMapper.createObjectNode();
+        }
+
         uiSpec.putIfAbsent("language", objectMapper.valueToTree(Map.of("mandatory", mandatoryLanguages,
                 "optional", optionalLanguages)));
 
@@ -640,11 +646,10 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
      * Fetch and process document types and categories
      */
     private void fetchAndProcessDocTypesAndCategories(ObjectNode result) {
-        ResponseEntity<JsonNode> response = restTemplate.getForEntity(docTypesAndCategoryBaseUrl, JsonNode.class);
-        JsonNode responseBody = response.getBody();
-
-        if (responseBody != null && responseBody.has("response")) {
-            JsonNode data = responseBody.get("response").get("documentCategories");
+        ResponseWrapper<JsonNode> response = request(docTypesAndCategoryBaseUrl, HttpMethod.GET, null,
+            new ParameterizedTypeReference<ResponseWrapper<JsonNode>>() {});
+        if (!response.getResponse().isNull()) {
+            JsonNode data = response.getResponse().get("documentCategories");
             if (data != null && data.isArray()) {
                 for (JsonNode item : data) {
                     if (!item.has("isActive") || !item.get("isActive").asBoolean()) continue;
@@ -691,10 +696,9 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
 
         while (pageNumber < totalPages) {
             String url = buildDynamicFieldsUrl(pageNumber, pageSize);
-            ResponseEntity<JsonNode> response = restTemplate.getForEntity(url, JsonNode.class);
-            JsonNode responseBody = response.getBody();
-            if (responseBody != null && responseBody.has("response")) {
-                JsonNode responseNode = responseBody.get("response");
+            ResponseWrapper<JsonNode> response = request(url, HttpMethod.GET, null, new ParameterizedTypeReference<ResponseWrapper<JsonNode>>() {});
+            if (!response.getResponse().isNull()) {
+                JsonNode responseNode = response.getResponse();
                 if (pageNumber == 0) {
                     totalPages = objectMapper.convertValue(responseNode.get("totalPages"), Integer.class);
                     totalItems = objectMapper.convertValue(responseNode.get("totalItems"), Integer.class);
