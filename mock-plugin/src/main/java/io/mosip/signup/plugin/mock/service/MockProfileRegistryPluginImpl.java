@@ -89,16 +89,19 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     @Autowired
     private ResourceLoader resourceLoader;
 
-    private JsonSchema schema;
+    private volatile JsonSchema schema;
 
     @Override
     public void validate(String action, ProfileDto profileDto) throws InvalidProfileException {
 
         if(schema == null) {
-            ResponseWrapper<JsonNode> responseWrapper = request(identitySchemaEndpoint, HttpMethod.GET ,null,
-                    new ParameterizedTypeReference<ResponseWrapper<JsonNode>>() {});
-            JsonSchemaFactory jsonSchemaFactory = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V202012);
-            schema = jsonSchemaFactory.getSchema(responseWrapper.getResponse());
+            synchronized (this) {
+                ResponseWrapper<JsonNode> responseWrapper = request(identitySchemaEndpoint, HttpMethod.GET, null,
+                        new ParameterizedTypeReference<ResponseWrapper<JsonNode>>() {
+                        });
+                JsonSchemaFactory jsonSchemaFactory = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V202012);
+                schema = jsonSchemaFactory.getSchema(responseWrapper.getResponse());
+            }
         }
 
         if(!ACTIONS.contains(action)) {
