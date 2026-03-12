@@ -325,7 +325,7 @@ public class MockProfileRegistryPluginImplTest {
         ReflectionTestUtils.setField(mockProfileRegistryPlugin, "faceBiometricValuePrefix","data:image/jpeg;base64,");
 
         ObjectNode mockIdentity = mock(ObjectNode.class);
-        Mockito.when(mockIdentity.get("individualId")).thenReturn(objectMapper.valueToTree("1234567890"));
+        //Mockito.when(mockIdentity.get("individualId")).thenReturn(objectMapper.valueToTree("1234567890"));
         Mockito.when(mockIdentity.hasNonNull("encodedPhoto")).thenReturn(true);
         ObjectNode encodedPhotoNode = mock(ObjectNode.class);
         Mockito.when(mockIdentity.get("encodedPhoto")).thenReturn(encodedPhotoNode)

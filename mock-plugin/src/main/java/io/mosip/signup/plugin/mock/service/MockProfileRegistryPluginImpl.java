@@ -126,8 +126,8 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
 
     @Override
     public ProfileResult createProfile(String requestId, ProfileDto profileDto) throws ProfileException {
-    	if(identifierField != null && !profileDto.getIdentity().hasNonNull(identifierField)
-                && !profileDto.getIndividualId().equalsIgnoreCase(profileDto.getIdentity().get(identifierField).asText())) {
+    	if(identifierField != null && (profileDto.getIdentity().hasNonNull(identifierField)
+                && !profileDto.getIndividualId().equalsIgnoreCase(profileDto.getIdentity().get(identifierField).asText()))) {
             log.error("{} and userName mismatch", identifierField);
             throw new InvalidProfileException(ErrorConstants.IDENTIFIER_MISMATCH);
         }
