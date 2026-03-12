@@ -11,10 +11,8 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.TextNode;
 import com.networknt.schema.JsonSchema;
 import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.SpecVersion;
@@ -125,7 +123,8 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
 
     @Override
     public ProfileResult createProfile(String requestId, ProfileDto profileDto) throws ProfileException {
-    	if(identifierField != null && !profileDto.getIndividualId().equalsIgnoreCase(profileDto.getIdentity().get(identifierField).asText())) {
+    	if(identifierField != null && !profileDto.getIdentity().hasNonNull(identifierField)
+                && !profileDto.getIndividualId().equalsIgnoreCase(profileDto.getIdentity().get(identifierField).asText())) {
             log.error("{} and userName mismatch", identifierField);
             throw new InvalidProfileException(ErrorConstants.IDENTIFIER_MISMATCH);
         }
