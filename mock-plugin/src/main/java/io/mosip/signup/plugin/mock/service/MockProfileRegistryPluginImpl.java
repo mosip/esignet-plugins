@@ -10,11 +10,13 @@ import static io.mosip.signup.api.util.ErrorConstants.SERVER_UNREACHABLE;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.networknt.schema.JsonSchema;
+import com.networknt.schema.JsonSchemaFactory;
+import com.networknt.schema.SpecVersion;
+import com.networknt.schema.ValidationMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -50,30 +52,26 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
 
     private static final String UTC_DATETIME_PATTERN = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
     private static final List<String> ACTIONS = Arrays.asList("CREATE", "UPDATE");
-    
-    @Value("${mosip.signup.mock.username.field:phone}")
-    private String usernameField;
 
-    @Value("#{'${mosip.signup.mock.mandatory-attributes.CREATE:}'.split(',')}")
-    private List<String> requiredFieldsOnCreate;
+    @Value("${mosip.signup.identifier.name:phone}")
+    private String identifierField;
 
-    @Value("#{'${mosip.signup.mock.mandatory-attributes.UPDATE:}'.split(',')}")
-    private List<String> requiredFieldsOnUpdate;
-
-    @Value("#{'${mosip.signup.mock.lang-based-attributes:}'.split(',')}")
-    private List<String> langBasedFields;
-
+    //Endpoint to add/update identity data
     @Value("${mosip.signup.mock.identity.endpoint}")
     private String identityEndpoint;
 
+    //Endpoint to fetch identity data
     @Value("${mosip.signup.mock.get-identity.endpoint}")
     private String getIdentityEndpoint;
 
     @Value("${mosip.signup.mock.add-verified-claims.endpoint}")
     private String addVerifiedClaimsEndpoint;
 
-    @Value("${mosip.signup.mock.get-schema.endpoint}")
-    private String getSchemaEndpoint;
+    @Value("${mosip.signup.mock.identity-schema.endpoint}")
+    private String identitySchemaEndpoint;
+
+    @Value("${mosip.signup.mock.ui-schema.endpoint}")
+    private String uiSchemaEndpoint;
 
     @Value("${mosip.signup.mock.face.biometric.field-name:encodedPhoto}")
     private String faceBiometricFieldName;
@@ -91,26 +89,46 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
     @Autowired
     private ResourceLoader resourceLoader;
 
+    private volatile JsonSchema schema;
+
     @Override
     public void validate(String action, ProfileDto profileDto) throws InvalidProfileException {
-    	if (!ACTIONS.contains(action)) {
+
+        if(schema == null) {
+            synchronized (this) {
+                ResponseWrapper<JsonNode> responseWrapper = request(identitySchemaEndpoint, HttpMethod.GET, null,
+                        new ParameterizedTypeReference<ResponseWrapper<JsonNode>>() {
+                        });
+                JsonSchemaFactory jsonSchemaFactory = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V202012);
+                schema = jsonSchemaFactory.getSchema(responseWrapper.getResponse());
+            }
+        }
+
+        if(!ACTIONS.contains(action)) {
+            log.error("Invalid action value : {}. Allowed values are CREATE and UPDATE", action);
             throw new InvalidProfileException(ErrorConstants.INVALID_ACTION);
         }
 
-        JsonNode inputJson = profileDto.getIdentity();
-        List<String> requiredFields = action.equals("CREATE") ? requiredFieldsOnCreate : requiredFieldsOnUpdate;
-        for (String fieldName : requiredFields) {
-            if (!fieldName.isEmpty() && (!inputJson.hasNonNull(fieldName) || (inputJson.get(fieldName).isArray() && inputJson.get(fieldName).isEmpty()))) {
-                log.error("Null value found in the required field of {}, required: {}", fieldName, requiredFields);
-                throw new InvalidProfileException("invalid_".concat(fieldName.toLowerCase()));
+        Set<ValidationMessage> errors = schema.validate(profileDto.getIdentity());
+
+        for(ValidationMessage error : errors) {
+            log.error("Validation error for field {} with message {}", error.getInstanceLocation(), error.getMessage());
+            String fieldName = error.getInstanceLocation().getNameCount() > 0 ? error.getInstanceLocation().getName(0) :
+                    error.getProperty();
+            if(action.equals("UPDATE") && error.getCode().equals("1028")) {
+                //Ignore required field validation errors for update action as in an update scenario, not all fields are mandatory
+                continue;
             }
+            throw new InvalidProfileException(fieldName != null ? "invalid_".concat(fieldName.toLowerCase()) :
+                    "unknown_field");
         }
     }
 
     @Override
     public ProfileResult createProfile(String requestId, ProfileDto profileDto) throws ProfileException {
-    	if(usernameField != null && !profileDto.getIndividualId().equalsIgnoreCase(profileDto.getIdentity().get(usernameField).asText())) {
-            log.error("{} and userName mismatch", usernameField);
+    	if(identifierField != null && (profileDto.getIdentity().hasNonNull(identifierField)
+                && !profileDto.getIndividualId().equalsIgnoreCase(profileDto.getIdentity().get(identifierField).asText()))) {
+            log.error("{} and userName mismatch", identifierField);
             throw new InvalidProfileException(ErrorConstants.IDENTIFIER_MISMATCH);
         }
         ObjectNode inputJson = (ObjectNode) profileDto.getIdentity();
@@ -253,9 +271,8 @@ public class MockProfileRegistryPluginImpl implements ProfileRegistryPlugin {
 
     @Override
     public JsonNode getUISpecification() {
-        ResponseWrapper<JsonNode> responseWrapper = request(getSchemaEndpoint, HttpMethod.GET ,null,
+        ResponseWrapper<JsonNode> responseWrapper = request(uiSchemaEndpoint, HttpMethod.GET ,null,
                 new ParameterizedTypeReference<ResponseWrapper<JsonNode>>() {});
         return responseWrapper.getResponse();
     }
-
 }
