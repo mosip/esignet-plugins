@@ -484,6 +484,7 @@ public class IdrepoProfileRegistryPluginImpl implements ProfileRegistryPlugin {
         //generate salted hash for password, if exists
         if(inputJson.has("password")) {
             Password password = generateSaltedHash(inputJson.get("password").asText());
+            password.setValue(password.getHashValue()); // Added for compatible with 1.3.0 IDRepo ('https://github.com/mosip/id-repository/blob/v1.3.0/id-repository/id-repository-identity-service/src/main/java/io/mosip/idrepository/identity/service/impl/IdRepoServiceImpl.java#L508')
             ((ObjectNode) inputJson).set("password", objectMapper.valueToTree(password));
         }
 
