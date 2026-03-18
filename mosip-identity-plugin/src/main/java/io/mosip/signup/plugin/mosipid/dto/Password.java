@@ -14,6 +14,7 @@ public class Password {
 
     private String hash;
     private String salt;
+    private String value; // Added for compatible with 1.3.0 IDRepo
 
     @Data
     @AllArgsConstructor
