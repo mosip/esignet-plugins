@@ -55,69 +55,224 @@ public class MockProfileRegistryPluginImplTest {
         ReflectionTestUtils.setField(mockProfileRegistryPlugin, "objectMapper",objectMapper);
     }
 
+    String IDENTITY_SCHEMA = "{\n" +
+            "  \"$schema\": \"https://json-schema.org/draft/2020-12/schema\",\n" +
+            "  \"type\": \"object\",\n" +
+            "  \"$defs\": {\n" +
+            "    \"langField\": {\n" +
+            "      \"type\": \"array\",\n" +
+            "      \"items\": {\n" +
+            "        \"type\": \"object\",\n" +
+            "        \"properties\": {\n" +
+            "          \"language\": {\n" +
+            "            \"type\": \"string\"\n" +
+            "          },\n" +
+            "          \"value\": {\n" +
+            "            \"type\": \"string\"\n" +
+            "          }\n" +
+            "        },\n" +
+            "        \"required\": [\n" +
+            "          \"language\",\n" +
+            "          \"value\"\n" +
+            "        ],\n" +
+            "        \"additionalProperties\": false\n" +
+            "      }\n" +
+            "    }\n" +
+            "  },\n" +
+            "  \"properties\": {\n" +
+            "    \"individualId\": {\n" +
+            "      \"type\": \"string\",\n" +
+            "      \"pattern\": \"\\\\S\"\n" +
+            "    },\n" +
+            "    \"fullName\": {\n" +
+            "      \"allOf\": [\n" +
+            "        { \"$ref\": \"#/$defs/langField\" },\n" +
+            "        {\n" +
+            "          \"items\": {\n" +
+            "            \"properties\": {\n" +
+            "              \"value\": {\n" +
+            "                \"pattern\": \"^(?=.*[^\\\\s])^(?:[a-zA-ZÀ-ÿ\\\\s]{1,40}|[ء-ي\\\\s٩ٱ-ڿﹰ-\\uFEFF\\u0600-ۿ]{1,40}|[ក-\\u17FF᧠-᧿ᨀ-\\u1A9F ]{1,40})$\"\n" +
+            "              },\n" +
+            "              \"language\": {\n" +
+            "                \"type\": \"string\",\n" +
+            "                \"enum\": [\"eng\",\"fra\",\"ara\"]\n" +
+            "              }\n" +
+            "            }\n" +
+            "          }\n" +
+            "        }\n" +
+            "      ]\n" +
+            "    },\n" +
+            "    \"preferredLang\": {\n" +
+            "        \"type\": \"string\",\n" +
+            "        \"enum\": [\"eng\",\"fra\",\"ara\"],\n" +
+            "        \"nullable\": true\n" +
+            "    },\n" +
+            "    \"phone\": {\n" +
+            "      \"type\": \"string\",\n" +
+            "      \"pattern\": \"^\\\\+[1-9]\\\\d{8,13}$\"\n" +
+            "    },\n" +
+            "    \"password\": {\n" +
+            "      \"type\": \"string\",\n" +
+            "      \"pattern\": \"^[A-Za-z__1-9]{6,9}\\\\d{1}$\"\n" +
+            "    }\n" +
+            "  },\n" +
+            "  \"required\": [\n" +
+            "    \"individualId\",\n" +
+            "    \"fullName\",\n" +
+            "    \"phone\",\n" +
+            "    \"password\"\n" +
+            "  ],\n" +
+            "  \"additionalProperties\": false\n" +
+            "}";
+
 
     @Test
     public void validate_withValidActionAndProfileDto_thenPass() throws JsonProcessingException {
-
-        List<String> requiredField=new ArrayList<>();
-        requiredField.add("phone");
-        ReflectionTestUtils.setField(mockProfileRegistryPlugin, "requiredFieldsOnCreate", requiredField);
+        ReflectionTestUtils.setField(mockProfileRegistryPlugin, "identitySchemaEndpoint", "http://localhost:8080/");
         String action = "CREATE";
 
-        String phone="{ \"value\": \"7408001310\", \"essential\":true }";
-        String verifiedClaims="[{\"verification\":{\"trust_framework\":{\"value\":\"income-tax\"}},\"claims\":{\"name\":null,\"email\":{\"essential\":0}}},{\"verification\":{\"trust_framework\":{\"value\":\"pwd\"}},\"claims\":{\"birthdate\":{\"essential\":true},\"address\":null}},{\"verification\":{\"trust_framework\":{\"value\":\"cbi\"}},\"claims\":{\"gender\":{\"essential\":true},\"email\":{\"essential\":true}}}]";
-        JsonNode addressNode = objectMapper.readValue(phone, JsonNode.class);
-        JsonNode verifiedClaimNode = objectMapper.readValue(verifiedClaims, JsonNode.class);
+        ResponseWrapper<JsonNode> wrapper = new ResponseWrapper<>();
+        wrapper.setResponse(objectMapper.readTree(IDENTITY_SCHEMA));
+        ResponseEntity<ResponseWrapper<JsonNode>> responseEntity=new ResponseEntity<>(wrapper, HttpStatus.OK);
+        Mockito.when(restTemplate.exchange(
+                Mockito.eq("http://localhost:8080/"),
+                Mockito.any(HttpMethod.class),
+                Mockito.any(),
+                Mockito.eq(new ParameterizedTypeReference<ResponseWrapper<JsonNode>>() {
+                }))).thenReturn(responseEntity);
 
-        Map<String, JsonNode> userinfoMap = new HashMap<>();
-        userinfoMap.put("phone", addressNode);
-        userinfoMap.put("verified_claims", verifiedClaimNode);
-        JsonNode mockIdentity=objectMapper.valueToTree(userinfoMap);
+        String userinfo = "{\"individualId\" : \"1234567890\",\"phone\" : \"+9134567890\", \"fullName\": [{\"value\": \"John Doe\", \"language\": \"eng\"}], \"preferredLang\": \"eng\", \"password\": \"pas_swo3\"}";
+        JsonNode mockIdentity=objectMapper.readTree(userinfo);
 
         ProfileDto profileDto = new ProfileDto();
-        profileDto.setIndividualId("individualId");
+        profileDto.setIndividualId("1234567890");
         profileDto.setIdentity(mockIdentity);
-
         mockProfileRegistryPlugin.validate(action, profileDto);
     }
 
 
     @Test
-    public void validate_withInValidRequiredField_thenFail() throws JsonProcessingException {
-
-        List<String> requiredField=new ArrayList<>();
-        requiredField.add("email");
-        ReflectionTestUtils.setField(mockProfileRegistryPlugin, "requiredFieldsOnCreate", requiredField);
+    public void validate_withInvalidRequiredField_thenFail() throws JsonProcessingException {
+        ReflectionTestUtils.setField(mockProfileRegistryPlugin, "identitySchemaEndpoint", "http://localhost:8080/");
         String action = "CREATE";
 
-        String phone="{ \"value\": \"7408001310\", \"essential\":true }";
-        String verifiedClaims="[{\"verification\":{\"trust_framework\":{\"value\":\"income-tax\"}},\"claims\":{\"name\":null,\"email\":{\"essential\":0}}},{\"verification\":{\"trust_framework\":{\"value\":\"pwd\"}},\"claims\":{\"birthdate\":{\"essential\":true},\"address\":null}},{\"verification\":{\"trust_framework\":{\"value\":\"cbi\"}},\"claims\":{\"gender\":{\"essential\":true},\"email\":{\"essential\":true}}}]";
-        JsonNode addressNode = objectMapper.readValue(phone, JsonNode.class);
-        JsonNode verifiedClaimNode = objectMapper.readValue(verifiedClaims, JsonNode.class);
+        ResponseWrapper<JsonNode> wrapper = new ResponseWrapper<>();
+        wrapper.setResponse(objectMapper.readTree(IDENTITY_SCHEMA));
+        ResponseEntity<ResponseWrapper<JsonNode>> responseEntity=new ResponseEntity<>(wrapper, HttpStatus.OK);
+        Mockito.when(restTemplate.exchange(
+                Mockito.eq("http://localhost:8080/"),
+                Mockito.any(HttpMethod.class),
+                Mockito.any(),
+                Mockito.eq(new ParameterizedTypeReference<ResponseWrapper<JsonNode>>() {
+                }))).thenReturn(responseEntity);
 
-        Map<String, JsonNode> userinfoMap = new HashMap<>();
-        userinfoMap.put("phone", addressNode);
-        userinfoMap.put("verified_claims", verifiedClaimNode);
-        JsonNode mockIdentity=objectMapper.valueToTree(userinfoMap);
+        String userinfo = "{\"individualId\" : \"1234567890\", \"fullName\": [{\"value\": \"John Doe\", \"language\": \"eng\"}], \"preferredLang\": \"eng\", \"password\": \"pas_swo3\"}";
+        JsonNode mockIdentity=objectMapper.readTree(userinfo);
 
         ProfileDto profileDto = new ProfileDto();
-        profileDto.setIndividualId("individualId");
+        profileDto.setIndividualId("1234567890");
         profileDto.setIdentity(mockIdentity);
 
         try{
             mockProfileRegistryPlugin.validate(action, profileDto);
             Assert.fail();
         }catch (InvalidProfileException e){
-            Assert.assertEquals(e.getMessage(),"invalid_email");
+            Assert.assertEquals("invalid_phone", e.getErrorCode());
         }
+    }
 
+    @Test
+    public void validate_withInvalidFieldValue_thenFail() throws JsonProcessingException {
+        ReflectionTestUtils.setField(mockProfileRegistryPlugin, "identitySchemaEndpoint", "http://localhost:8080/");
+        String action = "CREATE";
+
+        ResponseWrapper<JsonNode> wrapper = new ResponseWrapper<>();
+        wrapper.setResponse(objectMapper.readTree(IDENTITY_SCHEMA));
+        ResponseEntity<ResponseWrapper<JsonNode>> responseEntity=new ResponseEntity<>(wrapper, HttpStatus.OK);
+        Mockito.when(restTemplate.exchange(
+                Mockito.eq("http://localhost:8080/"),
+                Mockito.any(HttpMethod.class),
+                Mockito.any(),
+                Mockito.eq(new ParameterizedTypeReference<ResponseWrapper<JsonNode>>() {
+                }))).thenReturn(responseEntity);
+
+        String userinfo = "{\"individualId\" : \"1234567890\", \"fullName\": [{\"value\": \"John Doe\", \"language\": \"eng\"}], \"preferredLang\": \"khm\", \"password\": \"pas_swo3\"}";
+        JsonNode mockIdentity=objectMapper.readTree(userinfo);
+        ProfileDto profileDto = new ProfileDto();
+        profileDto.setIndividualId("1234567890");
+        profileDto.setIdentity(mockIdentity);
+
+        try{
+            mockProfileRegistryPlugin.validate(action, profileDto);
+            Assert.fail();
+        }catch (InvalidProfileException e) {
+            Assert.assertEquals("invalid_preferredlang", e.getErrorCode());
+        }
+    }
+
+    @Test
+    public void validate_patternNotMatching_thenFail() throws JsonProcessingException {
+        ReflectionTestUtils.setField(mockProfileRegistryPlugin, "identitySchemaEndpoint", "http://localhost:8080/");
+        String action = "CREATE";
+
+        ResponseWrapper<JsonNode> wrapper = new ResponseWrapper<>();
+        wrapper.setResponse(objectMapper.readTree(IDENTITY_SCHEMA));
+        ResponseEntity<ResponseWrapper<JsonNode>> responseEntity=new ResponseEntity<>(wrapper, HttpStatus.OK);
+        Mockito.when(restTemplate.exchange(
+                Mockito.eq("http://localhost:8080/"),
+                Mockito.any(HttpMethod.class),
+                Mockito.any(),
+                Mockito.eq(new ParameterizedTypeReference<ResponseWrapper<JsonNode>>() {
+                }))).thenReturn(responseEntity);
+
+        String userinfo = "{\"individualId\" : \"1234567890\",\"phone\" : \"+0134567890\", \"fullName\": [{\"value\": \"John Doe\", \"language\": \"eng\"}], \"preferredLang\": \"eng\", \"password\": \"pas_swo3\"}";
+        JsonNode mockIdentity=objectMapper.readTree(userinfo);
+        ProfileDto profileDto = new ProfileDto();
+        profileDto.setIndividualId("1234567890");
+        profileDto.setIdentity(mockIdentity);
+
+        try{
+            mockProfileRegistryPlugin.validate(action, profileDto);
+            Assert.fail();
+        }catch (InvalidProfileException e) {
+            Assert.assertEquals("invalid_phone", e.getErrorCode());
+        }
+    }
+
+    @Test
+    public void validate_withInvalidUpdateData_thenFail() throws JsonProcessingException {
+        ReflectionTestUtils.setField(mockProfileRegistryPlugin, "identitySchemaEndpoint", "http://localhost:8080/");
+        String action = "UPDATE";
+
+        ResponseWrapper<JsonNode> wrapper = new ResponseWrapper<>();
+        wrapper.setResponse(objectMapper.readTree(IDENTITY_SCHEMA));
+        ResponseEntity<ResponseWrapper<JsonNode>> responseEntity=new ResponseEntity<>(wrapper, HttpStatus.OK);
+        Mockito.when(restTemplate.exchange(
+                Mockito.eq("http://localhost:8080/"),
+                Mockito.any(HttpMethod.class),
+                Mockito.any(),
+                Mockito.eq(new ParameterizedTypeReference<ResponseWrapper<JsonNode>>() {
+                }))).thenReturn(responseEntity);
+
+        String userinfo = "{\"individualId\": \"1234567890\", \"password\": \"@password123\"}";
+        JsonNode mockIdentity=objectMapper.readTree(userinfo);
+        ProfileDto profileDto = new ProfileDto();
+        profileDto.setIndividualId("1234567890");
+        profileDto.setIdentity(mockIdentity);
+
+        try{
+            mockProfileRegistryPlugin.validate(action, profileDto);
+            Assert.fail();
+        }catch (InvalidProfileException e) {
+            Assert.assertEquals("invalid_password", e.getErrorCode());
+        }
     }
 
     @Test
     public void createProfile_withValidRequestAndProfileDto_thenPass() throws ProfileException {
         // Arrange
         ReflectionTestUtils.setField(mockProfileRegistryPlugin, "identityEndpoint","http://localhost:8080/");
-        ReflectionTestUtils.setField(mockProfileRegistryPlugin, "usernameField","individualId");
+        ReflectionTestUtils.setField(mockProfileRegistryPlugin, "identifierField","individualId");
         Map<String, Object> identityData = new HashMap<>();
         identityData.put("individualId","1234567890");
         JsonNode mockIdentity = objectMapper.valueToTree(identityData);
@@ -147,7 +302,7 @@ public class MockProfileRegistryPluginImplTest {
     @Test
     public void createProfile_withInValidRequestAndProfileDto_thenFail() throws ProfileException {
         // Arrange
-        ReflectionTestUtils.setField(mockProfileRegistryPlugin, "usernameField","individualId");
+        ReflectionTestUtils.setField(mockProfileRegistryPlugin, "identifierField","individualId");
         Map<String,String> identityData=new HashMap<>();
         identityData.put("individualId","1234567890");
         JsonNode mockIdentity = objectMapper.valueToTree(identityData);
@@ -165,12 +320,12 @@ public class MockProfileRegistryPluginImplTest {
     public void createProfile_withFacePhoto_thenPass() throws ProfileException {
         // Arrange
         ReflectionTestUtils.setField(mockProfileRegistryPlugin, "identityEndpoint","http://localhost:8080/");
-        ReflectionTestUtils.setField(mockProfileRegistryPlugin, "usernameField","individualId");
+        ReflectionTestUtils.setField(mockProfileRegistryPlugin, "identifierField","individualId");
         ReflectionTestUtils.setField(mockProfileRegistryPlugin, "faceBiometricFieldName","encodedPhoto");
         ReflectionTestUtils.setField(mockProfileRegistryPlugin, "faceBiometricValuePrefix","data:image/jpeg;base64,");
 
         ObjectNode mockIdentity = mock(ObjectNode.class);
-        Mockito.when(mockIdentity.get("individualId")).thenReturn(objectMapper.valueToTree("1234567890"));
+        //Mockito.when(mockIdentity.get("individualId")).thenReturn(objectMapper.valueToTree("1234567890"));
         Mockito.when(mockIdentity.hasNonNull("encodedPhoto")).thenReturn(true);
         ObjectNode encodedPhotoNode = mock(ObjectNode.class);
         Mockito.when(mockIdentity.get("encodedPhoto")).thenReturn(encodedPhotoNode)

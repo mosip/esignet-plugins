@@ -1,5 +1,6 @@
 package io.mosip.signup.plugin.mosipid.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -62,6 +63,7 @@ public class IdrepoProfileRegistryPluginImplTest {
         defaultSelectedHandles.add("email");
         ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "defaultSelectedHandles",defaultSelectedHandles);
         ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "objectMapper",objectMapper);
+        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "uiSpecJsonPointer", "/0/jsonSpec/0/spec");
         ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "getUinEndpoint","http://localhost:8080/identity/v1/uin");
         ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "schemaUrl","http://localhost:8080/identity/v1/schema/");
         ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "identityEndpoint","http://localhost:8080/identity/v1/identity/");
@@ -74,12 +76,6 @@ public class IdrepoProfileRegistryPluginImplTest {
         ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "mandatoryLanguages", List.of("en"));
         ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "optionalLanguages", List.of("fr","ar"));
         ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "uinLength", 10);
-        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "schemaJsonpath", "$[0].jsonSpec[0].schema");
-        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "errorsJsonpath", "$[0].jsonSpec[0].errors");
-        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "i18nValuesJsonpath", "$[0].jsonSpec[0].i18nValues");
-        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "i18nValuesErrorJsonpath", "$[0].jsonSpec[0].i18nValues.errors");
-        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "allowedValuesJsonpath", "$[0].jsonSpec[0].allowedValues");
-        ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "maxUploadFileSizeJsonpath", "$[0].jsonSpec[0].maxUploadFileSize");
         ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "uiSpecUrl", "http://mock/uispec");
         ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "biometricDataFieldName", "individualBiometrics");
         ReflectionTestUtils.setField(idrepoProfileRegistryPlugin, "defaultSelectedHandles", List.of("phone"));
@@ -564,55 +560,20 @@ public class IdrepoProfileRegistryPluginImplTest {
     }
 
     @Test
-    public void generateAllowedValues_withValidDetails_thenPass() {
-        ObjectNode dynamicItem = objectMapper.createObjectNode();
-        dynamicItem.put("isActive", true);
-        dynamicItem.put("name", "fieldName");
-        dynamicItem.put("langCode", "eng");
+    public void fetchAllowedValues_FromMasterDataService_withValidDetails_thenPass() {
+        ResponseEntity<ResponseWrapper<JsonNode>> dynamicFieldResponse = new ResponseEntity<>(getDynamicFieldsEndpointResponse(), HttpStatus.OK);
+        Mockito.when(restTemplate.exchange(
+            Mockito.contains("dynamic"), Mockito.eq(HttpMethod.GET), Mockito.any(),
+            Mockito.eq(new ParameterizedTypeReference<ResponseWrapper<JsonNode>>() {})
+        )).thenReturn(dynamicFieldResponse);
 
-        ArrayNode fieldValArray = objectMapper.createArrayNode();
-        ObjectNode fieldVal = objectMapper.createObjectNode();
-        fieldVal.put("code", "code1");
-        fieldVal.put("value", "value1");
-        fieldValArray.add(fieldVal);
-        dynamicItem.set("fieldVal", fieldValArray);
-        ArrayNode dynamicDataArray = objectMapper.createArrayNode();
-        dynamicDataArray.add(dynamicItem);
+        ResponseEntity<ResponseWrapper<JsonNode>> docEntity = new ResponseEntity<>(getDocumentTypesAndCategoriesEndpointResponse(), HttpStatus.OK);
+        Mockito.when(restTemplate.exchange(
+            Mockito.contains("docTypes"), Mockito.eq(HttpMethod.GET), Mockito.any(),
+            Mockito.eq(new ParameterizedTypeReference<ResponseWrapper<JsonNode>>() {})
+        )).thenReturn(docEntity);
 
-        ObjectNode dynamicResponseNode = objectMapper.createObjectNode();
-        dynamicResponseNode.put("totalPages", 1);
-        dynamicResponseNode.put("totalItems", 1);
-        dynamicResponseNode.set("data", dynamicDataArray);
-        ObjectNode dynamicWrapper = objectMapper.createObjectNode();
-        dynamicWrapper.set("response", dynamicResponseNode);
-
-        ResponseEntity<JsonNode> dynamicEntity = new ResponseEntity<>(dynamicWrapper, HttpStatus.OK);
-        Mockito.when(restTemplate.getForEntity(Mockito.contains("dynamic"), Mockito.eq(JsonNode.class))).thenReturn(dynamicEntity);
-
-        ObjectNode categoryItem = objectMapper.createObjectNode();
-        categoryItem.put("isActive", true);
-        categoryItem.put("code", "cat1");
-        categoryItem.put("langCode", "eng");
-
-        ArrayNode docTypesArray = objectMapper.createArrayNode();
-        ObjectNode docType = objectMapper.createObjectNode();
-        docType.put("code", "doc1");
-        docType.put("name", "Document Name");
-        docTypesArray.add(docType);
-
-        categoryItem.set("documentTypes", docTypesArray);
-
-        ArrayNode docCategoriesArray = objectMapper.createArrayNode();
-        docCategoriesArray.add(categoryItem);
-        ObjectNode docResponseNode = objectMapper.createObjectNode();
-        docResponseNode.set("documentCategories", docCategoriesArray);
-        ObjectNode docWrapper = objectMapper.createObjectNode();
-        docWrapper.set("response", docResponseNode);
-
-        ResponseEntity<JsonNode> docEntity = new ResponseEntity<>(docWrapper, HttpStatus.OK);
-        Mockito.when(restTemplate.getForEntity(Mockito.contains("docTypes"), Mockito.eq(JsonNode.class))).thenReturn(docEntity);
-
-        JsonNode result = idrepoProfileRegistryPlugin.generateAllowedValues();
+        JsonNode result = idrepoProfileRegistryPlugin.fetchAllowedValuesFromMasterDataService();
 
         Assert.assertNotNull(result);
         Assert.assertTrue(result.has("fieldName"));
@@ -624,8 +585,9 @@ public class IdrepoProfileRegistryPluginImplTest {
         Assert.assertEquals("Document Name", result.get("cat1").get("doc1").get("eng").asText());
     }
 
+
     @Test
-    public void generateAllowedValues_withInactiveDynamicField_thenFail() {
+    public void fetchAllowedValues_FromMasterDataService_withInactiveDynamicField_thenFail() {
         ObjectNode dynamicItem = objectMapper.createObjectNode();
         dynamicItem.put("isActive", false);
 
@@ -635,33 +597,41 @@ public class IdrepoProfileRegistryPluginImplTest {
         dynamicResponseNode.put("totalPages", 1);
         dynamicResponseNode.put("totalItems", 1);
         dynamicResponseNode.set("data", dynamicDataArray);
-        ObjectNode dynamicWrapper = objectMapper.createObjectNode();
-        dynamicWrapper.set("response", dynamicResponseNode);
+        ResponseWrapper<JsonNode> dynamicWrapper = new ResponseWrapper<JsonNode>();
+        dynamicWrapper.setResponse(dynamicResponseNode);
+        ResponseEntity<ResponseWrapper<JsonNode>> dynamicFieldResponse = new ResponseEntity<>(dynamicWrapper, HttpStatus.OK);
+        Mockito.when(restTemplate.exchange(
+            Mockito.contains("dynamic"), Mockito.eq(HttpMethod.GET), Mockito.any(),
+            Mockito.eq(new ParameterizedTypeReference<ResponseWrapper<JsonNode>>() {})
+        )).thenReturn(dynamicFieldResponse);
 
-        ResponseEntity<JsonNode> dynamicEntity = new ResponseEntity<>(dynamicWrapper, HttpStatus.OK);
-        Mockito.when(restTemplate.getForEntity(Mockito.contains("dynamic"), Mockito.eq(JsonNode.class))).thenReturn(dynamicEntity);
-        ObjectNode docWrapper = objectMapper.createObjectNode();
-        docWrapper.set("response", objectMapper.createObjectNode().set("documentCategories", objectMapper.createArrayNode()));
-        ResponseEntity<JsonNode> docEntity = new ResponseEntity<>(docWrapper, HttpStatus.OK);
-        Mockito.when(restTemplate.getForEntity(Mockito.contains("docTypes"), Mockito.eq(JsonNode.class))).thenReturn(docEntity);
+        ResponseWrapper<JsonNode> docWrapper = new ResponseWrapper<JsonNode>();
+        docWrapper.setResponse(objectMapper.createObjectNode().set("documentCategories", objectMapper.createArrayNode()));
+        ResponseEntity<ResponseWrapper<JsonNode>> docEntity = new ResponseEntity<>(docWrapper, HttpStatus.OK);
+        Mockito.when(restTemplate.exchange(
+            Mockito.contains("docTypes"), Mockito.eq(HttpMethod.GET), Mockito.any(),
+            Mockito.eq(new ParameterizedTypeReference<ResponseWrapper<JsonNode>>() {})
+        )).thenReturn(docEntity);
 
-        JsonNode result = idrepoProfileRegistryPlugin.generateAllowedValues();
+        JsonNode result = idrepoProfileRegistryPlugin.fetchAllowedValuesFromMasterDataService();
         Assert.assertNotNull(result);
         Assert.assertEquals(0, result.size());
     }
 
     @Test
-    public void generateAllowedValues_withInactiveDocumentTypesAndCategories_thenFail() {
+    public void fetchAllowedValues_FromMasterDataService_withInactiveDocumentTypesAndCategories_thenFail() {
         ObjectNode dynamicResponseNode = objectMapper.createObjectNode();
         dynamicResponseNode.put("totalPages", 1);
         dynamicResponseNode.put("totalItems", 0);
         dynamicResponseNode.set("data", objectMapper.createArrayNode());
 
-        ObjectNode dynamicWrapper = objectMapper.createObjectNode();
-        dynamicWrapper.set("response", dynamicResponseNode);
-
-        ResponseEntity<JsonNode> dynamicEntity = new ResponseEntity<>(dynamicWrapper, HttpStatus.OK);
-        Mockito.when(restTemplate.getForEntity(Mockito.contains("dynamic"), Mockito.eq(JsonNode.class))).thenReturn(dynamicEntity);
+        ResponseWrapper<JsonNode> dynamicWrapper = new ResponseWrapper<JsonNode>();
+        dynamicWrapper.setResponse(dynamicResponseNode);
+        ResponseEntity<ResponseWrapper<JsonNode>> dynamicFieldResponse = new ResponseEntity<>(dynamicWrapper, HttpStatus.OK);
+        Mockito.when(restTemplate.exchange(
+            Mockito.contains("dynamic"), Mockito.eq(HttpMethod.GET), Mockito.any(),
+            Mockito.eq(new ParameterizedTypeReference<ResponseWrapper<JsonNode>>() {})
+        )).thenReturn(dynamicFieldResponse);
 
         ObjectNode inactiveCategory = objectMapper.createObjectNode();
         inactiveCategory.put("isActive", false); // should be skipped
@@ -686,13 +656,16 @@ public class IdrepoProfileRegistryPluginImplTest {
         ObjectNode docResponseNode = objectMapper.createObjectNode();
         docResponseNode.set("documentCategories", docCategoriesArray);
 
-        ObjectNode docWrapper = objectMapper.createObjectNode();
-        docWrapper.set("response", docResponseNode);
+        ResponseWrapper<JsonNode> responseWrapper = new ResponseWrapper<>();
+        responseWrapper.setResponse(docResponseNode);
 
-        ResponseEntity<JsonNode> docEntity = new ResponseEntity<>(docWrapper, HttpStatus.OK);
-        Mockito.when(restTemplate.getForEntity(Mockito.contains("docTypes"), Mockito.eq(JsonNode.class))).thenReturn(docEntity);
+        ResponseEntity<ResponseWrapper<JsonNode>> docResponse = new ResponseEntity<>(responseWrapper, HttpStatus.OK);
+        Mockito.when(restTemplate.exchange(
+            Mockito.contains("docTypes"), Mockito.eq(HttpMethod.GET), Mockito.any(),
+            Mockito.eq(new ParameterizedTypeReference<ResponseWrapper<JsonNode>>() {})
+        )).thenReturn(docResponse);
 
-        JsonNode result = idrepoProfileRegistryPlugin.generateAllowedValues();
+        JsonNode result = idrepoProfileRegistryPlugin.fetchAllowedValuesFromMasterDataService();
 
         Assert.assertNotNull(result);
         Assert.assertEquals(0, result.size());
@@ -724,21 +697,12 @@ public class IdrepoProfileRegistryPluginImplTest {
     }
 
     @Test
-    public void init_shouldPopulateUiSpec_thenPass() {
-        ObjectNode specNode = objectMapper.createObjectNode();
-        specNode.set("schema", objectMapper.createObjectNode().put("someKey", "someValue"));
-        specNode.set("errors", objectMapper.createObjectNode().put("errKey", "errVal"));
+    public void getUISpecification_validResponse_thenPass() throws JsonProcessingException {
+        String jsonSpec = "{\"spec\":{\"schema\":{\"required\":[\"phone\"],\"properties\":{\"phone\":{\"type\":\"string\"}}}," +
+                "\"i18nValues\":{\"en\":{\"label\":\"Phone Number\"},\"errors\":{\"invalid_phone\":\"Phone number is invalid\"}}," +
+                "\"customField\":{\"gender\":\"M,F\"}}}}";
 
-        ObjectNode i18n = objectMapper.createObjectNode();
-        i18n.set("en", objectMapper.createObjectNode().put("label", "Name"));
-        ObjectNode i18nErrors = objectMapper.createObjectNode().put("required", "Required");
-        i18n.set("errors", i18nErrors);
-        specNode.set("i18nValues", i18n);
-
-        specNode.set("allowedValues", objectMapper.createObjectNode().put("gender", "M,F"));
-        specNode.put("maxUploadFileSize", 1048576);
-
-        ArrayNode specArray = objectMapper.createArrayNode().add(specNode);
+        ArrayNode specArray = objectMapper.createArrayNode().add(objectMapper.readTree(jsonSpec));
         ObjectNode root = objectMapper.createObjectNode().set("jsonSpec", specArray);
         ArrayNode rootArray = objectMapper.createArrayNode().add(root);
 
@@ -749,15 +713,28 @@ public class IdrepoProfileRegistryPluginImplTest {
 
         Mockito.when(restTemplate.exchange(Mockito.eq("http://mock/uispec"), Mockito.eq(HttpMethod.GET), Mockito.isNull(),
                 Mockito.<ParameterizedTypeReference<ResponseWrapper<JsonNode>>>any())).thenReturn(responseEntity);
-        idrepoProfileRegistryPlugin.init();
+
+        ResponseEntity<ResponseWrapper<JsonNode>> dynamicFieldResponse = new ResponseEntity<>(getDynamicFieldsEndpointResponse(), HttpStatus.OK);
+        Mockito.when(restTemplate.exchange(
+            Mockito.contains("dynamic"), Mockito.eq(HttpMethod.GET), Mockito.any(),
+            Mockito.eq(new ParameterizedTypeReference<ResponseWrapper<JsonNode>>() {})
+        )).thenReturn(dynamicFieldResponse);
+
+        ResponseEntity<ResponseWrapper<JsonNode>> docEntity = new ResponseEntity<>(getDocumentTypesAndCategoriesEndpointResponse(), HttpStatus.OK);
+        Mockito.when(restTemplate.exchange(
+            Mockito.contains("docTypes"), Mockito.eq(HttpMethod.GET), Mockito.any(),
+            Mockito.eq(new ParameterizedTypeReference<ResponseWrapper<JsonNode>>() {})
+        )).thenReturn(docEntity);
 
         JsonNode uiSpec = idrepoProfileRegistryPlugin.getUISpecification();
         Assert.assertNotNull(uiSpec);
         Assert.assertTrue(uiSpec.has("schema"));
-        Assert.assertTrue(uiSpec.has("errors"));
+        Assert.assertTrue(uiSpec.has("customField"));
         Assert.assertTrue(uiSpec.has("i18nValues"));
         Assert.assertTrue(uiSpec.has("allowedValues"));
         Assert.assertTrue(uiSpec.has("maxUploadFileSize"));
+        Assert.assertTrue(uiSpec.has("language"));
+        Assert.assertTrue(uiSpec.has("resetPasswordChallengeFields"));
     }
 
     @Test
@@ -815,5 +792,54 @@ public class IdrepoProfileRegistryPluginImplTest {
         ProfileResult profileResult = idrepoProfileRegistryPlugin.createProfile(requestId, profileDto);
         Assert.assertNotNull(profileResult);
         Assert.assertEquals(profileResult.getStatus(),"SUCCESS");
+    }
+
+    private ResponseWrapper<JsonNode> getDynamicFieldsEndpointResponse() {
+        ObjectNode dynamicItem = objectMapper.createObjectNode();
+        dynamicItem.put("isActive", true);
+        dynamicItem.put("name", "fieldName");
+        dynamicItem.put("langCode", "eng");
+
+        ArrayNode fieldValArray = objectMapper.createArrayNode();
+        ObjectNode fieldVal = objectMapper.createObjectNode();
+        fieldVal.put("code", "code1");
+        fieldVal.put("value", "value1");
+        fieldValArray.add(fieldVal);
+        dynamicItem.set("fieldVal", fieldValArray);
+        ArrayNode dynamicDataArray = objectMapper.createArrayNode();
+        dynamicDataArray.add(dynamicItem);
+
+        ObjectNode dynamicResponseNode = objectMapper.createObjectNode();
+        dynamicResponseNode.put("totalPages", 1);
+        dynamicResponseNode.put("totalItems", 1);
+        dynamicResponseNode.set("data", dynamicDataArray);
+
+        ResponseWrapper<JsonNode> dynamicWrapper = new ResponseWrapper<JsonNode>();
+        dynamicWrapper.setResponse(dynamicResponseNode);
+        return dynamicWrapper;
+    }
+
+    private ResponseWrapper<JsonNode> getDocumentTypesAndCategoriesEndpointResponse() {
+        ObjectNode docType = objectMapper.createObjectNode();
+        docType.put("code", "doc1");
+        docType.put("name", "Document Name");
+        docType.put("langCode", "eng");
+        ArrayNode docTypesArray = objectMapper.createArrayNode();
+        docTypesArray.add(docType);
+
+        ObjectNode category = objectMapper.createObjectNode();
+        category.put("isActive", true);
+        category.put("code", "cat1");
+        category.put("langCode", "eng");
+        category.set("documentTypes", docTypesArray);
+        ArrayNode docCategoriesArray = objectMapper.createArrayNode();
+        docCategoriesArray.add(category);
+
+        ObjectNode docResponseNode = objectMapper.createObjectNode();
+        docResponseNode.set("documentCategories", docCategoriesArray);
+
+        ResponseWrapper<JsonNode> docWrapper = new ResponseWrapper<>();
+        docWrapper.setResponse(docResponseNode);
+        return docWrapper;
     }
 }

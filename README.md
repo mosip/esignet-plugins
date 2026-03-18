@@ -21,5 +21,5 @@ One can use the esignet base image to test the new fixes in the plugin. There ar
 Either of the above 2 steps should be followed and finally set the "plugin_name_env" environment variable. With this setup, eSignet
 service should get started with the configured plugin.
 
-## License
+## License 
 This project is licensed under the terms of [Mozilla Public License 2.0](LICENSE).
