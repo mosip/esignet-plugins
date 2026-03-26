@@ -51,7 +51,7 @@ jobs:
   sonar-analysis-mock-plugin:
     needs: build-maven-mock-plugin
     if: "${{  github.event_name != 'pull_request' }}"
-    uses: mosip/kattu/.github/workflows/maven-sonar-analysis.yml@master-java21
+    uses: mosip/kattu/.github/workflows/maven-sonar-analysis-new.yml@dsd9685
     with:
       SERVICE_LOCATION: ./mock-plugin
     secrets:
@@ -92,7 +92,7 @@ jobs:
   sonar-analysis-mosip-identity-plugin:
     needs: build-maven-mosip-identity-plugin
     if: "${{  github.event_name != 'pull_request' }}"
-    uses: mosip/kattu/.github/workflows/maven-sonar-analysis.yml@master-java21
+    uses: mosip/kattu/.github/workflows/maven-sonar-analysis-new.yml@dsd9685
     with:
       SERVICE_LOCATION: ./mosip-identity-plugin
     secrets:
@@ -133,7 +133,7 @@ jobs:
   sonar-analysis-sunbird-rc-plugin:
     needs: build-maven-sunbird-rc-plugin
     if: "${{  github.event_name != 'pull_request' }}"
-    uses: mosip/kattu/.github/workflows/maven-sonar-analysis.yml@master-java21
+    uses: mosip/kattu/.github/workflows/maven-sonar-analysis-new.yml@dsd9685
     with:
       SERVICE_LOCATION: ./sunbird-rc-plugin
     secrets:
