@@ -12,8 +12,8 @@ available at the time of the esignet and esignet-signup service release.
 Any bug fixes or changes in the plugins will be made available in the esignet service or
 esignet-signup service in their immediate next releases.
 
-### How to use the plugin with fixes where the eSignet is not yet released?
-One can use the esignet base image to test the new fixes in the plugin. There are two ways:
+### How to use the plugin with fixes where the eSignet is not yet released ?
+One can use the esignet base image to test the new fixes in the plugin. There are two ways to do that:
 
 1. Pass URL to download the plugin zip/jar in the "plugin_url_env" environment variable of the container.
 2. Mount the external directory with the plugin onto "/home/mosip/plugins" directory in the container.
