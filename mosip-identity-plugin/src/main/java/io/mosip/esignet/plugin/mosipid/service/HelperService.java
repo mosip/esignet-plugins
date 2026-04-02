@@ -156,8 +156,7 @@ public class HelperService {
         if(responseEntity.getStatusCode().is2xxSuccessful() && responseEntity.getBody() != null) {
             IdaSendOtpResponse idaSendOtpResponse = responseEntity.getBody();
             if(idaSendOtpRequest.getTransactionID().equals(idaSendOtpResponse.getTransactionID()) && idaSendOtpResponse.getResponse() != null){
-                log.info("IDA Send OTP Inner Response (JSON): {}", objectMapper.writeValueAsString(idaSendOtpResponse.getResponse()));
-                log.info("IDA Send OTP Inner Response (RAW): {}", idaSendOtpResponse.getResponse());
+                log.debug("IDA Send OTP Inner Response (RAW): {}", idaSendOtpResponse.getResponse());
                 return new SendOtpResult(idaSendOtpResponse.getTransactionID(),
                         idaSendOtpResponse.getResponse().getMaskedEmail(),
                         idaSendOtpResponse.getResponse().getMaskedMobile());
