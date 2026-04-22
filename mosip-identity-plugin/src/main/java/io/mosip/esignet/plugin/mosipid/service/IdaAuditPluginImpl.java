@@ -19,7 +19,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
-
+import org.springframework.scheduling.annotation.Async;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.mosip.esignet.api.dto.AuditDTO;
@@ -52,11 +52,13 @@ public class IdaAuditPluginImpl implements AuditPlugin {
 	@Value("${mosip.esignet.authenticator.ida.audit-manager-url}")
 	private String auditManagerUrl;
 
+    @Async("auditTaskExecutor")
 	@Override
 	public void logAudit(Action action, ActionStatus status, AuditDTO audit, Throwable t) {
 		audit(null, action, status, audit);
 	}
 
+    @Async("auditTaskExecutor")
 	@Override
 	public void logAudit(String username, Action action, ActionStatus status, AuditDTO audit, Throwable t) {
 		audit(username, action, status, audit);
