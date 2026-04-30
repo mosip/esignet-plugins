@@ -47,7 +47,7 @@ public class DemoIdentityVerifierPluginImpl extends IdentityVerifierPlugin {
 
     @Override
     public String getVerifierId() {
-        return "demo-identity-verifier";
+        return "test-identity-verifier";
     }
 
     @Override
