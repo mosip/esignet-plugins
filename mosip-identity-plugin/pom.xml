@@ -53,6 +53,17 @@
 				<enabled>false</enabled>
 			</snapshots>
 		</repository>
+        <repository>
+            <id>gcs-maven-central-mirror</id>
+            <name>GCS Maven Central mirror</name>
+            <url>https://maven-central.storage-download.googleapis.com/maven2/</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
 	</repositories>
 
 	<distributionManagement>
@@ -77,7 +88,17 @@
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
-			<!-- Override transitive Bouncy Castle version to fix CVEs -->
+			<!-- Override transitive Bouncy Castle versions to keep the set aligned -->
+			<dependency>
+				<groupId>org.bouncycastle</groupId>
+				<artifactId>bcprov-jdk18on</artifactId>
+				<version>1.80</version>
+			</dependency>
+			<dependency>
+				<groupId>org.bouncycastle</groupId>
+				<artifactId>bcutil-jdk18on</artifactId>
+				<version>1.80</version>
+			</dependency>
 			<dependency>
 				<groupId>org.bouncycastle</groupId>
 				<artifactId>bcpkix-jdk18on</artifactId>
