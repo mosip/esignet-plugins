@@ -70,7 +70,7 @@ Run a single test class:
 
 ```shell
 cd mock-plugin
-mvn test -Dtest=MockAuthenticationServiceTest
+mvn -Dtest=MockAuthenticationServiceTest test
 ```
 
 To build against a specific SNAPSHOT version of `esignet-integration-api` /
