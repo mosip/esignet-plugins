@@ -16,9 +16,9 @@ CI:
 
 | Module | Purpose |
 |---|---|
-| [`mock-plugin`](mock-plugin/README.md) | Implementation for use with the [Mock IDA system](https://github.com/mosip/esignet-mock-services/tree/master/mock-identity-system). Development/demo use only — not for production. |
-| [`mosip-identity-plugin`](mosip-identity-plugin/README.md) | Integrates eSignet with the [MOSIP IDA system](https://github.com/mosip/id-authentication) and esignet-signup with [MOSIP ID Repository](https://github.com/mosip/id-repository). This is the production plugin. |
-| [`sunbird-rc-plugin`](sunbird-rc-plugin/README.md) | Wraps the [Sunbird-RC](https://github.com/Sunbird-RC/sunbird-rc-core) registry system as an eSignet authenticator/VCI plugin (compatible with Sunbird-RC 1.0.0). |
+| [`mock-plugin`](mock-plugin/README.md) ([`AGENTS.md`](mock-plugin/AGENTS.md)) | Implementation for use with the [Mock IDA system](https://github.com/mosip/esignet-mock-services/tree/master/mock-identity-system). Development/demo use only — not for production. |
+| [`mosip-identity-plugin`](mosip-identity-plugin/README.md) ([`AGENTS.md`](mosip-identity-plugin/AGENTS.md)) | Integrates eSignet with the [MOSIP IDA system](https://github.com/mosip/id-authentication) and esignet-signup with [MOSIP ID Repository](https://github.com/mosip/id-repository). This is the production plugin. |
+| [`sunbird-rc-plugin`](sunbird-rc-plugin/README.md) ([`AGENTS.md`](sunbird-rc-plugin/AGENTS.md)) | Wraps the [Sunbird-RC](https://github.com/Sunbird-RC/sunbird-rc-core) registry system as an eSignet authenticator/VCI plugin (compatible with Sunbird-RC 1.0.0). |
 
 Each module's own `README.md` is the authoritative source for that module's
 configuration properties, dependent services, and database entries — this
