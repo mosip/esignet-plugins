@@ -70,18 +70,19 @@ Run a single test class:
 
 ```shell
 cd mock-plugin
-mvn -Dtest=MockAuthenticationServiceTest test
+mvn test -Dtest=MockAuthenticationServiceTest
 ```
 
 To build against a specific SNAPSHOT version of `esignet-integration-api` /
 `signup-integration-api` (both are `provided`-scope dependencies resolved
 from the OSSRH snapshot repository declared in each module's `pom.xml`),
-override the version property before the goal, not after the module path —
-system properties (`-D...`) must precede the goal on the Maven command line:
+override the version property (Maven's CLI parser accepts `-D` in either
+position relative to the goal — position it after the goal, matching the
+style used elsewhere in this file):
 
 ```shell
 cd mosip-identity-plugin
-mvn -Designet.version=1.6.0-SNAPSHOT clean install
+mvn clean install -Designet.version=1.6.0-SNAPSHOT
 ```
 
 ## Configuration
@@ -177,7 +178,7 @@ Actions secrets.
 2. Read the target module's own `README.md` before changing its configuration or documenting new properties — it is the source of truth for that module's setup.
 3. Keep new provider/service implementation classes in the correct existing package (`io.mosip.esignet.plugin.<module>` or `io.mosip.signup.plugin.<module>`) matching the interface being implemented.
 4. Target the `develop` branch for new branches and PRs.
-5. Place any `-D` system property before the Maven goal on the command line (e.g. `mvn -Dproperty=value clean install`), never after.
+5. Write Maven `-D` system properties after the goal on the command line (e.g. `mvn clean install -Dproperty=value`), matching the style used throughout this file — Maven's CLI parser accepts either position, this is just for consistency. (This is unrelated to a plain `java -jar` command, where `-D` flags genuinely must precede `-jar` for the JVM to recognize them.)
 
 ### Do not
 
