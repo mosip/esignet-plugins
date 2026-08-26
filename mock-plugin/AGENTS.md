@@ -8,8 +8,7 @@ Implements interfaces from **both** `esignet-integration-api` and
 `signup-integration-api`, backed by the [Mock IDA
 system](https://github.com/mosip/esignet-mock-services/tree/master/mock-identity-system)
 instead of a real MOSIP ID Authentication service. **Development/demo
-use only — not for production.** See `../AGENTS.md`'s
-Repository-Specific Considerations for why.
+use only — not for production.**
 
 ## Layout
 
@@ -63,13 +62,11 @@ mvn test -Dtest=MockAuthenticationServiceTest
 
 ## Configuration
 
-`src/main/resources/application.properties` ships with default values
-for every property this plugin needs — see `README.md`'s Configuration
-section. Real overrides happen at the host application
-(`esignet-service`) level via environment variables, not by editing
-this file. `README.md` also documents two `key_policy_def` DB rows
-(`MOCK_AUTHENTICATION_SERVICE`, `MOCK_BINDING_SERVICE`) that must exist
-in the target `mosip_esignet` database, and a required
+`src/main/resources/application.properties` ships defaults for every
+property; real overrides happen at the host `esignet-service` via env
+vars, not by editing this file. `README.md` also documents two
+`key_policy_def` DB rows (`MOCK_AUTHENTICATION_SERVICE`,
+`MOCK_BINDING_SERVICE`) required in `mosip_esignet`, and a required
 `"bindingtransaction"` entry in `mosip.esignet.cache.names`.
 
 ## Agent rules

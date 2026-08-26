@@ -2,87 +2,54 @@
 
 ## Repository Overview
 
-This repository hosts the Java runtime-dependency plugins used by
-[esignet](https://github.com/mosip/esignet) and
-[esignet-signup](https://github.com/mosip/esignet-signup). Each plugin
-implements the interfaces defined in `esignet-integration-api` and/or
-`signup-integration-api` and is bundled as a runtime jar into the eSignet
-service images. MOSIP publishes two image flavors: a base `esignet` image and
-an `esignet-with-plugins` image that bundles the plugins from this repo.
+Java runtime-dependency plugins for [esignet](https://github.com/mosip/esignet)
+and [esignet-signup](https://github.com/mosip/esignet-signup). Each plugin
+implements `esignet-integration-api` and/or `signup-integration-api` and is
+bundled as a runtime jar into the `esignet-with-plugins` image.
 
-There is no root aggregator `pom.xml` — the repository is a flat collection
-of three independent Maven modules, each built and published on its own by
-CI:
+No root aggregator `pom.xml` — three independent Maven modules, each built,
+versioned, and published on its own:
 
 | Module | Purpose |
 |---|---|
-| [`mock-plugin`](mock-plugin/README.md) ([`AGENTS.md`](mock-plugin/AGENTS.md)) | Implementation for use with the [Mock IDA system](https://github.com/mosip/esignet-mock-services/tree/master/mock-identity-system). Development/demo use only — not for production. |
-| [`mosip-identity-plugin`](mosip-identity-plugin/README.md) ([`AGENTS.md`](mosip-identity-plugin/AGENTS.md)) | Integrates eSignet with the [MOSIP IDA system](https://github.com/mosip/id-authentication) and esignet-signup with [MOSIP ID Repository](https://github.com/mosip/id-repository). This is the production plugin. |
-| [`sunbird-rc-plugin`](sunbird-rc-plugin/README.md) ([`AGENTS.md`](sunbird-rc-plugin/AGENTS.md)) | Wraps the [Sunbird-RC](https://github.com/Sunbird-RC/sunbird-rc-core) registry system as an eSignet authenticator/VCI plugin (compatible with Sunbird-RC 1.0.0). |
+| [`mock-plugin`](mock-plugin/README.md) ([`AGENTS.md`](mock-plugin/AGENTS.md)) | Mock IDA-backed implementation. **Not for production.** |
+| [`mosip-identity-plugin`](mosip-identity-plugin/README.md) ([`AGENTS.md`](mosip-identity-plugin/AGENTS.md)) | Production plugin — real MOSIP IDA/ID Repository. |
+| [`sunbird-rc-plugin`](sunbird-rc-plugin/README.md) ([`AGENTS.md`](sunbird-rc-plugin/AGENTS.md)) | Sunbird-RC registry as an eSignet authenticator/VCI plugin. |
 
-Each module's own `README.md` is the authoritative source for that module's
-configuration properties, dependent services, and database entries — this
-file does not repeat that detail, only points to it.
+Each module's own `README.md` is the source of truth for its configuration
+properties, dependent services, and DB entries — not repeated here.
 
 ## Technology Stack
 
-- Language: Java 21 (`java.version`, `maven.compiler.source/target` are all
-  `21` in every module's `pom.xml`)
-- Build tool: Apache Maven (no Maven Wrapper committed — use a locally
-  installed `mvn`)
-- Test: JUnit via `maven-surefire-plugin` (version `3.1.2`), coverage via
-  `jacoco-maven-plugin` (version `0.8.14`) in each module
-- Packaging: plain `jar` for `mock-plugin` and `sunbird-rc-plugin`;
-  `mosip-identity-plugin` additionally uses `maven-assembly-plugin` with
-  `src/assembly.xml`
-- Artifacts published to Maven Central / Sonatype OSSRH snapshots
-  (`https://central.sonatype.com/repository/maven-snapshots`)
+- Java 21 (`java.version`, `maven.compiler.source/target` in every `pom.xml`)
+- Apache Maven, no wrapper committed — use a local `mvn`
+- Test: JUnit via `maven-surefire-plugin` 3.1.2; coverage via
+  `jacoco-maven-plugin` 0.8.14
+- Packaging: plain `jar`; `mosip-identity-plugin` additionally uses
+  `maven-assembly-plugin` (`src/assembly.xml`)
+- Published to Maven Central / Sonatype OSSRH snapshots
 
 ## Build & Test Commands
 
-Each module is built independently — there is no parent `pom.xml` to build
-all three from the repo root. Run Maven from inside the module directory you
-are changing:
+Build from inside the module directory — there's no repo-root build. Each
+module's `maven-gpg-plugin` binds `sign` to the `verify` phase (which
+`install` runs through), so pass `-Dgpg.skip=true` locally unless you have a
+signing key:
 
-Each module's `maven-gpg-plugin` binds `sign` to the `verify` phase, which
-`install` runs through — pass `-Dgpg.skip=true` for local builds unless you
-have a signing key configured:
+```shell
+cd mock-plugin && mvn clean install -Dgpg.skip=true
+cd mosip-identity-plugin && mvn clean install -Dgpg.skip=true
+cd sunbird-rc-plugin && mvn clean install -Dgpg.skip=true
+```
 
 ```shell
 cd mock-plugin
-mvn clean install -Dgpg.skip=true
+mvn test                                      # module tests
+mvn test -Dtest=MockAuthenticationServiceTest # single class
 ```
 
-```shell
-cd mosip-identity-plugin
-mvn clean install -Dgpg.skip=true
-```
-
-```shell
-cd sunbird-rc-plugin
-mvn clean install -Dgpg.skip=true
-```
-
-Run only the tests for a module:
-
-```shell
-cd mock-plugin
-mvn test
-```
-
-Run a single test class:
-
-```shell
-cd mock-plugin
-mvn test -Dtest=MockAuthenticationServiceTest
-```
-
-To build against a specific SNAPSHOT version of `esignet-integration-api` /
-`signup-integration-api` (both are `provided`-scope dependencies resolved
-from the OSSRH snapshot repository declared in each module's `pom.xml`),
-override the version property (Maven's CLI parser accepts `-D` in either
-position relative to the goal — position it after the goal, matching the
-style used elsewhere in this file):
+To build against a SNAPSHOT of `esignet-integration-api`/`signup-integration-api`
+(`provided`-scope, resolved from the OSSRH snapshot repo):
 
 ```shell
 cd mosip-identity-plugin
@@ -91,103 +58,63 @@ mvn clean install -Dgpg.skip=true -Designet.version=1.6.0-SNAPSHOT
 
 ## Configuration
 
-There are no secrets or local-override property files checked into this
-repository. Each module ships one `src/main/resources/application.properties`
-with default values for its own plugin; there is no
-`application-local.properties` or similar override file in any module.
-Configuration works by env-var overrides at the host application
-(esignet-service / signup-service) level, as described in each module's
-README:
-
-- `mock-plugin/src/main/resources/application.properties`
-- `mosip-identity-plugin/src/main/resources/application.properties`
-- `sunbird-rc-plugin/src/main/resources/application.properties`
-
-`mosip-identity-plugin` additionally requires values that have no default and
-must be supplied by the deployer: `mosip.ida.client.secret` and
-`mosip.esignet.misp.key` (see
-[mosip-identity-plugin/README.md](mosip-identity-plugin/README.md)).
-
-Never commit real values for these, or for any Nexus/OSSRH/GPG credentials
-used by the release workflow (see below) — they are supplied only as GitHub
-Actions secrets.
+No secrets or local-override property files are checked in. Each module ships
+one `src/main/resources/application.properties` with defaults; real overrides
+happen at the host service (esignet-service/signup-service) via env vars.
+`mosip-identity-plugin` additionally requires `mosip.ida.client.secret` and
+`mosip.esignet.misp.key`, supplied only by the deployer — see
+[mosip-identity-plugin/README.md](mosip-identity-plugin/README.md). Never
+commit real values for these or any Nexus/OSSRH/GPG release-workflow
+credentials — GitHub Actions secrets only.
 
 ## Project Structure Notes
 
-- `mock-plugin/`, `mosip-identity-plugin/`, `sunbird-rc-plugin/` — the three
-  independent plugin modules described above. Each has its own `pom.xml`,
-  `README.md`, `src/main/java`, `src/main/resources`, and `src/test/java`.
-- `.github/workflows/push-trigger.yml` — on every push to `master`, `develop`,
-  `1.*`, `MOSIP*`, or `release*`, and on PR open/reopen/sync, builds all three
-  modules independently (one `build-maven-<module>` job per module) using the
-  shared `mosip/kattu` reusable workflows. On non-PR, non-release pushes off
-  `master`, each module is also published to Nexus and Sonar-analyzed.
-- `.github/workflows/codeql.yml` — runs CodeQL static analysis (Java/Kotlin)
-  on pushes and PRs targeting `develop`, plus a weekly schedule.
-- No root `pom.xml`: do not try to build "the whole repo" with one Maven
-  invocation from the repo root — it will not find a project there.
+- `.github/workflows/push-trigger.yml` — on push to `master`/`develop`/`1.*`/
+  `MOSIP*`/`release*` and on PR, builds all three modules independently
+  (`mosip/kattu` reusable workflows). Publish to Nexus + Sonar analysis only
+  fire on non-PR, non-release pushes off `master`.
+- `.github/workflows/codeql.yml` — CodeQL on push/PR to `develop` + weekly.
 
 ## Development Workflow
 
-1. Fork the repository and clone your fork.
-2. Branch from `develop` (the active integration branch; CI, including
-   CodeQL, targets `develop`).
-3. Make changes inside the one module your change concerns. Cross-module
-   changes are rare because the modules do not depend on each other.
-4. Run `mvn clean install` (or at least `mvn test`) inside that module
+1. Branch from `develop`.
+2. Change one module at a time — they don't depend on each other.
+3. Run that module's `mvn clean install -Dgpg.skip=true` (or `mvn test`)
    before opening a PR.
-5. Keep new/changed classes under the module's existing package roots
-   (`io.mosip.esignet.plugin.<module>` for esignet-integration-api
-   implementations, `io.mosip.signup.plugin.<module>` for
-   signup-integration-api implementations — see `mock-plugin` and
-   `mosip-identity-plugin` for examples of both).
+4. New classes go under the module's existing package root
+   (`io.mosip.esignet.plugin.<module>` or `io.mosip.signup.plugin.<module>`).
 
 ## Pull Request Guidelines
 
-- Target the `develop` branch.
-- Reference the tracking issue (e.g. `MOSIP-xxxxx` or a GitHub issue URL) in
-  the PR title/description, following the existing commit history convention
-  in this repo (see `git log`).
-- Sign off commits (`git commit -s`) — MOSIP requires a DCO sign-off line
-  matching the committer's real identity.
-- Expect CI to run the module-specific Maven build and CodeQL scan
-  automatically; a failing build or new CodeQL alert should be fixed before
-  requesting review.
-- Do not add a root `pom.xml` or otherwise couple the three modules together
-  unless that is explicitly the goal of the change — they are deliberately
-  independent, versioned and released separately.
+- Target `develop`; sign off commits (`git commit -s`, DCO required).
+- Reference the tracking issue (`MOSIP-xxxxx` or GitHub issue URL) per
+  existing commit-history convention.
+- CI runs the module build + CodeQL automatically — fix failures/alerts
+  before requesting review.
 
 ## Repository-Specific Considerations
 
-- `mock-plugin` is explicitly documented as **not for production use** — it
-  exists to exercise eSignet against the Mock IDA system. Do not point
-  production-facing changes at it; use `mosip-identity-plugin` instead.
-- Each module declares its own `<version>` in its `pom.xml` and is released
-  independently to Sonatype/Maven Central — bumping one module's version does
-  not affect the others.
-- `esignet-integration-api` and `signup-integration-api` are consumed as
-  `provided`-scope dependencies (i.e. supplied by the host esignet/esignet-
-  signup service at runtime, not bundled into the plugin jar). Keep new
-  dependencies out of `compile` scope unless they genuinely need to ship
-  inside the plugin jar.
-- The publish/Sonar/Nexus jobs in `push-trigger.yml` only run for non-PR,
-  non-release pushes off `master` — a plain PR only triggers the build (and
-  CodeQL) jobs, not publishing.
+- `esignet-integration-api`/`signup-integration-api` are `provided`-scope
+  (supplied by the host service at runtime, not bundled) — keep new
+  dependencies out of `compile` scope unless they must ship in the jar.
+- Maven's CLI parser accepts `-D` before or after the goal; this repo's
+  convention is after the goal (unlike a plain `java -jar` command, where
+  `-D` must precede `-jar`).
 
 ## Agent rules
 
 ### Do
 
-1. Work inside a single module directory (`mock-plugin`, `mosip-identity-plugin`, or `sunbird-rc-plugin`) per change, and run that module's own `mvn clean install` / `mvn test` before proposing a change as complete.
-2. Read the target module's own `README.md` before changing its configuration or documenting new properties — it is the source of truth for that module's setup.
-3. Keep new provider/service implementation classes in the correct existing package (`io.mosip.esignet.plugin.<module>` or `io.mosip.signup.plugin.<module>`) matching the interface being implemented.
-4. Target the `develop` branch for new branches and PRs.
-5. Write Maven `-D` system properties after the goal on the command line (e.g. `mvn clean install -Dproperty=value`), matching the style used throughout this file — Maven's CLI parser accepts either position, this is just for consistency. (This is unrelated to a plain `java -jar` command, where `-D` flags genuinely must precede `-jar` for the JVM to recognize them.)
+1. Work inside one module per change; run its `mvn clean install
+   -Dgpg.skip=true` / `mvn test` before calling a change complete.
+2. Read the target module's own `README.md` before touching its config.
+3. Keep new provider classes in the matching existing package root.
 
 ### Do not
 
-1. Do not assume a root `pom.xml` exists — there isn't one, so do not attempt a repo-root Maven build or add cross-module dependencies between the three plugins.
-2. Do not commit real secrets, license keys, or credentials (e.g. `mosip.esignet.misp.key`, `mosip.ida.client.secret`, OSSRH/GPG/Sonar tokens) into any `application.properties` or workflow file.
-3. Do not treat `mock-plugin` as production-ready — it is documented as development/demo-only.
-4. Do not change `esignet-integration-api` / `signup-integration-api` dependency scope away from `provided` without a specific reason — they are supplied by the host service at runtime.
-5. Do not skip running the affected module's tests locally before opening a PR just because CI will also run them.
+1. Don't assume a root `pom.xml` exists, or add cross-module dependencies.
+2. Don't commit secrets/credentials into `application.properties` or
+   workflow files.
+3. Don't point production-facing changes at `mock-plugin` — demo-only.
+4. Don't move `esignet-integration-api`/`signup-integration-api` off
+   `provided` scope without a specific reason.

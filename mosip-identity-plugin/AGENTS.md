@@ -6,9 +6,8 @@ Parent guide: [`../AGENTS.md`](../AGENTS.md)
 
 The **production** plugin: integrates eSignet with the real [MOSIP IDA
 system](https://github.com/mosip/id-authentication) and eSignet Signup
-with the real [MOSIP ID Repository](https://github.com/mosip/id-repository).
-This is what actually ships to a live MOSIP deployment — contrast with
-`../mock-plugin/`, which is explicitly demo-only.
+with the real [MOSIP ID Repository](https://github.com/mosip/id-repository)
+— what actually ships to a live deployment (contrast `../mock-plugin/`).
 
 ## Layout
 
@@ -61,16 +60,12 @@ cd mosip-identity-plugin
 mvn clean install -Dgpg.skip=true
 ```
 
-Unlike `mock-plugin` and `sunbird-rc-plugin`, this module additionally
-uses `maven-assembly-plugin` with a custom `src/assembly.xml`
-(`jar-with-runtime-deps` format — plain jar output, `includeBaseDirectory`
-false, bundles compiled classes/resources plus the Maven descriptor
-metadata) — check `src/assembly.xml` before assuming standard `jar`
-packaging behavior for this module specifically.
+Only module of the three using `maven-assembly-plugin` (`src/assembly.xml`,
+`jar-with-runtime-deps` format, `includeBaseDirectory` false) — check
+`src/assembly.xml` before assuming standard `jar` packaging here.
 
-To build against a specific SNAPSHOT of `esignet-integration-api`/
-`signup-integration-api`, see `../AGENTS.md`'s Build & Test Commands
-(`mvn clean install -Designet.version=...`).
+For a SNAPSHOT build of `esignet-integration-api`/`signup-integration-api`,
+see `../AGENTS.md`'s Build & Test Commands.
 
 ## Configuration
 
@@ -97,18 +92,11 @@ Authmanager, Auditmanager, Idgenerator, Credential-request-generator.
 
 1. Keep esignet-side changes under `io.mosip.esignet.plugin.mosipid`
    and signup-side changes under `io.mosip.signup.plugin.mosipid`.
-2. Check `src/assembly.xml` before changing this module's packaging —
-   it's the only one of the three modules that uses
-   `maven-assembly-plugin`.
-3. Treat `mosip.ida.client.secret`/`mosip.esignet.misp.key` as
-   deployer-supplied — never give them a real default value in
-   `application.properties`.
+2. Treat `mosip.ida.client.secret`/`mosip.esignet.misp.key` as
+   deployer-supplied — never give them a real default value.
 
 ### Do not
 
-1. Do not assume `MockIdentityVerifierPluginImpl` in this module is a
-   real MOSIP-backed verifier — it's a mock, despite living in the
-   production plugin module.
-2. Do not add real credentials/keys to `application.properties`.
-3. Do not change `esignet-integration-api`/`signup-integration-api`
-   dependency scope away from `provided` (see `../AGENTS.md`).
+1. Don't assume `MockIdentityVerifierPluginImpl` here is real — it's a
+   mock despite living in the production module.
+2. Don't add real credentials/keys to `application.properties`.

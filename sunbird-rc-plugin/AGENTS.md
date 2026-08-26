@@ -4,12 +4,11 @@ Parent guide: [`../AGENTS.md`](../AGENTS.md)
 
 ## Purpose
 
-Implements **only** `esignet-integration-api` (unlike `mock-plugin` and
-`mosip-identity-plugin`, which implement both esignet- and
-signup-integration-api) — wraps the
-[Sunbird-RC](https://github.com/Sunbird-RC/sunbird-rc-core) registry
-system as an eSignet authenticator/VCI plugin, compatible with
-Sunbird-RC 1.0.0. The smallest of the three modules by a wide margin.
+Implements **only** `esignet-integration-api` (not `signup-integration-api`,
+unlike the other two modules) — wraps
+[Sunbird-RC](https://github.com/Sunbird-RC/sunbird-rc-core) as an eSignet
+authenticator/VCI plugin, compatible with Sunbird-RC 1.0.0. Smallest of the
+three modules by a wide margin.
 
 ## Layout
 
