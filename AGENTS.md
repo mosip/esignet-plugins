@@ -44,19 +44,23 @@ Each module is built independently — there is no parent `pom.xml` to build
 all three from the repo root. Run Maven from inside the module directory you
 are changing:
 
+Each module's `maven-gpg-plugin` binds `sign` to the `verify` phase, which
+`install` runs through — pass `-Dgpg.skip=true` for local builds unless you
+have a signing key configured:
+
 ```shell
 cd mock-plugin
-mvn clean install
+mvn clean install -Dgpg.skip=true
 ```
 
 ```shell
 cd mosip-identity-plugin
-mvn clean install
+mvn clean install -Dgpg.skip=true
 ```
 
 ```shell
 cd sunbird-rc-plugin
-mvn clean install
+mvn clean install -Dgpg.skip=true
 ```
 
 Run only the tests for a module:
@@ -82,7 +86,7 @@ style used elsewhere in this file):
 
 ```shell
 cd mosip-identity-plugin
-mvn clean install -Designet.version=1.6.0-SNAPSHOT
+mvn clean install -Dgpg.skip=true -Designet.version=1.6.0-SNAPSHOT
 ```
 
 ## Configuration

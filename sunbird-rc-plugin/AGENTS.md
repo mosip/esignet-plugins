@@ -38,7 +38,7 @@ helper. `doKycAuth` performs a registry search against Sunbird-RC using
 
 ```bash
 cd sunbird-rc-plugin
-mvn clean install
+mvn clean install -Dgpg.skip=true
 mvn test
 ```
 
@@ -75,6 +75,3 @@ endpoints or credentials into these examples.
 
 1. Do not assume this module implements `signup-integration-api` — it
    doesn't; only `esignet-integration-api`.
-2. Do not "fix" the misspelled test filename
-   (`SunbirdRCAuthenticaionServiceTest.java`) as a drive-by change —
-   rename it deliberately if asked to, not incidentally.

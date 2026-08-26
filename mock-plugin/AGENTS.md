@@ -56,7 +56,7 @@ service class (5 test files total).
 
 ```bash
 cd mock-plugin
-mvn clean install
+mvn clean install -Dgpg.skip=true
 mvn test
 mvn test -Dtest=MockAuthenticationServiceTest
 ```

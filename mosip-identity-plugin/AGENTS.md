@@ -58,7 +58,7 @@ which interface/class you're touching.
 
 ```bash
 cd mosip-identity-plugin
-mvn clean install
+mvn clean install -Dgpg.skip=true
 ```
 
 Unlike `mock-plugin` and `sunbird-rc-plugin`, this module additionally
